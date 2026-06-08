@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stovo — pilotez votre stock</title>
+
+  <!--
+    STOVO — Dashboard de gestion de stock (version démo, lecture seule)
+    ===================================================================
+    3 parties dans ce fichier :
+      1. La présentation (CSS, dans <style> ci-dessous)
+      2. La structure (HTML, dans <body>)
+      3. La logique : lire les données Supabase, calculer les indicateurs, afficher (JS, tout en bas)
+
+    Idée métier centrale : on n'affiche pas que le stock brut, on calcule la
+    COUVERTURE EN JOURS (combien de temps il reste au rythme réel des sorties).
+    C'est l'info qui déclenche vraiment l'action chez un gérant.
+
+    La clé Supabase ci-dessous est PUBLIQUE par nature : lecture seule,
+    la base est verrouillée en écriture (Row Level Security).
+  -->
+
+  <style>
+    :root {
+      --brand: #0d9488;
+      --brand-dark: #0f766e;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --border: #e6eaf0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --muted-light: #94a3b8;
+
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --danger-border: #fecaca;
+      --warn: #ea580c;
+      --warn-bg: #fff7ed;
+      --warn-border: #fed7aa;
+      --ok: #0d9488;
+      --ok-bg: #f0fdfa;
+
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, .04);
+      --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 10px 30px rgba(15, 23, 42, .05);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 40px;
+    }
+
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+    /* ---------- En-tête ---------- */
+    header {
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 55%, #115e59 100%);
+      color: #fff;
+      padding: 26px 0 70px;
+    }
+    .header-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .logo {
+      width: 46px; height: 46px; border-radius: 13px;
+      background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.25);
+      display: grid; place-items: center; font-size: 24px; font-weight: 800;
+    }
+    .brand h1 { font-size: 25px; font-weight: 800; letter-spacing: -.5px; }
+    .brand p { font-size: 13.5px; opacity: .88; }
+    .header-actions { display: flex; align-items: center; gap: 14px; }
+    .updated { font-size: 12.5px; opacity: .85; text-align: right; }
+    .btn-refresh {
+      background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.3);
+      padding: 10px 15px; border-radius: 10px; font-size: 14px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; gap: 7px; transition: background .15s, transform .1s;
+    }
+    .btn-refresh:hover { background: rgba(255,255,255,.28); }
+    .btn-refresh:active { transform: translateY(1px); }
+
+    /* ---------- KPI ---------- */
+    .kpis {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      margin-top: -48px; margin-bottom: 8px;
+    }
+    .kpi {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 18px 20px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+    }
+    .kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--muted-light); }
+    .kpi.danger::before { background: var(--danger); }
+    .kpi.warn::before { background: var(--warn); }
+    .kpi.brand::before { background: var(--brand); }
+    .kpi .k-label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+    .kpi .k-value { font-size: 32px; font-weight: 800; line-height: 1.1; margin-top: 6px; }
+    .kpi.danger .k-value { color: var(--danger); }
+    .kpi.warn .k-value { color: var(--warn); }
+    .kpi .k-sub { font-size: 12px; color: var(--muted-light); margin-top: 2px; }
+
+    /* ---------- Titres de section ---------- */
+    .section-title { font-size: 17px; font-weight: 700; margin: 30px 0 14px; display: flex; align-items: center; gap: 10px; }
+    .section-title .count {
+      font-size: 12.5px; font-weight: 600; color: var(--muted);
+      background: #fff; border: 1px solid var(--border); padding: 2px 10px; border-radius: 999px;
+    }
+
+    /* ---------- Bloc réappro (priorité action) ---------- */
+    .reorder {
+      background: var(--card); border: 1px solid var(--danger-border); border-radius: var(--radius);
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .reorder-item {
+      display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center;
+      padding: 15px 20px; border-top: 1px solid var(--border);
+    }
+    .reorder-item:first-child { border-top: none; }
+    .reorder-item .ri-main { min-width: 0; }
+    .reorder-item .ri-name { font-weight: 700; font-size: 15px; }
+    .reorder-item .ri-detail { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .reorder-item .ri-right { text-align: right; white-space: nowrap; }
+    .reorder-item .ri-cover { font-size: 19px; font-weight: 800; }
+    .reorder-item .ri-cover.c-crit { color: var(--danger); }
+    .reorder-item .ri-cover.c-warn { color: var(--warn); }
+    .reorder-item .ri-coverlabel { font-size: 11.5px; color: var(--muted-light); text-transform: uppercase; letter-spacing: .3px; }
+    .reorder-item .ri-qty { font-size: 22px; font-weight: 800; color: var(--danger); cursor: help; }
+    .reorder-item .ri-warning { font-size: 12.5px; font-weight: 600; color: var(--danger); margin-top: 6px; }
+
+    /* ---------- Cartes produits ---------- */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 16px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 18px; box-shadow: var(--shadow-sm); transition: box-shadow .15s, transform .1s;
+    }
+    .card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+    .card .c-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .card .c-name { font-size: 15px; font-weight: 700; }
+    .card .c-stock { display: flex; align-items: baseline; gap: 6px; margin: 12px 0 4px; }
+    .card .c-num { font-size: 36px; font-weight: 800; line-height: 1; }
+    .card .c-unit { font-size: 14px; color: var(--muted); font-weight: 600; }
+    .card .c-cover { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+    .card .c-cover b { color: var(--text); }
+
+    /* jauge de niveau : repère du seuil au milieu (50%) */
+    .jauge { position: relative; height: 9px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
+    .jauge-fill { height: 100%; border-radius: 999px; background: var(--brand); }
+    .jauge-fill.is-low { background: var(--danger); }
+    .jauge-seuil { position: absolute; top: -2px; bottom: -2px; width: 2px; background: rgba(15,23,42,.35); }
+
+    /* badges / pills */
+    .badge { font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+    .badge.ok { color: var(--ok); background: var(--ok-bg); border: 1px solid #99f6e4; }
+    .badge.danger { color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger-border); }
+    .badge.warn { color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-border); }
+
+    /* ---------- Tableau des mouvements ---------- */
+    .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 12px 18px; font-size: 14px; }
+    th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); background: #f8fafc; font-weight: 700; }
+    tbody tr { border-top: 1px solid var(--border); }
+    tbody tr:hover { background: #fafbfc; }
+    .pill { font-weight: 700; font-size: 13.5px; }
+    .pill.entree { color: var(--ok); }
+    .pill.sortie { color: var(--warn); }
+    .src { font-size: 12px; color: var(--muted-light); }
+
+    /* ---------- États ---------- */
+    .state { padding: 38px; text-align: center; color: var(--muted); }
+    .state.error { color: var(--danger); }
+
+    footer { margin-top: 36px; font-size: 12.5px; color: var(--muted-light); text-align: center; }
+
+    /* ---------- Mobile ---------- */
+    @media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) {
+      header { padding-bottom: 60px; }
+      .kpis { grid-template-columns: repeat(2, 1fr); margin-top: -42px; }
+      .kpi .k-value { font-size: 26px; }
+      .brand h1 { font-size: 21px; }
+      th:nth-child(4), td:nth-child(4) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="wrap header-row">
+      <div class="brand">
+        <div class="logo">S</div>
+        <div>
+          <h1>Stovo</h1>
+          <p>Pilotez votre stock en un coup d'œil</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="updated" id="updated">—</div>
+        <button class="btn-refresh" id="refresh">↻ Rafraîchir</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- 4 indicateurs de pilotage -->
+    <section class="kpis">
+      <div class="kpi danger">
+        <div class="k-label">À commander</div>
+        <div class="k-value" id="kpi-commander">—</div>
+        <div class="k-sub">sous le seuil</div>
+      </div>
+      <div class="kpi warn">
+        <div class="k-label">Rupture imminente</div>
+        <div class="k-value" id="kpi-rupture">—</div>
+        <div class="k-sub">moins de 3 jours</div>
+      </div>
+      <div class="kpi brand">
+        <div class="k-label">Produits suivis</div>
+        <div class="k-value" id="kpi-produits">—</div>
+        <div class="k-sub">références actives</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Activité (7 jours)</div>
+        <div class="k-value" id="kpi-mouvements">—</div>
+        <div class="k-sub">mouvements enregistrés</div>
+      </div>
+    </section>
+
+    <!-- Priorité d'action : à réapprovisionner, trié du plus urgent au moins urgent -->
+    <div id="reorder-bloc" style="display:none;">
+      <h2 class="section-title">⚠️ À réapprovisionner en priorité <span class="count" id="reorder-count"></span></h2>
+      <div class="reorder" id="reorder-list"></div>
+    </div>
+
+    <!-- Inventaire complet -->
+    <h2 class="section-title">📦 Inventaire complet <span class="count" id="inv-count"></span></h2>
+    <div class="grid" id="inv-grid">
+      <div class="state">Chargement de l'inventaire…</div>
+    </div>
+
+    <!-- Derniers mouvements -->
+    <h2 class="section-title">🕑 Derniers mouvements</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Quand</th><th>Produit</th><th>Mouvement</th><th>Source</th></tr></thead>
+        <tbody id="mvt-body"><tr><td colspan="4" class="state">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+
+    <footer>
+      Stovo · version démonstration · données hébergées en Europe (Paris) · mise à jour automatique toutes les 30 s
+    </footer>
+
+  </main>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    // --- Connexion Supabase (clé publique = lecture seule) ---
+    const SUPABASE_URL = 'https://hivaawwjrimacfkguauc.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_h-tBhpJfbAP4YUS6OmYsaA_GNAfWkjh';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const FENETRE_JOURS = 7;          // période sur laquelle on mesure le rythme de consommation
+    const COUVERTURE_CIBLE_JOURS = 10; // combien de jours on veut tenir après réception (curseur trésorerie)
+
+    const $ = (id) => document.getElementById(id);
+    const fmtNombre = (v) => { const n = Number(v); return Number.isInteger(n) ? n.toString() : n.toFixed(2).replace(/\.?0+$/, ''); };
+    const fmtDate = (iso) => new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+
+    // Texte lisible de la couverture en jours
+    const txtCouverture = (c) => {
+      if (c === null) return '—';
+      if (c < 1) return "moins d'1 jour";
+      const j = Math.round(c);
+      return '≈ ' + j + ' jour' + (j > 1 ? 's' : '');
+    };
+    // Niveau d'urgence selon la couverture : critique (<1.5j), attention (<3j), ok
+    const urgence = (c) => (c === null ? 'ok' : c < 1.5 ? 'crit' : c < 3 ? 'warn' : 'ok');
+
+    // Carte d'un produit (inventaire)
+    const carteProduit = (p) => {
+      const stock = Number(p.stock_actuel), seuil = Number(p.seuil_alerte);
+      const alerte = stock <= seuil;
+      // jauge : le seuil est placé à 50%, le stock se remplit jusqu'à (stock / 2*seuil)
+      const largeur = seuil > 0 ? Math.min(100, (stock / (seuil * 2)) * 100) : (stock > 0 ? 100 : 0);
+      const cov = p._couverture;
+      const badge = alerte
+        ? `<span class="badge danger">À commander</span>`
+        : (urgence(cov) === 'warn' ? `<span class="badge warn">À surveiller</span>` : `<span class="badge ok">En stock</span>`);
+      return `
+        <div class="card">
+          <div class="c-top"><div class="c-name">${p.nom}</div>${badge}</div>
+          <div class="c-stock"><span class="c-num">${fmtNombre(stock)}</span><span class="c-unit">${p.unite}</span></div>
+          <div class="c-cover">Autonomie : <b>${txtCouverture(cov)}</b></div>
+          <div class="jauge">
+            <div class="jauge-fill ${alerte ? 'is-low' : ''}" style="width:${largeur}%"></div>
+            ${seuil > 0 ? '<div class="jauge-seuil" style="left:50%"></div>' : ''}
+          </div>
+        </div>`;
+    };
+
+    // Ligne de la section "à réapprovisionner"
+    const ligneReappro = (p) => {
+      const delai = Number(p.delai_repro_jours) || 0;
+      const autonomie = p._couverture;
+      const ruptureAvantLivraison = (autonomie !== null && autonomie < delai);
+      const detail = `Stock : ${fmtNombre(p.stock_actuel)} ${p.unite}&nbsp;&nbsp;·&nbsp;&nbsp;Autonomie : ${txtCouverture(autonomie)}&nbsp;&nbsp;·&nbsp;&nbsp;Livraison : ${fmtNombre(delai)} j`;
+      const alerteLivr = ruptureAvantLivraison
+        ? `<div class="ri-warning">⚠ Rupture probable avant la livraison</div>` : '';
+      // Détail du calcul, visible au survol du chiffre
+      const calcul = (p._qteCommander && p._consoJour > 0)
+        ? `${p._consoJour.toFixed(1)} ${p.unite}/jour × (${fmtNombre(delai)} j livraison + ${COUVERTURE_CIBLE_JOURS} j d'avance) − ${fmtNombre(p.stock_actuel)} en stock`
+        : '';
+      const droite = (p._qteCommander !== null && p._qteCommander > 0)
+        ? `<div class="ri-coverlabel">à commander</div><div class="ri-qty" title="${calcul}">${fmtNombre(p._qteCommander)} ${p.unite}</div>`
+        : `<div class="ri-coverlabel">autonomie</div><div class="ri-qty">${txtCouverture(autonomie)}</div>`;
+      return `
+        <div class="reorder-item">
+          <div class="ri-main">
+            <div class="ri-name">${p.nom}</div>
+            <div class="ri-detail">${detail}</div>
+            ${alerteLivr}
+          </div>
+          <div class="ri-right">${droite}</div>
+        </div>`;
+    };
+
+    async function charger() {
+      // 1. Produits
+      const { data: produits, error: errP } = await supabase
+        .from('produits').select('id, nom, unite, stock_actuel, seuil_alerte, delai_repro_jours').order('nom');
+      if (errP) { $('inv-grid').innerHTML = `<div class="state error">Erreur produits : ${errP.message}</div>`; return; }
+
+      // 2. Mouvements récents (30 j) : sert aux calculs ET à l'historique
+      const depuis = new Date(Date.now() - 30 * 864e5).toISOString();
+      const { data: mvts, error: errM } = await supabase
+        .from('mouvements')
+        .select('id, produit_id, type, quantite, source, cree_le, produits ( nom, unite )')
+        .gte('cree_le', depuis).order('cree_le', { ascending: false });
+
+      // --- Calcul de la consommation par produit sur les 7 derniers jours ---
+      const limite7j = Date.now() - FENETRE_JOURS * 864e5;
+      const sorties = {};           // produit_id -> total des sorties sur 7 j
+      let nbMvt7j = 0;
+      (mvts || []).forEach(m => {
+        const t = new Date(m.cree_le).getTime();
+        if (t >= limite7j) {
+          nbMvt7j++;
+          if (m.type === 'sortie') sorties[m.produit_id] = (sorties[m.produit_id] || 0) + Number(m.quantite);
+        }
+      });
+      // couverture = stock / consommation moyenne par jour (null si aucune sortie récente)
+      produits.forEach(p => {
+        const conso = (sorties[p.id] || 0) / FENETRE_JOURS; // consommation moyenne par jour
+        p._consoJour = conso;
+        p._couverture = conso > 0 ? Number(p.stock_actuel) / conso : null;
+        // Quantité à commander = de quoi couvrir (délai + couverture cible), moins le stock déjà présent
+        if (conso > 0) {
+          const delai = Number(p.delai_repro_jours) || 0;
+          const besoin = conso * (delai + COUVERTURE_CIBLE_JOURS) - Number(p.stock_actuel);
+          p._qteCommander = Math.max(0, Math.ceil(besoin));
+        } else {
+          p._qteCommander = null; // pas de sortie récente : aucune suggestion fiable
+        }
+      });
+
+      // --- KPI ---
+      const aCommander = produits.filter(p => Number(p.stock_actuel) <= Number(p.seuil_alerte));
+      const ruptureImminente = produits.filter(p => p._couverture !== null && p._couverture < 3);
+      $('kpi-commander').textContent = aCommander.length;
+      $('kpi-rupture').textContent = ruptureImminente.length;
+      $('kpi-produits').textContent = produits.length;
+      $('kpi-mouvements').textContent = nbMvt7j;
+      $('updated').textContent = 'Mis à jour à ' + new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date());
+
+      // --- Bloc réappro : produits sous seuil, triés par couverture croissante (plus urgent en haut) ---
+      if (aCommander.length) {
+        const tries = [...aCommander].sort((a, b) => {
+          const ca = a._couverture === null ? Infinity : a._couverture;
+          const cb = b._couverture === null ? Infinity : b._couverture;
+          return ca - cb;
+        });
+        $('reorder-bloc').style.display = 'block';
+        $('reorder-count').textContent = aCommander.length;
+        $('reorder-list').innerHTML = tries.map(ligneReappro).join('');
+      } else {
+        $('reorder-bloc').style.display = 'none';
+      }
+
+      // --- Inventaire complet ---
+      $('inv-count').textContent = produits.length;
+      $('inv-grid').innerHTML = produits.length ? produits.map(carteProduit).join('') : `<div class="state">Aucun produit.</div>`;
+
+      // --- Historique : 15 derniers mouvements ---
+      if (errM) {
+        $('mvt-body').innerHTML = `<tr><td colspan="4" class="state error">Erreur : ${errM.message}</td></tr>`;
+      } else if (!mvts.length) {
+        $('mvt-body').innerHTML = `<tr><td colspan="4" class="state">Aucun mouvement.</td></tr>`;
+      } else {
+        $('mvt-body').innerHTML = mvts.slice(0, 15).map(m => {
+          const entree = m.type === 'entree';
+          const nom = m.produits ? m.produits.nom : '(supprimé)';
+          const unite = m.produits ? m.produits.unite : '';
+          return `<tr>
+            <td>${fmtDate(m.cree_le)}</td>
+            <td>${nom}</td>
+            <td class="pill ${entree ? 'entree' : 'sortie'}">${entree ? '+' : '−'}${fmtNombre(m.quantite)} ${unite}</td>
+            <td class="src">${m.source === 'vocal' ? '🎙️ vocal' : '⌨️ manuel'}</td>
+          </tr>`;
+        }).join('');
+      }
+    }
+
+    charger();
+    $('refresh').addEventListener('click', charger);
+    setInterval(charger, 30000);
+  </script>
+
+</body>
+</html>
