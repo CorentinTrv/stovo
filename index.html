@@ -169,6 +169,8 @@
     .pill.entree { color: var(--ok); }
     .pill.sortie { color: var(--warn); }
     .src { font-size: 12px; color: var(--muted-light); }
+    /* étiquette des mouvements de régularisation (motif), pour les distinguer d'une vente */
+    .tag-motif { font-size: 11px; font-weight: 700; color: #475569; background: #eef2f7; border: 1px solid var(--border); padding: 1px 8px; border-radius: 999px; margin-left: 7px; vertical-align: middle; }
 
     /* ---------- États ---------- */
     .state { padding: 38px; text-align: center; color: var(--muted); }
@@ -341,7 +343,7 @@
       const depuis = new Date(Date.now() - 30 * 864e5).toISOString();
       const { data: mvts, error: errM } = await supabase
         .from('mouvements')
-        .select('id, produit_id, type, quantite, source, cree_le, produits ( nom, unite )')
+        .select('id, produit_id, type, quantite, source, motif, cree_le, produits ( nom, unite )')
         .gte('cree_le', depuis).order('cree_le', { ascending: false });
 
       // --- Calcul de la consommation par produit sur les 7 derniers jours ---
@@ -352,7 +354,9 @@
         const t = new Date(m.cree_le).getTime();
         if (t >= limite7j) {
           nbMvt7j++;
-          if (m.type === 'sortie') sorties[m.produit_id] = (sorties[m.produit_id] || 0) + Number(m.quantite);
+          // Consommation = vraies sorties seulement. On EXCLUT les régularisations et pertes (m.motif renseigné),
+          // sinon un recalage d'inventaire à la baisse serait pris pour une vente et gonflerait la suggestion de réappro.
+          if (m.type === 'sortie' && !m.motif) sorties[m.produit_id] = (sorties[m.produit_id] || 0) + Number(m.quantite);
         }
       });
       // couverture = stock / consommation moyenne par jour (null si aucune sortie récente)
@@ -403,14 +407,17 @@
       } else if (!mvts.length) {
         $('mvt-body').innerHTML = `<tr><td colspan="4" class="state">Aucun mouvement.</td></tr>`;
       } else {
+        const motifLabel = { inventaire: 'régul. inventaire', casse: 'casse', peremption: 'péremption', vol: 'vol', erreur: 'correction' };
         $('mvt-body').innerHTML = mvts.slice(0, 15).map(m => {
           const entree = m.type === 'entree';
           const nom = m.produits ? m.produits.nom : '(supprimé)';
           const unite = m.produits ? m.produits.unite : '';
+          // étiquette si c'est une régularisation/perte (motif renseigné), pour la distinguer d'une vente
+          const motifTag = m.motif ? ` <span class="tag-motif">${motifLabel[m.motif] || m.motif}</span>` : '';
           return `<tr>
             <td>${fmtDate(m.cree_le)}</td>
             <td>${nom}</td>
-            <td class="pill ${entree ? 'entree' : 'sortie'}">${entree ? '+' : '−'}${fmtNombre(m.quantite)} ${unite}</td>
+            <td class="pill ${entree ? 'entree' : 'sortie'}">${entree ? '+' : '−'}${fmtNombre(m.quantite)} ${unite}${motifTag}</td>
             <td class="src">${m.source === 'vocal' ? '🎙️ vocal' : '⌨️ manuel'}</td>
           </tr>`;
         }).join('');
