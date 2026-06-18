@@ -292,6 +292,10 @@
       // jauge : le seuil est placé à 50%, le stock se remplit jusqu'à (stock / 2*seuil)
       const largeur = seuil > 0 ? Math.min(100, (stock / (seuil * 2)) * 100) : (stock > 0 ? 100 : 0);
       const cov = p._couverture;
+      const consoJ = p._consoJour || 0;
+      const txtConso = consoJ > 0
+        ? `<b>≈ ${consoJ.toFixed(1).replace('.', ',')} /jour</b> (≈ ${fmtNombre(Math.round(consoJ * 7))} /sem)`
+        : '<b>pas encore mesurée</b>';
       const badge = alerte
         ? `<span class="badge danger">À commander</span>`
         : (urgence(cov) === 'warn' ? `<span class="badge warn">À surveiller</span>` : `<span class="badge ok">En stock</span>`);
@@ -300,6 +304,8 @@
           <div class="c-top"><div class="c-name">${p.nom}</div>${badge}</div>
           <div class="c-stock"><span class="c-num">${fmtNombre(stock)}</span><span class="c-unit">${p.unite}</span></div>
           <div class="c-cover">Autonomie : <b>${txtCouverture(cov)}</b></div>
+          <div class="c-cover">Conso : ${txtConso}</div>
+          <div class="c-cover">Commander à : <b>${seuil > 0 ? fmtNombre(seuil) + ' ' + p.unite : '—'}</b></div>
           <div class="jauge">
             <div class="jauge-fill ${alerte ? 'is-low' : ''}" style="width:${largeur}%"></div>
             ${seuil > 0 ? '<div class="jauge-seuil" style="left:50%"></div>' : ''}
