@@ -171,6 +171,8 @@
     .src { font-size: 12px; color: var(--muted-light); }
     /* étiquette des mouvements de régularisation (motif), pour les distinguer d'une vente */
     .tag-motif { font-size: 11px; font-weight: 700; color: #475569; background: #eef2f7; border: 1px solid var(--border); padding: 1px 8px; border-radius: 999px; margin-left: 7px; vertical-align: middle; }
+    .tag-auto { font-size: 10.5px; font-weight: 700; color: var(--brand-dark); background: var(--ok-bg); border: 1px solid #99f6e4; padding: 0 7px; border-radius: 999px; vertical-align: middle; cursor: help; }
+    .tag-fixe { font-size: 10.5px; font-weight: 700; color: var(--muted); background: #f1f5f9; border: 1px solid var(--border); padding: 0 7px; border-radius: 999px; vertical-align: middle; cursor: help; }
 
     /* ---------- États ---------- */
     .state { padding: 38px; text-align: center; color: var(--muted); }
@@ -270,6 +272,7 @@
 
     const FENETRE_JOURS = 7;          // période sur laquelle on mesure le rythme de consommation
     const COUVERTURE_CIBLE_JOURS = 10; // combien de jours on veut tenir après réception (curseur trésorerie)
+    const SECURITE_JOURS = 3;          // marge de sécurité du point de commande (jours de conso ajoutés au délai)
 
     const $ = (id) => document.getElementById(id);
     const fmtNombre = (v) => { const n = Number(v); return Number.isInteger(n) ? n.toString() : n.toFixed(2).replace(/\.?0+$/, ''); };
@@ -287,15 +290,22 @@
 
     // Carte d'un produit (inventaire)
     const carteProduit = (p) => {
-      const stock = Number(p.stock_actuel), seuil = Number(p.seuil_alerte);
-      const alerte = stock <= seuil;
-      // jauge : le seuil est placé à 50%, le stock se remplit jusqu'à (stock / 2*seuil)
-      const largeur = seuil > 0 ? Math.min(100, (stock / (seuil * 2)) * 100) : (stock > 0 ? 100 : 0);
+      const stock = Number(p.stock_actuel);
+      const pdc = Number(p._pointCommande) || 0;   // point de commande effectif (dynamique ou repli figé)
+      const dynamique = p._pdcDynamique !== null;  // a-t-on pu le calculer sur les ventes récentes ?
+      const alerte = stock <= pdc;
+      // jauge : le point de commande est placé à 50%, le stock se remplit jusqu'à (stock / 2*pdc)
+      const largeur = pdc > 0 ? Math.min(100, (stock / (pdc * 2)) * 100) : (stock > 0 ? 100 : 0);
       const cov = p._couverture;
       const consoJ = p._consoJour || 0;
+      const delai = Number(p.delai_repro_jours) || 0;
       const txtConso = consoJ > 0
         ? `<b>≈ ${consoJ.toFixed(1).replace('.', ',')} /jour</b> (≈ ${fmtNombre(Math.round(consoJ * 7))} /sem)`
         : '<b>pas encore mesurée</b>';
+      // Tag du seuil : "auto" s'il suit les ventes, "fixe" si on retombe sur le seuil figé. Détail au survol.
+      const tagPdc = dynamique
+        ? `<span class="tag-auto" title="Point de commande dynamique : ${consoJ.toFixed(1).replace('.', ',')} /j × (${fmtNombre(delai)} j livraison + ${SECURITE_JOURS} j sécurité)">auto</span>`
+        : `<span class="tag-fixe" title="Seuil figé : pas encore de ventes récentes pour calculer un point de commande dynamique">fixe</span>`;
       const badge = alerte
         ? `<span class="badge danger">À commander</span>`
         : (urgence(cov) === 'warn' ? `<span class="badge warn">À surveiller</span>` : `<span class="badge ok">En stock</span>`);
@@ -305,10 +315,10 @@
           <div class="c-stock"><span class="c-num">${fmtNombre(stock)}</span><span class="c-unit">${p.unite}</span></div>
           <div class="c-cover">Autonomie : <b>${txtCouverture(cov)}</b></div>
           <div class="c-cover">Conso : ${txtConso}</div>
-          <div class="c-cover">Commander à : <b>${seuil > 0 ? fmtNombre(seuil) + ' ' + p.unite : '—'}</b></div>
+          <div class="c-cover">Commander à : <b>${pdc > 0 ? fmtNombre(pdc) + ' ' + p.unite : '—'}</b>${pdc > 0 ? ' ' + tagPdc : ''}</div>
           <div class="jauge">
             <div class="jauge-fill ${alerte ? 'is-low' : ''}" style="width:${largeur}%"></div>
-            ${seuil > 0 ? '<div class="jauge-seuil" style="left:50%"></div>' : ''}
+            ${pdc > 0 ? '<div class="jauge-seuil" style="left:50%"></div>' : ''}
           </div>
         </div>`;
     };
@@ -370,9 +380,14 @@
         const conso = (sorties[p.id] || 0) / FENETRE_JOURS; // consommation moyenne par jour
         p._consoJour = conso;
         p._couverture = conso > 0 ? Number(p.stock_actuel) / conso : null;
+        const delai = Number(p.delai_repro_jours) || 0;
+        // Point de commande DYNAMIQUE = de quoi tenir le délai de livraison + une marge de sécurité,
+        // au rythme réel des ventes. C'est le niveau de stock à partir duquel il faut recommander.
+        // Repli sur le seuil figé (seuil_alerte) tant qu'aucune vente récente ne permet de le calculer.
+        p._pdcDynamique = conso > 0 ? Math.max(1, Math.ceil(conso * (delai + SECURITE_JOURS))) : null;
+        p._pointCommande = p._pdcDynamique !== null ? p._pdcDynamique : Number(p.seuil_alerte);
         // Quantité à commander = de quoi couvrir (délai + couverture cible), moins le stock déjà présent
         if (conso > 0) {
-          const delai = Number(p.delai_repro_jours) || 0;
           const besoin = conso * (delai + COUVERTURE_CIBLE_JOURS) - Number(p.stock_actuel);
           p._qteCommander = Math.max(0, Math.ceil(besoin));
         } else {
@@ -381,7 +396,8 @@
       });
 
       // --- KPI ---
-      const aCommander = produits.filter(p => Number(p.stock_actuel) <= Number(p.seuil_alerte));
+      // "À commander" piloté par le point de commande dynamique (repli sur le seuil figé si pas de ventes récentes)
+      const aCommander = produits.filter(p => Number(p.stock_actuel) <= Number(p._pointCommande));
       const ruptureImminente = produits.filter(p => p._couverture !== null && p._couverture < 3);
       $('kpi-commander').textContent = aCommander.length;
       $('kpi-rupture').textContent = ruptureImminente.length;
