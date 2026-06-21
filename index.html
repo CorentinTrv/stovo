@@ -103,6 +103,19 @@
     .kpi.warn .k-value { color: var(--warn); }
     .kpi .k-sub { font-size: 12px; color: var(--muted-light); margin-top: 2px; }
 
+    /* ---------- Bandeau valeur du stock (ROI) ---------- */
+    .stock-value {
+      background: var(--card); border: 1px solid #99f6e4; border-left: 4px solid var(--brand);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 16px 22px; margin: 16px 0 8px;
+      display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px;
+    }
+    .stock-value .sv-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+    .stock-value .sv-note { color: var(--muted-light); font-weight: 500; }
+    .stock-value .sv-amount { font-size: 30px; font-weight: 800; color: var(--brand-dark); line-height: 1.1; }
+    .stock-value .sv-sub { font-size: 12.5px; color: var(--muted-light); margin-left: auto; }
+    @media (max-width: 560px) { .stock-value .sv-sub { margin-left: 0; flex-basis: 100%; } }
+
     /* ---------- Titres de section ---------- */
     .section-title { font-size: 17px; font-weight: 700; margin: 30px 0 14px; display: flex; align-items: center; gap: 10px; }
     .section-title .count {
@@ -235,6 +248,13 @@
       </div>
     </section>
 
+    <!-- Valeur du stock (trésorerie immobilisée), en bandeau dédié pour bien la mettre en avant -->
+    <section class="stock-value" title="Valeur au prix d'achat dicté (pas une valorisation comptable type coût moyen pondéré)">
+      <div class="sv-label">Valeur du stock <span class="sv-note">au prix d'achat</span></div>
+      <div class="sv-amount" id="kpi-valeur">—</div>
+      <div class="sv-sub" id="kpi-valeur-sub"></div>
+    </section>
+
     <!-- Priorité d'action : à réapprovisionner, trié du plus urgent au moins urgent -->
     <div id="reorder-bloc" style="display:none;">
       <h2 class="section-title">⚠️ À réapprovisionner en priorité <span class="count" id="reorder-count"></span></h2>
@@ -276,6 +296,7 @@
 
     const $ = (id) => document.getElementById(id);
     const fmtNombre = (v) => { const n = Number(v); return Number.isInteger(n) ? n.toString() : n.toFixed(2).replace(/\.?0+$/, ''); };
+    const fmtEuro = (v) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(v));
     const fmtDate = (iso) => new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 
     // Texte lisible de la couverture en jours
@@ -309,10 +330,21 @@
       const badge = alerte
         ? `<span class="badge danger">À commander</span>`
         : (urgence(cov) === 'warn' ? `<span class="badge warn">À surveiller</span>` : `<span class="badge ok">En stock</span>`);
+      // Prix d'achat à l'unité (la valeur dictée) + valeur de la trésorerie immobilisée (prix × stock).
+      // "non renseigné" tant que le prix n'a pas été dicté : jamais 0 € trompeur, et pas de ligne valeur dans ce cas.
+      const aPrix = (p.prix_achat !== null && p.prix_achat !== undefined);
+      const prixTxt = aPrix
+        ? `<b>${fmtEuro(p.prix_achat)}</b> / ${p.unite}`
+        : `<span style="color:var(--muted-light)">non renseigné</span>`;
+      const ligneValeur = aPrix
+        ? `<div class="c-cover">Valeur du stock : <b>${fmtEuro(p._valeur)}</b></div>`
+        : '';
       return `
         <div class="card">
           <div class="c-top"><div class="c-name">${p.nom}</div>${badge}</div>
           <div class="c-stock"><span class="c-num">${fmtNombre(stock)}</span><span class="c-unit">${p.unite}</span></div>
+          <div class="c-cover">Prix : ${prixTxt}</div>
+          ${ligneValeur}
           <div class="c-cover">Autonomie : <b>${txtCouverture(cov)}</b></div>
           <div class="c-cover">Conso : ${txtConso}</div>
           <div class="c-cover">Commander à : <b>${pdc > 0 ? fmtNombre(pdc) + ' ' + p.unite : '—'}</b>${pdc > 0 ? ' ' + tagPdc : ''}</div>
@@ -352,7 +384,7 @@
     async function charger() {
       // 1. Produits
       const { data: produits, error: errP } = await supabase
-        .from('produits').select('id, nom, unite, stock_actuel, seuil_alerte, delai_repro_jours').order('nom');
+        .from('produits').select('id, nom, unite, stock_actuel, seuil_alerte, delai_repro_jours, prix_achat').order('nom');
       if (errP) { $('inv-grid').innerHTML = `<div class="state error">Erreur produits : ${errP.message}</div>`; return; }
 
       // 2. Mouvements récents (30 j) : sert aux calculs ET à l'historique
@@ -395,6 +427,20 @@
         }
       });
 
+      // --- Valorisation du stock en euros (au dernier prix d'achat dicté) ---
+      // Valeur d'un produit = prix_achat × stock. Un produit SANS prix (NULL) n'est PAS compté :
+      // sa valeur est inconnue, pas nulle. On l'affiche "prix non renseigné" et on signale le total partiel.
+      let valeurTotale = 0, nbValorises = 0;
+      produits.forEach(p => {
+        if (p.prix_achat !== null && p.prix_achat !== undefined) {
+          p._valeur = Number(p.prix_achat) * Number(p.stock_actuel);
+          valeurTotale += p._valeur;
+          nbValorises++;
+        } else {
+          p._valeur = null;
+        }
+      });
+
       // --- KPI ---
       // "À commander" piloté par le point de commande dynamique (repli sur le seuil figé si pas de ventes récentes)
       const aCommander = produits.filter(p => Number(p.stock_actuel) <= Number(p._pointCommande));
@@ -403,6 +449,13 @@
       $('kpi-rupture').textContent = ruptureImminente.length;
       $('kpi-produits').textContent = produits.length;
       $('kpi-mouvements').textContent = nbMvt7j;
+      // Valeur du stock : total des produits valorisés, et part du catalogue déjà valorisée (incite à dicter les prix manquants)
+      $('kpi-valeur').textContent = nbValorises ? fmtEuro(valeurTotale) : '—';
+      $('kpi-valeur-sub').textContent = produits.length === 0
+        ? 'aucun produit'
+        : (nbValorises === produits.length
+            ? 'tout le catalogue valorisé'
+            : `${nbValorises}/${produits.length} produits valorisés`);
       $('updated').textContent = 'Mis à jour à ' + new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date());
 
       // --- Bloc réappro : produits sous seuil, triés par couverture croissante (plus urgent en haut) ---
