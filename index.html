@@ -116,6 +116,12 @@
     .stock-value .sv-sub { font-size: 12.5px; color: var(--muted-light); margin-left: auto; }
     @media (max-width: 560px) { .stock-value .sv-sub { margin-left: 0; flex-basis: 100%; } }
 
+    /* ---------- Phrase de verdict (la réponse en un coup d'œil, avant tout scroll) ---------- */
+    .verdict { font-size: 15.5px; font-weight: 700; margin: 14px 0 2px; padding: 12px 18px; border-radius: 12px; }
+    .verdict.v-ok { color: var(--brand-dark); background: var(--ok-bg); border: 1px solid #99f6e4; }
+    .verdict.v-warn { color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-border); }
+    .verdict.v-crit { color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger-border); }
+
     /* ---------- Titres de section ---------- */
     .section-title { font-size: 17px; font-weight: 700; margin: 30px 0 14px; display: flex; align-items: center; gap: 10px; }
     .section-title .count {
@@ -153,11 +159,17 @@
     .card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
     .card .c-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
     .card .c-name { font-size: 15px; font-weight: 700; }
-    .card .c-stock { display: flex; align-items: baseline; gap: 6px; margin: 12px 0 4px; }
-    .card .c-num { font-size: 36px; font-weight: 800; line-height: 1; }
-    .card .c-unit { font-size: 14px; color: var(--muted); font-weight: 600; }
-    .card .c-cover { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
-    .card .c-cover b { color: var(--text); }
+    /* Héros de la carte : l'autonomie, l'info qui fait agir. Couleur selon l'urgence. */
+    .card .c-hero { font-size: 20px; font-weight: 800; line-height: 1.15; margin: 13px 0 2px; color: var(--text); }
+    .card .c-hero.h-crit { color: var(--danger); }
+    .card .c-hero.h-warn { color: var(--warn); }
+    .card .c-hero.h-muted { color: var(--muted-light); font-weight: 700; font-size: 16px; }
+    /* Stock brut, rétrogradé en information secondaire */
+    .card .c-stockline { font-size: 13.5px; color: var(--muted); margin-bottom: 12px; }
+    .card .c-stockline b { color: var(--text); font-size: 15px; font-weight: 800; }
+    /* Détail (prix, valeur, conso, point de commande) : petit, gris, en pied de carte */
+    .card .c-detail { font-size: 12px; color: var(--muted-light); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.7; }
+    .card .c-detail b { color: var(--muted); font-weight: 700; }
 
     /* jauge de niveau : repère du seuil au milieu (50%) */
     .jauge { position: relative; height: 9px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
@@ -227,12 +239,12 @@
     <!-- 4 indicateurs de pilotage -->
     <section class="kpis">
       <div class="kpi danger">
-        <div class="k-label">À commander</div>
+        <div class="k-label">■ À commander</div>
         <div class="k-value" id="kpi-commander">—</div>
         <div class="k-sub">sous le seuil</div>
       </div>
       <div class="kpi warn">
-        <div class="k-label">Rupture imminente</div>
+        <div class="k-label">▲ Rupture imminente</div>
         <div class="k-value" id="kpi-rupture">—</div>
         <div class="k-sub">moins de 3 jours</div>
       </div>
@@ -254,6 +266,9 @@
       <div class="sv-amount" id="kpi-valeur">—</div>
       <div class="sv-sub" id="kpi-valeur-sub"></div>
     </section>
+
+    <!-- Verdict en langage simple : la réponse avant tout scroll (assemblé depuis les compteurs déjà calculés) -->
+    <div class="verdict" id="verdict" style="display:none"></div>
 
     <!-- Priorité d'action : à réapprovisionner, trié du plus urgent au moins urgent -->
     <div id="reorder-bloc" style="display:none;">
@@ -321,36 +336,37 @@
       const consoJ = p._consoJour || 0;
       const delai = Number(p.delai_repro_jours) || 0;
       const txtConso = consoJ > 0
-        ? `<b>≈ ${consoJ.toFixed(1).replace('.', ',')} /jour</b> (≈ ${fmtNombre(Math.round(consoJ * 7))} /sem)`
-        : '<b>pas encore mesurée</b>';
+        ? `≈ ${consoJ.toFixed(1).replace('.', ',')} /jour (≈ ${fmtNombre(Math.round(consoJ * 7))} /sem)`
+        : 'pas encore mesurée';
       // Tag du seuil : "auto" s'il suit les ventes, "fixe" si on retombe sur le seuil figé. Détail au survol.
       const tagPdc = dynamique
-        ? `<span class="tag-auto" title="Point de commande dynamique : ${consoJ.toFixed(1).replace('.', ',')} /j × (${fmtNombre(delai)} j livraison + ${SECURITE_JOURS} j sécurité)">auto</span>`
-        : `<span class="tag-fixe" title="Seuil figé : pas encore de ventes récentes pour calculer un point de commande dynamique">fixe</span>`;
+        ? `<span class="tag-auto" title="Calculé sur tes ventes : ${consoJ.toFixed(1).replace('.', ',')} /j × (${fmtNombre(delai)} j livraison + ${SECURITE_JOURS} j sécurité)">auto</span>`
+        : `<span class="tag-fixe" title="Seuil figé : pas encore de ventes récentes pour le calculer sur le rythme réel">fixe</span>`;
+      // Badge état, doublé d'un symbole pour rester lisible même sans la couleur (daltonien)
       const badge = alerte
-        ? `<span class="badge danger">À commander</span>`
-        : (urgence(cov) === 'warn' ? `<span class="badge warn">À surveiller</span>` : `<span class="badge ok">En stock</span>`);
-      // Prix d'achat à l'unité (la valeur dictée) + valeur de la trésorerie immobilisée (prix × stock).
-      // "non renseigné" tant que le prix n'a pas été dicté : jamais 0 € trompeur, et pas de ligne valeur dans ce cas.
+        ? `<span class="badge danger">■ À commander</span>`
+        : (urgence(cov) === 'warn' ? `<span class="badge warn">▲ À surveiller</span>` : `<span class="badge ok">● En stock</span>`);
+      // Héros de la carte : l'autonomie, l'info qui fait agir. La couleur ne fait qu'habiller une donnée déjà calculée.
+      const heroClass = cov !== null ? (urgence(cov) === 'crit' ? 'h-crit' : (urgence(cov) === 'warn' ? 'h-warn' : '')) : (alerte ? 'h-crit' : '');
+      const heroTxt = cov !== null ? `Il te reste ${txtCouverture(cov)}` : (alerte ? 'Stock bas, à recommander' : 'Stock suffisant');
+      // Détail (petit, gris, en pied de carte) : prix dicté, valeur immobilisée (prix × stock), conso, point de commande.
+      // "non renseigné" tant que le prix n'a pas été dicté : jamais 0 € trompeur, et pas de valeur affichée dans ce cas.
       const aPrix = (p.prix_achat !== null && p.prix_achat !== undefined);
-      const prixTxt = aPrix
-        ? `<b>${fmtEuro(p.prix_achat)}</b> / ${p.unite}`
-        : `<span style="color:var(--muted-light)">non renseigné</span>`;
-      const ligneValeur = aPrix
-        ? `<div class="c-cover">Valeur du stock : <b>${fmtEuro(p._valeur)}</b></div>`
-        : '';
+      const prixTxt = aPrix ? `<b>${fmtEuro(p.prix_achat)}</b> / ${p.unite}` : 'non renseigné';
+      const valeurTxt = aPrix ? ` · Valeur : <b>${fmtEuro(p._valeur)}</b>` : '';
+      const commanderTxt = pdc > 0 ? `Recommande quand il reste <b>${fmtNombre(pdc)} ${p.unite}</b> ${tagPdc}` : '';
       return `
         <div class="card">
           <div class="c-top"><div class="c-name">${p.nom}</div>${badge}</div>
-          <div class="c-stock"><span class="c-num">${fmtNombre(stock)}</span><span class="c-unit">${p.unite}</span></div>
-          <div class="c-cover">Prix : ${prixTxt}</div>
-          ${ligneValeur}
-          <div class="c-cover">Autonomie : <b>${txtCouverture(cov)}</b></div>
-          <div class="c-cover">Conso : ${txtConso}</div>
-          <div class="c-cover">Commander à : <b>${pdc > 0 ? fmtNombre(pdc) + ' ' + p.unite : '—'}</b>${pdc > 0 ? ' ' + tagPdc : ''}</div>
+          <div class="c-hero ${heroClass}">${heroTxt}</div>
+          <div class="c-stockline"><b>${fmtNombre(stock)} ${p.unite}</b> en stock</div>
           <div class="jauge">
             <div class="jauge-fill ${alerte ? 'is-low' : ''}" style="width:${largeur}%"></div>
             ${pdc > 0 ? '<div class="jauge-seuil" style="left:50%"></div>' : ''}
+          </div>
+          <div class="c-detail">
+            Prix : ${prixTxt}${valeurTxt}<br>
+            Tu en sors ${txtConso}${commanderTxt ? '<br>' + commanderTxt : ''}
           </div>
         </div>`;
     };
@@ -449,6 +465,23 @@
       $('kpi-rupture').textContent = ruptureImminente.length;
       $('kpi-produits').textContent = produits.length;
       $('kpi-mouvements').textContent = nbMvt7j;
+      // --- Phrase de verdict : la réponse en un coup d'œil, assemblée à partir des compteurs déjà calculés (aucun nouveau calcul) ---
+      const vEl = $('verdict');
+      if (produits.length === 0) {
+        vEl.style.display = 'none';
+      } else {
+        const parts = [];
+        if (aCommander.length) parts.push(`${aCommander.length} produit${aCommander.length > 1 ? 's' : ''} à commander`);
+        if (ruptureImminente.length) parts.push(`${ruptureImminente.length} en rupture imminente`);
+        vEl.style.display = 'block';
+        if (parts.length === 0) {
+          vEl.className = 'verdict v-ok';
+          vEl.textContent = '● Tout ton stock est au vert.';
+        } else {
+          vEl.className = 'verdict ' + (ruptureImminente.length ? 'v-crit' : 'v-warn');
+          vEl.textContent = (ruptureImminente.length ? '■ ' : '▲ ') + parts.join(', ') + ', le reste est bon.';
+        }
+      }
       // Valeur du stock : total des produits valorisés, et part du catalogue déjà valorisée (incite à dicter les prix manquants)
       $('kpi-valeur').textContent = nbValorises ? fmtEuro(valeurTotale) : '—';
       $('kpi-valeur-sub').textContent = produits.length === 0
@@ -474,7 +507,7 @@
 
       // --- Inventaire complet ---
       $('inv-count').textContent = produits.length;
-      $('inv-grid').innerHTML = produits.length ? produits.map(carteProduit).join('') : `<div class="state">Aucun produit.</div>`;
+      $('inv-grid').innerHTML = produits.length ? produits.map(carteProduit).join('') : `<div class="state">Pour démarrer, importe ton catalogue ou dis au bot : « ajoute le produit X ».</div>`;
 
       // --- Historique : 15 derniers mouvements ---
       if (errM) {
