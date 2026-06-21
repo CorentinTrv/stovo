@@ -163,6 +163,7 @@
     .card .c-hero { font-size: 20px; font-weight: 800; line-height: 1.15; margin: 13px 0 2px; color: var(--text); }
     .card .c-hero.h-crit { color: var(--danger); }
     .card .c-hero.h-warn { color: var(--warn); }
+    .card .c-hero.h-ok { color: var(--ok); }
     .card .c-hero.h-muted { color: var(--muted-light); font-weight: 700; font-size: 16px; }
     /* Stock brut, rétrogradé en information secondaire */
     .card .c-stockline { font-size: 13.5px; color: var(--muted); margin-bottom: 12px; }
@@ -335,9 +336,9 @@
       const cov = p._couverture;
       const consoJ = p._consoJour || 0;
       const delai = Number(p.delai_repro_jours) || 0;
-      const txtConso = consoJ > 0
-        ? `≈ ${consoJ.toFixed(1).replace('.', ',')} /jour (≈ ${fmtNombre(Math.round(consoJ * 7))} /sem)`
-        : 'pas encore mesurée';
+      const consoTxt = consoJ > 0
+        ? `Tu en sors ≈ ${consoJ.toFixed(1).replace('.', ',')} /jour (≈ ${fmtNombre(Math.round(consoJ * 7))} /sem)`
+        : 'Pas encore de sorties mesurées';
       // Tag du seuil : "auto" s'il suit les ventes, "fixe" si on retombe sur le seuil figé. Détail au survol.
       const tagPdc = dynamique
         ? `<span class="tag-auto" title="Calculé sur tes ventes : ${consoJ.toFixed(1).replace('.', ',')} /j × (${fmtNombre(delai)} j livraison + ${SECURITE_JOURS} j sécurité)">auto</span>`
@@ -347,14 +348,14 @@
         ? `<span class="badge danger">■ À commander</span>`
         : (urgence(cov) === 'warn' ? `<span class="badge warn">▲ À surveiller</span>` : `<span class="badge ok">● En stock</span>`);
       // Héros de la carte : l'autonomie, l'info qui fait agir. La couleur ne fait qu'habiller une donnée déjà calculée.
-      const heroClass = cov !== null ? (urgence(cov) === 'crit' ? 'h-crit' : (urgence(cov) === 'warn' ? 'h-warn' : '')) : (alerte ? 'h-crit' : '');
-      const heroTxt = cov !== null ? `Il te reste ${txtCouverture(cov)}` : (alerte ? 'Stock bas, à recommander' : 'Stock suffisant');
+      const heroClass = cov !== null ? (urgence(cov) === 'crit' ? 'h-crit' : (urgence(cov) === 'warn' ? 'h-warn' : 'h-ok')) : 'h-muted';
+      const heroTxt = cov !== null ? `Il te reste ${txtCouverture(cov)}` : 'Pas encore de ventes';
       // Détail (petit, gris, en pied de carte) : prix dicté, valeur immobilisée (prix × stock), conso, point de commande.
       // "non renseigné" tant que le prix n'a pas été dicté : jamais 0 € trompeur, et pas de valeur affichée dans ce cas.
       const aPrix = (p.prix_achat !== null && p.prix_achat !== undefined);
       const prixTxt = aPrix ? `<b>${fmtEuro(p.prix_achat)}</b> / ${p.unite}` : 'non renseigné';
       const valeurTxt = aPrix ? ` · Valeur : <b>${fmtEuro(p._valeur)}</b>` : '';
-      const commanderTxt = pdc > 0 ? `Recommande quand il reste <b>${fmtNombre(pdc)} ${p.unite}</b> ${tagPdc}` : '';
+      const commanderTxt = pdc > 0 ? `Commande quand il en reste <b>${fmtNombre(pdc)} ${p.unite}</b> ${tagPdc}` : '';
       return `
         <div class="card">
           <div class="c-top"><div class="c-name">${p.nom}</div>${badge}</div>
@@ -366,7 +367,7 @@
           </div>
           <div class="c-detail">
             Prix : ${prixTxt}${valeurTxt}<br>
-            Tu en sors ${txtConso}${commanderTxt ? '<br>' + commanderTxt : ''}
+            ${consoTxt}${commanderTxt ? '<br>' + commanderTxt : ''}
           </div>
         </div>`;
     };
