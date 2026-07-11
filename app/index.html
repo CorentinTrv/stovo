@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Stovo — pilotez votre stock</title>
+
+  <!--
+    STOVO — coquille PWA installable (lot 9a)
+    ============================================
+    Phase 2 de la refonte : cette page remplace peu à peu Telegram comme
+    interface. Ce lot 9a fait la COQUILLE seule (installable + mise à jour
+    auto + 2 onglets), sans micro ni connexion : ces deux briques viennent
+    après (voix à l'étape 11, login au lot 9b).
+
+    2 écrans, un seul choisi à la fois :
+      - « Tableau de bord » : le dashboard actuel (livrables/sites-web/stovo/
+        index.html), repris ici SANS changer sa logique (voir dashboard.js).
+        C'est l'écran par défaut à l'ouverture.
+      - « Parler » : un placeholder inerte (bouton micro grisé), en attente
+        de l'étape 11.
+
+    Balises PWA ci-dessous : manifest, icône iOS, couleur de thème, mode
+    "app" sur iPhone (apple-mobile-web-app-*). L'enregistrement du service
+    worker et la bascule d'onglets sont gérés par app.js, en bas de page.
+  -->
+
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d9488" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-180.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Stovo" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ================= Écran « Tableau de bord » (par défaut) ================= -->
+  <div id="ecran-dashboard" class="ecran ecran-actif">
+
+    <header>
+      <div class="wrap header-row">
+        <div class="brand">
+          <div class="logo">S</div>
+          <div>
+            <h1>Stovo</h1>
+            <p>Pilotez votre stock en un coup d'œil</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="updated" id="updated">—</div>
+          <button class="btn-refresh" id="refresh">↻ Rafraîchir</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+
+      <!-- 4 indicateurs de pilotage -->
+      <section class="kpis">
+        <div class="kpi danger">
+          <div class="k-label">■ À commander</div>
+          <div class="k-value" id="kpi-commander">—</div>
+          <div class="k-sub">sous le seuil</div>
+        </div>
+        <div class="kpi warn">
+          <div class="k-label">▲ Rupture imminente</div>
+          <div class="k-value" id="kpi-rupture">—</div>
+          <div class="k-sub">moins de 3 jours</div>
+        </div>
+        <div class="kpi brand">
+          <div class="k-label">Produits suivis</div>
+          <div class="k-value" id="kpi-produits">—</div>
+          <div class="k-sub">références actives</div>
+        </div>
+        <div class="kpi">
+          <div class="k-label">Activité (7 jours)</div>
+          <div class="k-value" id="kpi-mouvements">—</div>
+          <div class="k-sub">mouvements enregistrés</div>
+        </div>
+      </section>
+
+      <!-- Valeur du stock (trésorerie immobilisée), en bandeau dédié pour bien la mettre en avant -->
+      <section class="stock-value" title="Valeur au prix d'achat dicté (pas une valorisation comptable type coût moyen pondéré)">
+        <div class="sv-label">Valeur du stock <span class="sv-note">au prix d'achat</span></div>
+        <div class="sv-amount" id="kpi-valeur">—</div>
+        <div class="sv-sub" id="kpi-valeur-sub"></div>
+      </section>
+
+      <!-- Verdict en langage simple : la réponse avant tout scroll (assemblé depuis les compteurs déjà calculés) -->
+      <div class="verdict" id="verdict" style="display:none"></div>
+
+      <!-- Priorité d'action : à réapprovisionner, trié du plus urgent au moins urgent -->
+      <div id="reorder-bloc" style="display:none;">
+        <h2 class="section-title">⚠️ À réapprovisionner en priorité <span class="count" id="reorder-count"></span></h2>
+        <div class="reorder" id="reorder-list"></div>
+      </div>
+
+      <!-- Inventaire complet -->
+      <h2 class="section-title">📦 Inventaire complet <span class="count" id="inv-count"></span></h2>
+      <div class="grid" id="inv-grid">
+        <div class="state">Chargement de l'inventaire…</div>
+      </div>
+
+      <!-- Derniers mouvements -->
+      <h2 class="section-title">🕑 Derniers mouvements</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Quand</th><th>Produit</th><th>Mouvement</th><th>Source</th></tr></thead>
+          <tbody id="mvt-body"><tr><td colspan="4" class="state">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+
+      <footer>
+        Stovo · version démonstration · données hébergées en Europe (Paris) · mise à jour automatique toutes les 30 s
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- ================= Écran « Parler » (placeholder, lot 9a) ================= -->
+  <div id="ecran-parler" class="ecran">
+    <div class="parler-page">
+      <div class="parler-centre">
+        <button class="btn-micro" type="button" disabled aria-label="Micro, bientôt disponible">🎙️</button>
+        <p class="parler-texte">Bientôt : parle pour déclarer ton stock.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Navigation à 2 onglets ================= -->
+  <nav class="nav-bar">
+    <button class="nav-item actif" type="button" data-onglet="dashboard">
+      <span class="nav-icone" aria-hidden="true">📊</span>
+      <span class="nav-label">Tableau de bord</span>
+    </button>
+    <button class="nav-item" type="button" data-onglet="parler">
+      <span class="nav-icone" aria-hidden="true">🎙️</span>
+      <span class="nav-label">Parler</span>
+    </button>
+  </nav>
+
+  <script type="module" src="app.js"></script>
+
+</body>
+</html>
