@@ -6,14 +6,21 @@
 //   2. Brancher le formulaire de connexion et le bouton de déconnexion.
 //   3. Basculer entre les 2 onglets ("dashboard" / "parler") et enregistrer
 //      le service worker (inchangé depuis le lot 9a).
-// Rien d'autre ici : pas de micro (étape 11), pas d'écriture en base (le
-// login pose une session, l'écriture sécurisée viendra à l'étape 10).
+// Rien d'autre ici : pas de micro (étape 11). L'écriture sécurisée en base
+// (écran « Parler » au clavier, branché sur pwa-api) vit dans parler.js
+// (lot 10b), simplement importé ci-dessous.
 
 // L'import charge le module dashboard mais ne démarre plus rien tout seul
 // (lot 9b) : c'est demarrerDashboard() qui déclenche le chargement, appelé
 // ci-dessous seulement une fois la session confirmée.
 import { demarrerDashboard } from './dashboard.js';
 import { getSessionActuelle, seConnecter, seDeconnecter, onAuthChange } from './auth.js';
+// Lot 10b : écran « Parler » au clavier. Import pour effet de bord uniquement
+// (branche ses propres écouteurs sur les éléments de #ecran-parler, qui
+// existent dès le chargement de la page, comme le formulaire de login
+// ci-dessous — pas besoin d'attendre la session, les boutons ne font
+// simplement rien tant que l'utilisateur ne s'en sert pas).
+import './parler.js';
 
 const ecranLogin = document.getElementById('ecran-login');
 const appShell = document.getElementById('app-shell');

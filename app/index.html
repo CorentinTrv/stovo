@@ -7,6 +7,7 @@
 
   <!--
     STOVO — coquille PWA installable (lot 9a) + connexion (lot 9b)
+    + écran « Parler » au clavier branché sur pwa-api (lot 10b)
     ==================================================================
     Phase 2 de la refonte : cette page remplace peu à peu Telegram comme
     interface. Le lot 9a a fait la COQUILLE (installable + mise à jour
@@ -19,8 +20,10 @@
       - « Tableau de bord » : le dashboard actuel (livrables/sites-web/stovo/
         index.html), repris ici SANS changer sa logique (voir dashboard.js).
         C'est l'écran par défaut à l'ouverture (une fois connecté).
-      - « Parler » : un placeholder inerte (bouton micro grisé), en attente
-        de l'étape 11.
+      - « Parler » : un champ texte + Envoyer, branché sur l'Edge Function
+        pwa-api (lot 10b, voir app/parler.js) — le MÊME cerveau que Telegram
+        (_shared/coeur.ts). Le micro reste grisé, « bientôt » (étape 11) :
+        on écrit au clavier pour l'instant, pas encore de transcription vocale.
 
     Balises PWA ci-dessous : manifest, icône iOS, couleur de thème, mode
     "app" sur iPhone (apple-mobile-web-app-*). L'enregistrement du service
@@ -153,12 +156,28 @@
     </main>
   </div>
 
-  <!-- ================= Écran « Parler » (placeholder, lot 9a) ================= -->
+  <!-- ================= Écran « Parler » (clavier, lot 10b ; micro à l'étape 11) ================= -->
   <div id="ecran-parler" class="ecran">
     <div class="parler-page">
       <div class="parler-centre">
+
+        <!-- Message du bot (dernière réponse de pwa-api, ou message d'accueil par défaut) -->
+        <div class="parler-reponse" id="parler-reponse">Écris ce que tu as fait, par exemple : j'ai reçu 10 pâtes.</div>
+
+        <!-- Boutons Oui/Non : cachés par défaut, affichés seulement quand pwa-api renvoie enAttente=true -->
+        <div class="parler-confirmation" id="parler-confirmation" hidden>
+          <button class="btn-confirmation btn-oui" type="button" id="btn-oui">✔ Oui</button>
+          <button class="btn-confirmation btn-non" type="button" id="btn-non">✘ Non</button>
+        </div>
+
+        <!-- Déclaration au clavier (le micro viendra à l'étape 11) -->
+        <form id="form-parler" class="parler-form">
+          <input type="text" id="champ-parler" name="texte" placeholder="Ex. : j'ai reçu 10 pâtes" autocomplete="off" />
+          <button type="submit" class="btn-envoyer" id="btn-envoyer">Envoyer</button>
+        </form>
+
         <button class="btn-micro" type="button" disabled aria-label="Micro, bientôt disponible">🎙️</button>
-        <p class="parler-texte">Bientôt : parle pour déclarer ton stock.</p>
+        <p class="parler-texte">Bientôt : parle au lieu d'écrire.</p>
       </div>
     </div>
   </div>

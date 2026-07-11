@@ -14,7 +14,9 @@
 // skipWaiting), donc ce bump seul ne casse aucun onglet deja ouvert.
 // v3 (correctif 11/07) : styles.css corrige ([hidden] doit l'emporter, sinon
 // l'ecran de connexion restait affiche apres login). Bump pour rafraichir le cache.
-const CACHE_NAME = 'stovo-app-v3';
+// v4 (lot 10b, 11/07/2026) : parler.js ajoute au precache (ecran "Parler" au clavier,
+// branche sur l'Edge Function pwa-api).
+const CACHE_NAME = 'stovo-app-v4';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -27,6 +29,7 @@ const FICHIERS_COQUILLE = [
   './dashboard.js',
   './supabase.js',
   './auth.js',
+  './parler.js',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',
