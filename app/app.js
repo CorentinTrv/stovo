@@ -1,15 +1,95 @@
-// STOVO — coquille de la PWA (lot 9a)
-// =======================================
-// Deux responsabilites, volontairement simples :
-//   1. Faire vivre le dashboard comme un ecran parmi d'autres (import).
-//   2. Basculer entre les 2 onglets ("dashboard" / "parler") et enregistrer
-//      le service worker.
-// Rien d'autre ici : pas d'auth (lot 9b), pas de micro (etape 11).
+// STOVO — coquille de la PWA (lot 9a) + garde de session (lot 9b)
+// ====================================================================
+// Trois responsabilités, volontairement simples :
+//   1. Vérifier la session au démarrage et basculer entre l'écran de
+//      connexion (#ecran-login) et l'application (#app-shell).
+//   2. Brancher le formulaire de connexion et le bouton de déconnexion.
+//   3. Basculer entre les 2 onglets ("dashboard" / "parler") et enregistrer
+//      le service worker (inchangé depuis le lot 9a).
+// Rien d'autre ici : pas de micro (étape 11), pas d'écriture en base (le
+// login pose une session, l'écriture sécurisée viendra à l'étape 10).
 
-// L'import declenche l'execution du script du dashboard (connexion Supabase,
-// chargement des donnees, rafraichissement toutes les 30 s), exactement
-// comme le <script type="module"> du dashboard actuel.
-import './dashboard.js';
+// L'import charge le module dashboard mais ne démarre plus rien tout seul
+// (lot 9b) : c'est demarrerDashboard() qui déclenche le chargement, appelé
+// ci-dessous seulement une fois la session confirmée.
+import { demarrerDashboard } from './dashboard.js';
+import { getSessionActuelle, seConnecter, seDeconnecter, onAuthChange } from './auth.js';
+
+const ecranLogin = document.getElementById('ecran-login');
+const appShell = document.getElementById('app-shell');
+const formLogin = document.getElementById('form-login');
+const champEmail = document.getElementById('login-email');
+const champMdp = document.getElementById('login-mdp');
+const zoneErreur = document.getElementById('login-erreur');
+const btnLogin = document.getElementById('btn-login');
+const btnDeconnexion = document.getElementById('btn-deconnexion');
+
+// --- Garde de session : affiche l'app OU l'écran de connexion ---
+
+function afficherApp() {
+  ecranLogin.hidden = true;
+  appShell.hidden = false;
+  demarrerDashboard();
+}
+
+function afficherLogin() {
+  appShell.hidden = true;
+  ecranLogin.hidden = false;
+}
+
+// Session déjà active (persistSession) → on saute directement dans l'app.
+// Sinon → écran de connexion. C'est la garde qui protège le dashboard.
+getSessionActuelle().then((session) => {
+  if (session) {
+    afficherApp();
+  } else {
+    afficherLogin();
+  }
+});
+
+// Reste cohérent si la session change en cours de vie de la page (ex.
+// expiration sans renouvellement possible, ou connexion depuis le
+// formulaire ci-dessous qui passe aussi par ce canal).
+onAuthChange((session) => {
+  if (session) {
+    afficherApp();
+  } else {
+    afficherLogin();
+  }
+});
+
+// --- Formulaire de connexion ---
+
+formLogin.addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  zoneErreur.style.display = 'none';
+  btnLogin.disabled = true;
+  btnLogin.textContent = 'Connexion…';
+
+  const resultat = await seConnecter(champEmail.value.trim(), champMdp.value);
+
+  btnLogin.disabled = false;
+  btnLogin.textContent = 'Se connecter';
+
+  if (!resultat.ok) {
+    zoneErreur.textContent = resultat.message;
+    zoneErreur.style.display = 'block';
+    return;
+  }
+  // Succès : onAuthChange ci-dessus prend le relais (affiche l'app), mais
+  // on bascule aussi tout de suite pour ne pas attendre l'événement.
+  champMdp.value = '';
+  afficherApp();
+});
+
+// --- Déconnexion ---
+
+btnDeconnexion.addEventListener('click', async () => {
+  await seDeconnecter();
+  // onAuthChange ci-dessus rebasculera vers l'écran de connexion.
+});
+
+// --- Bascule entre les 2 onglets de l'app (dashboard / parler) ---
 
 const ECRANS = {
   dashboard: document.getElementById('ecran-dashboard'),

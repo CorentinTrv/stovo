@@ -1,25 +1,25 @@
-// STOVO — logique du dashboard (lot 9a)
-// =========================================
-// Ce fichier est une copie SANS AUCUN CHANGEMENT DE COMPORTEMENT du
+// STOVO — logique du dashboard (lot 9a, client centralisé au lot 9b)
+// =======================================================================
+// Ce fichier reprend SANS AUCUN CHANGEMENT DE CALCUL OU DE RENDU le
 // <script type="module"> du dashboard actuel
-// (livrables/sites-web/stovo/index.html). Meme connexion Supabase (cle
-// publishable, lecture seule via RLS), memes calculs, meme rendu. Il est
-// simplement sorti du HTML vers son propre fichier ES module pour que la
-// coquille (app.js) puisse l'importer comme un ecran parmi d'autres.
+// (livrables/sites-web/stovo/index.html). Memes calculs, meme rendu.
 //
 // Idee metier centrale : on n'affiche pas que le stock brut, on calcule la
 // COUVERTURE EN JOURS (combien de temps il reste au rythme reel des sorties).
 // C'est l'info qui declenche vraiment l'action chez un gerant.
 //
-// La cle Supabase ci-dessous est PUBLIQUE par nature : lecture seule,
-// la base est verrouillee en ecriture (Row Level Security).
+// Lot 9b, deux changements PUREMENT techniques (rien ci-dessous ne change
+// de comportement) :
+//   1. Le client Supabase n'est plus cree ici : il est importe depuis
+//      ./supabase.js, pour qu'il n'y ait qu'UN SEUL client (et donc une
+//      seule session) partage avec auth.js. Toujours la cle publishable
+//      (lecture seule via RLS), rien ne change cote droits d'acces.
+//   2. Le demarrage (chargement + rafraichissement toutes les 30 s) n'est
+//      plus automatique a l'import : il faut appeler demarrerDashboard(),
+//      declenche par app.js une fois la session confirmee. Objectif : ne
+//      pas charger le stock derriere l'ecran de login.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-// --- Connexion Supabase (clé publique = lecture seule) ---
-const SUPABASE_URL = 'https://hivaawwjrimacfkguauc.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_h-tBhpJfbAP4YUS6OmYsaA_GNAfWkjh';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+import { supabase } from './supabase.js';
 
 const FENETRE_JOURS = 7;          // période sur laquelle on mesure le rythme de consommation
 const COUVERTURE_CIBLE_JOURS = 10; // combien de jours on veut tenir après réception (curseur trésorerie)
@@ -248,6 +248,17 @@ async function charger() {
   }
 }
 
-charger();
-$('refresh').addEventListener('click', charger);
-setInterval(charger, 30000);
+// Demarrage encapsule (lot 9b) : app.js l'appelle une fois la session
+// confirmee, plus jamais a l'import. Garde anti-double-demarrage : si
+// app.js appelait ceci deux fois (ex. session deja active + evenement
+// onAuthStateChange qui suit), on ne veut ni deux setInterval empiles ni
+// deux ecouteurs sur le bouton "Rafraichir".
+let demarre = false;
+
+export function demarrerDashboard() {
+  if (demarre) return;
+  demarre = true;
+  charger();
+  $('refresh').addEventListener('click', charger);
+  setInterval(charger, 30000);
+}

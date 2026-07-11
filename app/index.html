@@ -6,23 +6,26 @@
   <title>Stovo — pilotez votre stock</title>
 
   <!--
-    STOVO — coquille PWA installable (lot 9a)
-    ============================================
+    STOVO — coquille PWA installable (lot 9a) + connexion (lot 9b)
+    ==================================================================
     Phase 2 de la refonte : cette page remplace peu à peu Telegram comme
-    interface. Ce lot 9a fait la COQUILLE seule (installable + mise à jour
-    auto + 2 onglets), sans micro ni connexion : ces deux briques viennent
-    après (voix à l'étape 11, login au lot 9b).
+    interface. Le lot 9a a fait la COQUILLE (installable + mise à jour
+    auto + 2 onglets). Le lot 9b ajoute l'écran de connexion devant :
+    non connecté → #ecran-login seul visible ; connecté → #app-shell
+    (dashboard + parler + nav) visible, #ecran-login masqué. La bascule
+    est gérée par app.js, pas de logique ici.
 
-    2 écrans, un seul choisi à la fois :
+    2 écrans dans #app-shell, un seul choisi à la fois :
       - « Tableau de bord » : le dashboard actuel (livrables/sites-web/stovo/
         index.html), repris ici SANS changer sa logique (voir dashboard.js).
-        C'est l'écran par défaut à l'ouverture.
+        C'est l'écran par défaut à l'ouverture (une fois connecté).
       - « Parler » : un placeholder inerte (bouton micro grisé), en attente
         de l'étape 11.
 
     Balises PWA ci-dessous : manifest, icône iOS, couleur de thème, mode
     "app" sur iPhone (apple-mobile-web-app-*). L'enregistrement du service
-    worker et la bascule d'onglets sont gérés par app.js, en bas de page.
+    worker, la bascule d'onglets et la garde de session sont gérés par
+    app.js, en bas de page.
   -->
 
   <link rel="manifest" href="manifest.json" />
@@ -35,6 +38,36 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+
+  <!-- ================= Écran de connexion (lot 9b) ================= -->
+  <!-- Masqué par défaut (hidden) : app.js le montre si aucune session n'est
+       trouvée au démarrage, et le cache dès qu'une connexion réussit. -->
+  <div id="ecran-login" class="ecran-login" hidden>
+    <div class="login-carte">
+      <div class="login-brand">
+        <div class="logo">S</div>
+        <h1>Stovo</h1>
+      </div>
+      <p class="login-soustitre">Connecte-toi pour piloter ton stock</p>
+
+      <form id="form-login" novalidate>
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" name="email" autocomplete="username" required />
+
+        <label for="login-mdp">Mot de passe</label>
+        <input type="password" id="login-mdp" name="password" autocomplete="current-password" required />
+
+        <button type="submit" class="btn-login" id="btn-login">Se connecter</button>
+
+        <div class="login-erreur" id="login-erreur" role="alert" style="display:none"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= Application (dashboard + parler + nav) ================= -->
+  <!-- Masquée par défaut (hidden) : app.js la montre une fois la session
+       confirmée (au démarrage si déjà connecté, ou juste après un login). -->
+  <div id="app-shell" hidden>
 
   <!-- ================= Écran « Tableau de bord » (par défaut) ================= -->
   <div id="ecran-dashboard" class="ecran ecran-actif">
@@ -51,6 +84,7 @@
         <div class="header-actions">
           <div class="updated" id="updated">—</div>
           <button class="btn-refresh" id="refresh">↻ Rafraîchir</button>
+          <button class="btn-deconnexion" id="btn-deconnexion" type="button" title="Se déconnecter">⏻ Déconnexion</button>
         </div>
       </div>
     </header>
@@ -140,6 +174,8 @@
       <span class="nav-label">Parler</span>
     </button>
   </nav>
+
+  </div><!-- /#app-shell -->
 
   <script type="module" src="app.js"></script>
 

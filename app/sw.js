@@ -8,7 +8,11 @@
 // onglets fermes puis rouverts). Pas de reload force, pas de risque de
 // couper une saisie en cours.
 
-const CACHE_NAME = 'stovo-app-v1';
+// v2 (lot 9b) : bump necessaire car la liste de precache change
+// (supabase.js + auth.js). Rappel du choix n°5 de l'Architecte : la mise a
+// jour ne prend effet qu'au prochain demarrage a froid (pas de
+// skipWaiting), donc ce bump seul ne casse aucun onglet deja ouvert.
+const CACHE_NAME = 'stovo-app-v2';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -19,6 +23,8 @@ const FICHIERS_COQUILLE = [
   './styles.css',
   './app.js',
   './dashboard.js',
+  './supabase.js',
+  './auth.js',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',
