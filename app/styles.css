@@ -263,6 +263,12 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .btn-deconnexion:hover { opacity: 1; background: rgba(255,255,255,.14); }
 .btn-deconnexion:active { transform: translateY(1px); }
 
+/* Correctif d'affichage (11/07) : l'attribut `hidden` doit TOUJOURS
+   l'emporter. Sans ce !important, la regle .ecran-login { display:flex }
+   ci-dessous annulait le hidden -> l'ecran de connexion restait visible
+   apres login et le dashboard s'empilait en dessous (il fallait defiler). */
+[hidden] { display: none !important; }
+
 /* Écran de connexion : centré, sobre, plein écran. */
 .ecran-login {
   min-height: 100vh; min-height: 100dvh;

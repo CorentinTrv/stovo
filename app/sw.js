@@ -12,7 +12,9 @@
 // (supabase.js + auth.js). Rappel du choix n°5 de l'Architecte : la mise a
 // jour ne prend effet qu'au prochain demarrage a froid (pas de
 // skipWaiting), donc ce bump seul ne casse aucun onglet deja ouvert.
-const CACHE_NAME = 'stovo-app-v2';
+// v3 (correctif 11/07) : styles.css corrige ([hidden] doit l'emporter, sinon
+// l'ecran de connexion restait affiche apres login). Bump pour rafraichir le cache.
+const CACHE_NAME = 'stovo-app-v3';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
