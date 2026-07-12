@@ -19,7 +19,10 @@
 // v5 (lot 11a, 12/07/2026) : parler.js modifie (micro on-device Web Speech API,
 // remplit le champ texte). Pas de nouveau fichier a precacher, seulement le
 // contenu de parler.js qui change.
-const CACHE_NAME = 'stovo-app-v5';
+// v6 (lot 12a, 12/07/2026) : import catalogue .xlsx (index.html + parler.js +
+// styles.css modifies : selecteur de fichier + bouton dedie sur l'ecran
+// "Parler"). Pas de nouveau fichier a precacher, seulement du contenu qui change.
+const CACHE_NAME = 'stovo-app-v6';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,

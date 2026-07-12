@@ -26,7 +26,10 @@
         API du navigateur, voir app/parler.js) peut aussi REMPLIR ce champ :
         aucun envoi automatique, c'est toujours le bouton Envoyer qui déclenche
         l'appel à pwa-api. Sans cette API (appareil non compatible), le micro
-        reste grisé et le clavier suffit.
+        reste grisé et le clavier suffit. Depuis le lot 12a, un bouton
+        « Importer un catalogue (.xlsx) » envoie le fichier choisi en base64 à
+        pwa-api (kind="import") — même ingestion que Telegram (ingererImportXlsx,
+        _shared/coeur.ts), même confirmation Oui/Non que les autres intentions.
 
     Balises PWA ci-dessous : manifest, icône iOS, couleur de thème, mode
     "app" sur iPhone (apple-mobile-web-app-*). L'enregistrement du service
@@ -178,6 +181,17 @@
           <input type="text" id="champ-parler" name="texte" placeholder="Ex. : j'ai reçu 10 pâtes" autocomplete="off" />
           <button type="submit" class="btn-envoyer" id="btn-envoyer">Envoyer</button>
         </form>
+
+        <!--
+          Import catalogue .xlsx (lot 12a) : réutilise l'affichage réponse
+          (#parler-reponse) et les boutons Oui/Non déjà câblés plus haut — c'est
+          pwa-api (kind="import") qui répond "J'ai lu N produits..." puis
+          applique l'import au clic sur Oui. L'input file reste `hidden`, seul
+          le bouton est visible ; le vrai contrôle taille/format est côté
+          serveur (ingererImportXlsx, _shared/coeur.ts).
+        -->
+        <input type="file" id="champ-import" accept=".xlsx" hidden />
+        <button class="btn-import" type="button" id="btn-import">📄 Importer un catalogue (.xlsx)</button>
 
         <!--
           Micro on-device (lot 11a) : reste `disabled` ici dans le HTML par

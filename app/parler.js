@@ -1,8 +1,9 @@
 // STOVO — écran « Parler » : clavier (lot 10b) + micro on-device (lot 11a)
+// + import catalogue .xlsx (lot 12a)
 // ====================================================
 // Branche le champ texte de l'écran « Parler » sur l'Edge Function pwa-api,
 // qui appelle EXACTEMENT le même cœur métier que Telegram (_shared/coeur.ts,
-// traiterDeclaration + traiterConfirmation).
+// traiterDeclaration + traiterConfirmation + ingererImportXlsx).
 //
 // Lot 11a : le micro utilise la reconnaissance vocale du NAVIGATEUR (Web
 // Speech API SpeechRecognition, en fr-FR), sans aucun appel serveur. Il ne
@@ -11,6 +12,13 @@
 // bas, le flux 10b n'est donc pas modifié. Le repli serveur pour les
 // appareils sans cette API (MediaRecorder + transcription côté serveur) est
 // le lot 11b, pas celui-ci.
+//
+// Lot 12a : le bouton « Importer un catalogue (.xlsx) » lit le fichier choisi
+// en base64 (FileReader) et le poste à pwa-api (kind="import"). Aucune
+// lecture du fichier ni décision métier côté client : tout (taille, format,
+// mapping des colonnes, écriture du tampon) se passe côté serveur
+// (ingererImportXlsx, _shared/coeur.ts). La réponse réutilise le même
+// affichage et les mêmes boutons Oui/Non que le clavier.
 //
 // Le SDK supabase-js attache automatiquement le JWT de la session en cours à
 // `supabase.functions.invoke(...)` (en-tête Authorization) : c'est pwa-api
@@ -32,6 +40,8 @@ const btnOui = document.getElementById('btn-oui');
 const btnNon = document.getElementById('btn-non');
 const btnMicro = document.getElementById('btn-micro');
 const zoneEtat = document.getElementById('parler-etat');
+const champImport = document.getElementById('champ-import');
+const btnImport = document.getElementById('btn-import');
 
 // Affiche le message renvoyé par pwa-api et montre/cache les boutons Oui/Non
 // selon `enAttente` (vrai s'il y a une déclaration en attente de confirmation).
@@ -77,6 +87,54 @@ btnOui.addEventListener('click', async () => {
 
 btnNon.addEventListener('click', async () => {
   await appelerPwaApi({ kind: 'confirmation', reponse: 'non' }, [btnOui, btnNon]);
+});
+
+// --- Import catalogue .xlsx (lot 12a) ---
+// Le fichier transite en base64 dans le JSON envoyé à pwa-api (pas de multipart,
+// transport tranché par l'Architecte pour ce lot). La réponse s'affiche via
+// afficherReponse (déjà appelée par appelerPwaApi) : le message « J'ai lu N
+// produits… » et les boutons Oui/Non déjà câblés plus haut appliquent l'import.
+
+// Le bouton visible déclenche le sélecteur natif : l'input reste `hidden`,
+// c'est la pratique standard pour styliser le déclencheur d'un <input type="file">.
+btnImport.addEventListener('click', () => {
+  champImport.click();
+});
+
+// Lit un File en base64 (FileReader.readAsDataURL renvoie une data URL du type
+// "data:...;base64,XXXX" : on ne garde que la partie après la virgule).
+function lireFichierEnBase64(fichier) {
+  return new Promise((resolve, reject) => {
+    const lecteur = new FileReader();
+    lecteur.onload = () => {
+      const resultat = String(lecteur.result || '');
+      const virgule = resultat.indexOf(',');
+      resolve(virgule === -1 ? resultat : resultat.slice(virgule + 1));
+    };
+    lecteur.onerror = () => reject(lecteur.error);
+    lecteur.readAsDataURL(fichier);
+  });
+}
+
+champImport.addEventListener('change', async () => {
+  const fichier = champImport.files && champImport.files[0];
+  // Garde front légère : sélecteur annulé sans choix de fichier -> on ne fait rien.
+  // Le vrai contrôle taille/format est côté serveur (ingererImportXlsx).
+  if (!fichier) return;
+
+  try {
+    const contenuBase64 = await lireFichierEnBase64(fichier);
+    btnImport.textContent = 'Import en cours…';
+    await appelerPwaApi({ kind: 'import', nomFichier: fichier.name, contenuBase64 }, [btnImport]);
+  } catch (erreur) {
+    console.error('Erreur lecture fichier import Stovo :', erreur);
+    afficherReponse("Je n'ai pas pu lire ce fichier. Réessaie.", false);
+  } finally {
+    btnImport.textContent = '📄 Importer un catalogue (.xlsx)';
+    // Réinitialise la valeur : sinon 'change' ne se redéclenche pas si l'utilisateur
+    // choisit deux fois de suite le même fichier.
+    champImport.value = '';
+  }
 });
 
 // --- Micro on-device (lot 11a) ---

@@ -299,6 +299,21 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .btn-envoyer:active { transform: translateY(1px); }
 .btn-envoyer:disabled { opacity: .7; cursor: wait; }
 
+/* =====================================================================
+   Import catalogue .xlsx (lot 12a) — bouton secondaire sous le formulaire
+   de déclaration, sobre (l'action principale reste "Envoyer").
+   ===================================================================== */
+.btn-import {
+  display: block; width: 100%; margin-top: 12px;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  padding: 11px 16px; border: 1px dashed var(--border); border-radius: 10px;
+  background: #fff; color: var(--muted); cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.btn-import:hover { background: var(--ok-bg); border-color: #99f6e4; color: var(--brand-dark); }
+.btn-import:active { transform: translateY(1px); }
+.btn-import:disabled { opacity: .7; cursor: wait; }
+
 /* Barre de navigation a 2 onglets, fixee en bas (style app mobile). */
 .nav-bar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
