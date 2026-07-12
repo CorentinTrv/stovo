@@ -16,7 +16,10 @@
 // l'ecran de connexion restait affiche apres login). Bump pour rafraichir le cache.
 // v4 (lot 10b, 11/07/2026) : parler.js ajoute au precache (ecran "Parler" au clavier,
 // branche sur l'Edge Function pwa-api).
-const CACHE_NAME = 'stovo-app-v4';
+// v5 (lot 11a, 12/07/2026) : parler.js modifie (micro on-device Web Speech API,
+// remplit le champ texte). Pas de nouveau fichier a precacher, seulement le
+// contenu de parler.js qui change.
+const CACHE_NAME = 'stovo-app-v5';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
