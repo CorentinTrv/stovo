@@ -29,7 +29,10 @@
 // sections depliables, bandeau du matin repliable (etat memorise), et bandeau
 // moins chevauchant sur l'en-tete. index.html + dashboard.js + styles.css
 // modifies. Pas de nouveau fichier a precacher, seulement du contenu qui change.
-const CACHE_NAME = 'stovo-app-v8';
+// v9 (chantier desactiver un produit, 14/07/2026) : dashboard.js ne charge que
+// les produits actifs (.eq actif true) -> les produits desactives disparaissent
+// du tableau de bord. Seul dashboard.js change, rien de nouveau a precacher.
+const CACHE_NAME = 'stovo-app-v9';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,

@@ -206,7 +206,8 @@ function majEcranDuMatin(produits, aCommander, ruptureImminente) {
 async function charger() {
   // 1. Produits
   const { data: produits, error: errP } = await supabase
-    .from('produits').select('id, nom, unite, stock_actuel, seuil_alerte, delai_repro_jours, prix_achat').order('nom');
+    .from('produits').select('id, nom, unite, stock_actuel, seuil_alerte, delai_repro_jours, prix_achat')
+    .eq('actif', true).order('nom');
   if (errP) { $('inv-grid').innerHTML = `<div class="state error">Erreur produits : ${errP.message}</div>`; return; }
 
   // 2. Mouvements récents (30 j) : sert aux calculs ET à l'historique
