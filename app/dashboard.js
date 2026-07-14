@@ -40,6 +40,20 @@ const txtCouverture = (c) => {
 // Niveau d'urgence selon la couverture : critique (<1.5j), attention (<3j), ok
 const urgence = (c) => (c === null ? 'ok' : c < 1.5 ? 'crit' : c < 3 ? 'warn' : 'ok');
 
+// Titre du bandeau "ecran du matin" selon l'heure : l'app est consultee a
+// toute heure, pas qu'au reveil, donc "Ce matin" affiche a 17h serait faux.
+const titreDuMoment = () => {
+  const h = new Date().getHours();
+  if (h < 12) return '☀️ Ce matin';
+  if (h < 18) return '🕑 Cet après-midi';
+  return '🌙 Ce soir';
+};
+
+// Texte "liste de courses" prepare au dernier rendu du bandeau (voir
+// majEcranDuMatin) et copie par le bouton "Copier la liste" (voir
+// demarrerDashboard). Vide s'il n'y a rien a commander.
+let texteListeCourses = '';
+
 // Carte d'un produit (inventaire)
 const carteProduit = (p) => {
   const stock = Number(p.stock_actuel);
@@ -112,6 +126,68 @@ const ligneReappro = (p) => {
       <div class="ri-right">${droite}</div>
     </div>`;
 };
+
+// Ecran du matin (brique 1) : le brief du jour, en tete du tableau de bord.
+// Ne fait AUCUN nouveau calcul : il met en scene des chiffres deja produits
+// par charger() (produits a commander + ruptures imminentes). C'est ce qui le
+// rend sur en lecture seule. Trois etats : catalogue vide (masque), rien a
+// commander (message vert), des produits a commander (resume + liste de courses).
+function majEcranDuMatin(produits, aCommander, ruptureImminente) {
+  const sec = $('matin');
+  $('matin-titre').textContent = titreDuMoment();
+  const resume = $('matin-resume');
+  const liste = $('matin-liste');
+  const btnCopier = $('matin-copier');
+
+  // Catalogue vide : rien a briefer, on masque (comme le verdict).
+  if (produits.length === 0) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+
+  // Rien sous le point de commande : message positif, pas de liste ni de copier.
+  if (aCommander.length === 0) {
+    sec.className = 'matin matin-ok';
+    resume.textContent = "● Rien à commander aujourd'hui, ton stock est au vert.";
+    liste.innerHTML = '';
+    btnCopier.hidden = true;
+    texteListeCourses = '';
+    return;
+  }
+
+  // Des produits a commander : couleur rouge s'il y a une rupture imminente, sinon orange.
+  sec.className = 'matin ' + (ruptureImminente.length ? 'matin-crit' : 'matin-warn');
+  const parts = [`${aCommander.length} produit${aCommander.length > 1 ? 's' : ''} à commander`];
+  if (ruptureImminente.length) parts.push(`${ruptureImminente.length} en rupture imminente`);
+  resume.textContent = parts.join(', ') + '.';
+
+  // Liste triee du plus urgent au moins urgent (couverture croissante), meme
+  // ordre que le bloc reappro plus bas.
+  const tries = [...aCommander].sort((a, b) => {
+    const ca = a._couverture === null ? Infinity : a._couverture;
+    const cb = b._couverture === null ? Infinity : b._couverture;
+    return ca - cb;
+  });
+  // Quantite a commander = _qteCommander (deja calcule). Null si aucune vente
+  // recente pour l'estimer : on affiche alors "a commander" sans quantite.
+  const qteTxt = (p) => (p._qteCommander !== null && p._qteCommander > 0)
+    ? `${fmtNombre(p._qteCommander)} ${p.unite}` : 'à commander';
+  liste.innerHTML = tries.map(p => {
+    const cov = p._couverture;
+    const urgent = cov !== null && cov < 1.5;
+    const covTxt = cov !== null ? `reste ${txtCouverture(cov)}` : 'stock bas';
+    return `<div class="matin-item">
+        <span class="mi-nom">${p.nom}</span>
+        <span class="mi-qte">${qteTxt(p)}</span>
+        <span class="mi-cov${urgent ? ' urgent' : ''}">${covTxt}${urgent ? ' ⚠' : ''}</span>
+      </div>`;
+  }).join('');
+  btnCopier.hidden = false;
+
+  // Texte "liste de courses" a copier : simple, collable dans un SMS/WhatsApp au
+  // fournisseur. Pas de HTML, une ligne par produit.
+  const dateJour = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' }).format(new Date());
+  texteListeCourses = `Liste de courses Stovo — ${dateJour}\n`
+    + tries.map(p => `- ${p.nom} : ${qteTxt(p)}`).join('\n');
+}
 
 async function charger() {
   // 1. Produits
@@ -198,6 +274,9 @@ async function charger() {
       vEl.textContent = (ruptureImminente.length ? '■ ' : '▲ ') + parts.join(', ') + ', le reste est bon.';
     }
   }
+  // Ecran du matin (brique 1) : le brief en tete, a partir des memes compteurs
+  // (aCommander + ruptureImminente), aucun nouveau calcul.
+  majEcranDuMatin(produits, aCommander, ruptureImminente);
   // Valeur du stock : total des produits valorisés, et part du catalogue déjà valorisée (incite à dicter les prix manquants)
   $('kpi-valeur').textContent = nbValorises ? fmtEuro(valeurTotale) : '—';
   $('kpi-valeur-sub').textContent = produits.length === 0
@@ -260,5 +339,22 @@ export function demarrerDashboard() {
   demarre = true;
   charger();
   $('refresh').addEventListener('click', charger);
+  // Bouton "Copier la liste" de l'ecran du matin : copie le texte prepare au
+  // dernier rendu (texteListeCourses). Attache une seule fois, comme refresh ;
+  // le contenu, lui, est remis a jour a chaque charger().
+  $('matin-copier').addEventListener('click', async () => {
+    if (!texteListeCourses) return;
+    const btn = $('matin-copier');
+    try {
+      await navigator.clipboard.writeText(texteListeCourses);
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copié';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    } catch (_e) {
+      // Presse-papier indisponible (vieux navigateur, contexte non securise) :
+      // repli par une invite ou l'utilisateur fait Ctrl+C.
+      globalThis.prompt('Copie ta liste (Ctrl+C) :', texteListeCourses);
+    }
+  });
   setInterval(charger, 30000);
 }

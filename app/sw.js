@@ -22,7 +22,10 @@
 // v6 (lot 12a, 12/07/2026) : import catalogue .xlsx (index.html + parler.js +
 // styles.css modifies : selecteur de fichier + bouton dedie sur l'ecran
 // "Parler"). Pas de nouveau fichier a precacher, seulement du contenu qui change.
-const CACHE_NAME = 'stovo-app-v6';
+// v7 (brique 1 "ecran du matin", 14/07/2026) : bandeau de brief en tete du
+// tableau de bord (index.html + dashboard.js + styles.css modifies). Pas de
+// nouveau fichier a precacher, seulement du contenu qui change.
+const CACHE_NAME = 'stovo-app-v7';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
