@@ -54,6 +54,18 @@ const titreDuMoment = () => {
 // demarrerDashboard). Vide s'il n'y a rien a commander.
 let texteListeCourses = '';
 
+// Etat ouvert/ferme des sections d'inventaire (brique 2). Garde en memoire pour
+// survivre au rafraichissement toutes les 30 s ; "En stock" ferme par defaut
+// (c'est la longue liste "tout va bien").
+const invGroupesOuverts = { commander: true, surveiller: true, stock: false };
+
+// Change la couleur d'etat du bandeau du matin SANS ecraser ses autres classes
+// (surtout "replie", pose par l'utilisateur et sinon perdu a chaque rendu).
+const etatMatin = (sec, cls) => {
+  sec.classList.remove('matin-ok', 'matin-warn', 'matin-crit');
+  sec.classList.add(cls);
+};
+
 // Carte d'un produit (inventaire)
 const carteProduit = (p) => {
   const stock = Number(p.stock_actuel);
@@ -145,7 +157,8 @@ function majEcranDuMatin(produits, aCommander, ruptureImminente) {
 
   // Rien sous le point de commande : message positif, pas de liste ni de copier.
   if (aCommander.length === 0) {
-    sec.className = 'matin matin-ok';
+    etatMatin(sec, 'matin-ok');
+    $('matin-chevron').style.display = 'none';  // rien a replier
     resume.textContent = "● Rien à commander aujourd'hui, ton stock est au vert.";
     liste.innerHTML = '';
     btnCopier.hidden = true;
@@ -154,7 +167,8 @@ function majEcranDuMatin(produits, aCommander, ruptureImminente) {
   }
 
   // Des produits a commander : couleur rouge s'il y a une rupture imminente, sinon orange.
-  sec.className = 'matin ' + (ruptureImminente.length ? 'matin-crit' : 'matin-warn');
+  etatMatin(sec, ruptureImminente.length ? 'matin-crit' : 'matin-warn');
+  $('matin-chevron').style.display = '';  // la liste est repliable
   const parts = [`${aCommander.length} produit${aCommander.length > 1 ? 's' : ''} à commander`];
   if (ruptureImminente.length) parts.push(`${ruptureImminente.length} en rupture imminente`);
   resume.textContent = parts.join(', ') + '.';
@@ -300,9 +314,30 @@ async function charger() {
     $('reorder-bloc').style.display = 'none';
   }
 
-  // --- Inventaire complet ---
+  // --- Inventaire complet, regroupe par etat en sections depliables (brique 2) ---
   $('inv-count').textContent = produits.length;
-  $('inv-grid').innerHTML = produits.length ? produits.map(carteProduit).join('') : `<div class="state">Pour démarrer, importe ton catalogue ou dis au bot : « ajoute le produit X ».</div>`;
+  if (!produits.length) {
+    $('inv-grid').innerHTML = `<div class="state">Pour démarrer, importe ton catalogue ou dis au bot : « ajoute le produit X ».</div>`;
+  } else {
+    // Trois paniers mutuellement exclusifs, memes regles que les badges des cartes :
+    // sous le point de commande -> a commander ; sinon autonomie courte -> a surveiller ; sinon en stock.
+    const gCommander = [], gSurveiller = [], gStock = [];
+    produits.forEach(p => {
+      if (Number(p.stock_actuel) <= (Number(p._pointCommande) || 0)) gCommander.push(p);
+      else if (urgence(p._couverture) === 'warn') gSurveiller.push(p);
+      else gStock.push(p);
+    });
+    // Un groupe = un <details> (pli natif), ouvert selon invGroupesOuverts. Groupe vide = pas affiche.
+    const groupe = (cle, sym, titre, arr) => arr.length ? `
+      <details class="inv-groupe" data-groupe="${cle}"${invGroupesOuverts[cle] ? ' open' : ''}>
+        <summary class="inv-sommaire"><span class="inv-sym inv-sym-${cle}">${sym}</span> ${titre} <span class="count">${arr.length}</span></summary>
+        <div class="grid">${arr.map(carteProduit).join('')}</div>
+      </details>` : '';
+    $('inv-grid').innerHTML =
+      groupe('commander', '■', 'À commander', gCommander)
+      + groupe('surveiller', '▲', 'À surveiller', gSurveiller)
+      + groupe('stock', '●', 'En stock', gStock);
+  }
 
   // --- Historique : 15 derniers mouvements ---
   if (errM) {
@@ -337,6 +372,9 @@ let demarre = false;
 export function demarrerDashboard() {
   if (demarre) return;
   demarre = true;
+  // Restaurer le repli du bandeau du matin AVANT le premier rendu (evite un
+  // clignotement de la liste qui s'afficherait puis se replierait).
+  try { if (localStorage.getItem('stovo_matin_replie') === '1') $('matin').classList.add('replie'); } catch (_e) { /* stockage indispo */ }
   charger();
   $('refresh').addEventListener('click', charger);
   // Bouton "Copier la liste" de l'ecran du matin : copie le texte prepare au
@@ -356,5 +394,20 @@ export function demarrerDashboard() {
       globalThis.prompt('Copie ta liste (Ctrl+C) :', texteListeCourses);
     }
   });
+  // Repli/depli du bandeau du matin ; l'etat est memorise (localStorage).
+  const majAriaMatin = () => $('matin-toggle').setAttribute('aria-expanded', String(!$('matin').classList.contains('replie')));
+  majAriaMatin();
+  $('matin-toggle').addEventListener('click', () => {
+    const replie = $('matin').classList.toggle('replie');
+    majAriaMatin();
+    try { localStorage.setItem('stovo_matin_replie', replie ? '1' : '0'); } catch (_e) { /* stockage indispo */ }
+  });
+  // Memoriser l'etat ouvert/ferme des groupes d'inventaire, sinon le
+  // rafraichissement toutes les 30 s les refermerait. L'evenement "toggle" ne
+  // bouillonne pas -> ecoute en phase de capture.
+  $('inv-grid').addEventListener('toggle', (e) => {
+    const d = e.target;
+    if (d.tagName === 'DETAILS' && d.dataset.groupe) invGroupesOuverts[d.dataset.groupe] = d.open;
+  }, true);
   setInterval(charger, 30000);
 }

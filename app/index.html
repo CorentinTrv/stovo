@@ -107,7 +107,10 @@
            lecture seule. Masqué tant que le catalogue est vide. -->
       <section class="matin" id="matin" style="display:none">
         <div class="matin-head">
-          <div class="matin-titre" id="matin-titre">Ce matin</div>
+          <button class="matin-toggle" id="matin-toggle" type="button" aria-expanded="true">
+            <span class="matin-chevron" id="matin-chevron" aria-hidden="true">▾</span>
+            <span class="matin-titre" id="matin-titre">Ce matin</span>
+          </button>
           <button class="matin-copier" id="matin-copier" type="button" hidden>Copier la liste</button>
         </div>
         <div class="matin-resume" id="matin-resume"></div>
@@ -154,9 +157,10 @@
         <div class="reorder" id="reorder-list"></div>
       </div>
 
-      <!-- Inventaire complet -->
+      <!-- Inventaire complet, regroupé par état en sections dépliables (brique 2) :
+           chaque groupe est un <details> natif rempli par dashboard.js. -->
       <h2 class="section-title">📦 Inventaire complet <span class="count" id="inv-count"></span></h2>
-      <div class="grid" id="inv-grid">
+      <div class="inv-groupes" id="inv-grid">
         <div class="state">Chargement de l'inventaire…</div>
       </div>
 

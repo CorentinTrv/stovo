@@ -412,7 +412,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .matin {
   position: relative; z-index: 2;
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: var(--shadow); padding: 17px 19px; margin-top: -48px;
+  box-shadow: var(--shadow); padding: 17px 19px; margin-top: -18px;
   border-left: 4px solid var(--muted-light);
 }
 .matin.matin-ok { border-left-color: var(--ok); }
@@ -450,6 +450,36 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .mi-cov { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
 .mi-cov.urgent { color: var(--danger); font-weight: 700; }
 
+/* Bandeau repliable : le chevron + le titre forment un bouton qui plie/deplie
+   la liste. L'etat est memorise (localStorage) entre les sessions. */
+.matin-toggle {
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: none; padding: 0; margin: 0;
+  font-family: inherit; color: inherit; cursor: pointer; text-align: left;
+}
+.matin-chevron { font-size: 12px; color: var(--muted-light); transition: transform .15s; }
+.matin.replie .matin-chevron { transform: rotate(-90deg); }
+.matin.replie .matin-liste { display: none; }
+
+/* Inventaire regroupe par etat, en sections depliables (element <details>
+   natif : accessible, pas de JS pour le pli lui-meme ; l'etat ouvert est juste
+   memorise cote JS pour survivre au rafraichissement). */
+.inv-groupes { display: flex; flex-direction: column; gap: 12px; }
+.inv-sommaire {
+  cursor: pointer; list-style: none; user-select: none;
+  display: flex; align-items: center; gap: 9px;
+  font-size: 15px; font-weight: 700; padding: 8px 2px;
+}
+.inv-sommaire::-webkit-details-marker { display: none; }
+.inv-sommaire::before {
+  content: '▸'; color: var(--muted-light); font-size: 12px; transition: transform .15s;
+}
+.inv-groupe[open] > .inv-sommaire::before { transform: rotate(90deg); }
+.inv-sym-commander { color: var(--danger); }
+.inv-sym-surveiller { color: var(--warn); }
+.inv-sym-stock { color: var(--ok); }
+.inv-groupe > .grid { margin-top: 12px; }
+
 @media (max-width: 560px) {
-  .matin { margin-top: -42px; }
+  .matin { margin-top: -14px; }
 }

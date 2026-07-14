@@ -25,7 +25,11 @@
 // v7 (brique 1 "ecran du matin", 14/07/2026) : bandeau de brief en tete du
 // tableau de bord (index.html + dashboard.js + styles.css modifies). Pas de
 // nouveau fichier a precacher, seulement du contenu qui change.
-const CACHE_NAME = 'stovo-app-v7';
+// v8 (brique 2 + ajustements, 14/07/2026) : inventaire regroupe par etat en
+// sections depliables, bandeau du matin repliable (etat memorise), et bandeau
+// moins chevauchant sur l'en-tete. index.html + dashboard.js + styles.css
+// modifies. Pas de nouveau fichier a precacher, seulement du contenu qui change.
+const CACHE_NAME = 'stovo-app-v8';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
