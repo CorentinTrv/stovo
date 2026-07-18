@@ -184,13 +184,19 @@ function majEcranDuMatin(produits, aCommander, ruptureImminente) {
   // recente pour l'estimer : on affiche alors "a commander" sans quantite.
   const qteTxt = (p) => (p._qteCommander !== null && p._qteCommander > 0)
     ? `${fmtNombre(p._qteCommander)} ${p.unite}` : 'à commander';
+  // A l'ecran, la quantite porte son libelle "a commander :" (friction du
+  // 16/07 : sans lui, on peut la confondre avec le stock restant). Le texte
+  // copie garde la forme courte, son titre "Liste de courses" suffit.
+  const qteAffichee = (p) => (p._qteCommander !== null && p._qteCommander > 0)
+    ? `<span class="mi-qte-label">à commander :</span> ${qteTxt(p)}`
+    : 'à commander';
   liste.innerHTML = tries.map(p => {
     const cov = p._couverture;
     const urgent = cov !== null && cov < 1.5;
     const covTxt = cov !== null ? `reste ${txtCouverture(cov)}` : 'stock bas';
     return `<div class="matin-item">
         <span class="mi-nom">${p.nom}</span>
-        <span class="mi-qte">${qteTxt(p)}</span>
+        <span class="mi-qte">${qteAffichee(p)}</span>
         <span class="mi-cov${urgent ? ' urgent' : ''}">${covTxt}${urgent ? ' ⚠' : ''}</span>
       </div>`;
   }).join('');

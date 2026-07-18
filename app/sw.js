@@ -32,7 +32,7 @@
 // v9 (chantier desactiver un produit, 14/07/2026) : dashboard.js ne charge que
 // les produits actifs (.eq actif true) -> les produits desactives disparaissent
 // du tableau de bord. Seul dashboard.js change, rien de nouveau a precacher.
-const CACHE_NAME = 'stovo-app-v9';
+const CACHE_NAME = 'stovo-app-v10';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
