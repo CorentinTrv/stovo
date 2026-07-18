@@ -32,7 +32,13 @@
 // v9 (chantier desactiver un produit, 14/07/2026) : dashboard.js ne charge que
 // les produits actifs (.eq actif true) -> les produits desactives disparaissent
 // du tableau de bord. Seul dashboard.js change, rien de nouveau a precacher.
-const CACHE_NAME = 'stovo-app-v10';
+// v10 (libelle "a commander", 18/07/2026) : la quantite de la liste de courses
+// du bandeau du matin porte son libelle (friction du 16/07). dashboard.js +
+// styles.css modifies, rien de nouveau a precacher.
+// v11 (QW-C onglet "Stock", 18/07/2026) : 3e onglet, liste compacte +
+// recherche a la frappe. NOUVEAU fichier stock.js ajoute au precache ;
+// index.html, app.js, dashboard.js, styles.css modifies.
+const CACHE_NAME = 'stovo-app-v11';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -43,6 +49,7 @@ const FICHIERS_COQUILLE = [
   './styles.css',
   './app.js',
   './dashboard.js',
+  './stock.js',
   './supabase.js',
   './auth.js',
   './parler.js',

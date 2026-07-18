@@ -346,6 +346,12 @@ async function charger() {
       + groupe('stock', '●', 'En stock', gStock);
   }
 
+  // Onglet « Stock » (QW-C) : on publie les produits AVEC leurs chiffres
+  // calcules ci-dessus (_couverture, _pointCommande, _valeur...) pour que
+  // stock.js les affiche sans refaire ni lecture ni calcul. Un seul
+  // chargement nourrit les deux ecrans : memes chiffres partout.
+  document.dispatchEvent(new CustomEvent('stovo:donnees', { detail: { produits } }));
+
   // --- Historique : 15 derniers mouvements ---
   if (errM) {
     $('mvt-body').innerHTML = `<tr><td colspan="4" class="state error">Erreur : ${errM.message}</td></tr>`;
@@ -418,3 +424,8 @@ export function demarrerDashboard() {
   }, true);
   setInterval(charger, 30000);
 }
+
+// Formateurs partages avec l'onglet « Stock » (QW-C) : exportes tels quels
+// pour que stock.js affiche EXACTEMENT les memes textes et les memes regles
+// d'urgence que le dashboard, sans dupliquer la logique.
+export { fmtEuro, fmtNombre, txtCouverture, urgence };

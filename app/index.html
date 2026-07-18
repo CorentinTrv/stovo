@@ -226,11 +226,34 @@
     </div>
   </div>
 
-  <!-- ================= Navigation à 2 onglets ================= -->
+  <!-- ================= Écran « Stock » (QW-C, 18/07/2026) =================
+       La réponse « trouvabilité » de la cible 250/300 références : liste
+       compacte de tous les produits actifs + recherche à la frappe. 100 %
+       lecture seule, ZÉRO appel réseau en propre : stock.js écoute les
+       données déjà calculées par dashboard.js (événement 'stovo:donnees').
+       Division des écrans : Tableau de bord = piloter, Stock = trouver,
+       Parler = agir. -->
+  <div id="ecran-stock" class="ecran">
+    <div class="stock-page wrap">
+      <h2 class="section-title">📦 Stock <span class="count" id="stock-count"></span></h2>
+      <input type="search" id="stock-recherche" class="stock-recherche"
+             placeholder="Rechercher un produit…" autocomplete="off"
+             aria-label="Rechercher un produit" />
+      <div class="stock-liste" id="stock-liste">
+        <div class="state">Chargement…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Navigation à 3 onglets ================= -->
   <nav class="nav-bar">
     <button class="nav-item actif" type="button" data-onglet="dashboard">
       <span class="nav-icone" aria-hidden="true">📊</span>
       <span class="nav-label">Tableau de bord</span>
+    </button>
+    <button class="nav-item" type="button" data-onglet="stock">
+      <span class="nav-icone" aria-hidden="true">📦</span>
+      <span class="nav-label">Stock</span>
     </button>
     <button class="nav-item" type="button" data-onglet="parler">
       <span class="nav-icone" aria-hidden="true">🎙️</span>

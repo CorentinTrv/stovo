@@ -21,6 +21,10 @@ import { getSessionActuelle, seConnecter, seDeconnecter, onAuthChange } from './
 // ci-dessous — pas besoin d'attendre la session, les boutons ne font
 // simplement rien tant que l'utilisateur ne s'en sert pas).
 import './parler.js';
+// QW-C (18/07) : onglet « Stock » (liste compacte + recherche). Import pour
+// effet de bord comme parler.js : stock.js branche ses écouteurs (recherche,
+// dépli des lignes) et attend les données publiées par dashboard.js.
+import './stock.js';
 
 const ecranLogin = document.getElementById('ecran-login');
 const appShell = document.getElementById('app-shell');
@@ -96,10 +100,11 @@ btnDeconnexion.addEventListener('click', async () => {
   // onAuthChange ci-dessus rebasculera vers l'écran de connexion.
 });
 
-// --- Bascule entre les 2 onglets de l'app (dashboard / parler) ---
+// --- Bascule entre les 3 onglets de l'app (dashboard / stock / parler) ---
 
 const ECRANS = {
   dashboard: document.getElementById('ecran-dashboard'),
+  stock: document.getElementById('ecran-stock'),
   parler: document.getElementById('ecran-parler'),
 };
 const ONGLETS = document.querySelectorAll('.nav-item');

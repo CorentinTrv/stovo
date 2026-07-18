@@ -484,3 +484,34 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 @media (max-width: 560px) {
   .matin { margin-top: -14px; }
 }
+
+/* ---------- Onglet « Stock » (QW-C, 18/07/2026) ----------
+   Liste compacte (des lignes, pas des cartes) + recherche a la frappe.
+   Chaque ligne est un <details> natif : sommaire = ligne compacte,
+   contenu = detail replie (chiffres deja calcules par dashboard.js). */
+.stock-page { padding-top: 22px; }
+.stock-recherche {
+  width: 100%; padding: 12px 15px; font-size: 15px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--card); color: var(--text);
+  box-shadow: var(--shadow-sm); outline: none;
+  margin-bottom: 14px;
+}
+.stock-recherche:focus { border-color: var(--brand); }
+.stock-liste {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  padding: 2px 14px;
+}
+.stock-ligne { border-top: 1px solid var(--border); }
+.stock-ligne:first-child { border-top: none; }
+.stock-sommaire {
+  cursor: pointer; list-style: none; user-select: none;
+  display: grid; grid-template-columns: 1fr auto auto;
+  gap: 12px; align-items: center; padding: 11px 2px;
+}
+.stock-sommaire::-webkit-details-marker { display: none; }
+.sl-nom { font-weight: 700; font-size: 14.5px; }
+.sl-stock { font-size: 13.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sl-stock b { color: var(--text); }
+.stock-detail { padding: 0 2px 12px; font-size: 12.5px; color: var(--muted); line-height: 1.7; }
