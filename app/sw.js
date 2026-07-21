@@ -38,7 +38,11 @@
 // v11 (QW-C onglet "Stock", 18/07/2026) : 3e onglet, liste compacte +
 // recherche a la frappe. NOUVEAU fichier stock.js ajoute au precache ;
 // index.html, app.js, dashboard.js, styles.css modifies.
-const CACHE_NAME = 'stovo-app-v11';
+// v12 (chantier N1 mode reception, lots FR-4+FR-5) : mode reception
+// multi-produits sur l'ecran "Parler" (liste vivante + validation groupee).
+// NOUVEAU fichier reception.js ajoute au precache ; index.html, parler.js,
+// styles.css modifies.
+const CACHE_NAME = 'stovo-app-v12';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -53,6 +57,7 @@ const FICHIERS_COQUILLE = [
   './supabase.js',
   './auth.js',
   './parler.js',
+  './reception.js',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',

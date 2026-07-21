@@ -194,6 +194,34 @@
           <button class="btn-confirmation btn-non" type="button" id="btn-non">✘ Non</button>
         </div>
 
+        <!-- ===== Mode réception multi-produits (N1, lots FR-4 + FR-5) =====
+             « La voix saisit, l'écran contrôle » : on démarre une réception,
+             on dicte les produits un par un (liste vivante ci-dessous), puis
+             UNE validation groupée écrit tout le lot. Toute la logique est dans
+             reception.js (instancié par parler.js). Ces blocs sont masqués tant
+             qu'aucune réception n'est en cours. -->
+
+        <!-- Bannière de reprise : affichée au chargement si une réception a été
+             laissée en cours (reception.js -> reception-etat). -->
+        <div class="reception-reprise" id="reception-reprise" hidden>
+          <p class="reception-reprise-texte" id="reception-reprise-texte"></p>
+          <div class="reception-reprise-actions">
+            <button class="btn-reception-primaire" type="button" id="btn-reprendre">Reprendre</button>
+            <button class="btn-reception-secondaire" type="button" id="btn-reprise-abandon">Abandonner</button>
+          </div>
+        </div>
+
+        <!-- Panneau de la réception en cours (liste vivante). Masqué hors session. -->
+        <section class="reception-panneau" id="reception-panneau" hidden>
+          <div class="reception-entete">
+            <h2 class="reception-titre">Réception en cours</h2>
+            <span class="reception-total" id="reception-total">0 ligne</span>
+          </div>
+          <div class="reception-liste" id="reception-liste"></div>
+          <!-- Produits dictés absents du catalogue : signalés, exclus du lot (transitoires). -->
+          <p class="reception-inconnus" id="reception-inconnus" hidden></p>
+        </section>
+
         <!-- Déclaration au clavier -->
         <form id="form-parler" class="parler-form">
           <input type="text" id="champ-parler" name="texte" placeholder="Ex. : j'ai reçu 10 pâtes" autocomplete="off" />
@@ -210,6 +238,17 @@
         -->
         <input type="file" id="champ-import" accept=".xlsx" hidden />
         <button class="btn-import" type="button" id="btn-import">📄 Importer un catalogue (.xlsx)</button>
+
+        <!-- Entrée en mode réception (visible hors session). Bascule purement
+             front : la session « naît » côté serveur à la première ligne dictée. -->
+        <button class="btn-reception-demarrer" type="button" id="btn-reception-demarrer">📦 Démarrer une réception</button>
+
+        <!-- Actions de clôture (visibles seulement en session) : UNE validation
+             groupée (le rempart Oui/Non déplacé ici) ou l'abandon. -->
+        <div class="reception-actions" id="reception-actions" hidden>
+          <button class="btn-reception-primaire" type="button" id="btn-reception-valider" disabled>Valider la réception</button>
+          <button class="btn-reception-secondaire" type="button" id="btn-reception-abandon">Abandonner</button>
+        </div>
 
         <!--
           Micro on-device (lot 11a) : reste `disabled` ici dans le HTML par

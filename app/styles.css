@@ -314,6 +314,96 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .btn-import:active { transform: translateY(1px); }
 .btn-import:disabled { opacity: .7; cursor: wait; }
 
+/* =====================================================================
+   Mode réception multi-produits (N1, lots FR-4 + FR-5) — écran de
+   contrôle : bouton d'entrée, liste vivante, actions de clôture,
+   bannière de reprise. Reprend les tokens existants (--brand, --border…).
+   ===================================================================== */
+
+/* Bouton d'entrée en réception (secondaire, comme l'import mais plein). */
+.btn-reception-demarrer {
+  display: block; width: 100%; margin-top: 12px;
+  font-family: inherit; font-size: 14.5px; font-weight: 700;
+  padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--ok-bg); color: var(--brand-dark); cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.btn-reception-demarrer:hover { background: #ccfbf1; border-color: #99f6e4; }
+.btn-reception-demarrer:active { transform: translateY(1px); }
+
+/* Panneau de la réception en cours (la liste vivante). */
+.reception-panneau {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm); padding: 14px 16px; margin-bottom: 16px; text-align: left;
+}
+.reception-entete { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.reception-titre { font-size: 16px; font-weight: 800; color: var(--text); }
+.reception-total { font-size: 13px; font-weight: 700; color: var(--brand-dark); white-space: nowrap; }
+
+.reception-liste { display: flex; flex-direction: column; gap: 6px; }
+.reception-vide { color: var(--muted); font-size: 13.5px; padding: 8px 2px; }
+
+/* Une ligne : nom à gauche, quantité, croix de suppression à droite. */
+.reception-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px; border: 1px solid var(--border); border-radius: 10px; background: #fff;
+}
+.ri-nom { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 600; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ri-qte { font-size: 14.5px; font-weight: 800; color: var(--brand-dark); white-space: nowrap; }
+.ri-retirer {
+  flex: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--danger-border); background: var(--danger-bg); color: var(--danger);
+  font-size: 14px; line-height: 1; display: grid; place-items: center;
+  transition: background .12s, transform .1s;
+}
+.ri-retirer:hover { background: #fee2e2; }
+.ri-retirer:active { transform: translateY(1px); }
+
+/* Flash bref quand une ligne vient d'être fusionnée (dictée à nouveau). */
+.reception-item.fusionnee { animation: flash-fusion 1s ease-out 1; }
+@keyframes flash-fusion {
+  0% { background: var(--ok-bg); border-color: #99f6e4; }
+  100% { background: #fff; border-color: var(--border); }
+}
+
+/* Produits dictés hors catalogue : signalés en orange, exclus du lot. */
+.reception-inconnus {
+  margin-top: 10px; padding: 9px 11px; border-radius: 10px;
+  background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn);
+  font-size: 13px; line-height: 1.4;
+}
+
+/* Actions de clôture : Valider (plein) + Abandonner (discret). */
+.reception-actions { display: flex; gap: 12px; margin-top: 14px; }
+.btn-reception-primaire {
+  flex: 1; font-family: inherit; font-size: 15px; font-weight: 700; white-space: nowrap;
+  padding: 12px 16px; border: none; border-radius: 10px;
+  background: var(--brand); color: #fff; cursor: pointer;
+  transition: background .15s, transform .1s, opacity .15s;
+}
+.btn-reception-primaire:hover { background: var(--brand-dark); }
+.btn-reception-primaire:active { transform: translateY(1px); }
+.btn-reception-primaire:disabled { opacity: .5; cursor: not-allowed; }
+.btn-reception-secondaire {
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px;
+  background: #fff; color: var(--muted); cursor: pointer;
+  transition: background .15s, color .15s, transform .1s;
+}
+.btn-reception-secondaire:hover { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+.btn-reception-secondaire:active { transform: translateY(1px); }
+.btn-reception-secondaire:disabled { opacity: .6; cursor: wait; }
+
+/* Bannière de reprise (une réception oubliée remonte au chargement). */
+.reception-reprise {
+  background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 16px; text-align: left;
+}
+.reception-reprise-texte { font-size: 14px; font-weight: 600; color: var(--warn); margin-bottom: 10px; }
+.reception-reprise-actions { display: flex; gap: 12px; }
+.reception-reprise-actions .btn-reception-primaire { flex: 1; }
+
 /* Barre de navigation a 2 onglets, fixee en bas (style app mobile). */
 .nav-bar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;

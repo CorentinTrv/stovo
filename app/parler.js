@@ -30,6 +30,8 @@
 // métier (matching produit, confirmation oui/non obligatoire, etc.).
 
 import { supabase } from './supabase.js';
+import { creerModeReception } from './reception.js';
+import { getSessionActuelle } from './auth.js';
 
 const zoneReponse = document.getElementById('parler-reponse');
 const zoneConfirmation = document.getElementById('parler-confirmation');
@@ -69,10 +71,21 @@ async function appelerPwaApi(corps, controlesADesactiver) {
 }
 
 // --- Déclaration (formulaire texte) ---
+// Le formulaire est PARTAGÉ entre la saisie normale et le mode réception (N1) :
+// en réception, « Envoyer » devient « Ajouter » et la phrase part vers
+// reception-ligne au lieu de declaration (voir reception.js). Le micro (option A)
+// remplit le champ dans les deux cas, l'envoi reste ce submit.
 formParler.addEventListener('submit', async (evenement) => {
   evenement.preventDefault();
   const texte = champTexte.value.trim();
   if (!texte) return;
+
+  if (modeReception.estEnReception()) {
+    btnEnvoyer.textContent = 'Ajout…';
+    await modeReception.ajouterLigne(texte);
+    btnEnvoyer.textContent = 'Ajouter';
+    return;
+  }
 
   btnEnvoyer.textContent = 'Envoi…';
   await appelerPwaApi({ kind: 'declaration', texte }, [btnEnvoyer, champTexte]);
@@ -87,6 +100,77 @@ btnOui.addEventListener('click', async () => {
 
 btnNon.addEventListener('click', async () => {
   await appelerPwaApi({ kind: 'confirmation', reponse: 'non' }, [btnOui, btnNon]);
+});
+
+// --- Mode réception multi-produits (N1, lots FR-4 + FR-5) ---
+// La logique vit dans reception.js (module isolé, testable au banc offline). Ici
+// on lui injecte le vrai Supabase et le vrai DOM. Les kinds reception-* renvoient
+// { reply, session } (et non { reply, enAttente }) : on lit `session` pour rendre
+// la liste vivante.
+
+// Lit le corps JSON d'une réponse d'erreur si possible. pwa-api répond 400 sur
+// un corps de kind reception-* malformé, MAIS renvoie quand même { reply, session }
+// (choix §3.4/§3.5 du rapport API-3) : supabase-js expose alors la Response dans
+// error.context, il faut la lire au lieu de traiter ça comme un échec sec.
+async function lireCorpsReponse(error) {
+  try {
+    const reponse = error && error.context;
+    if (reponse && typeof reponse.json === 'function') return await reponse.json();
+  } catch (_erreur) {
+    /* corps illisible : on retombera sur le message d'erreur générique */
+  }
+  return null;
+}
+
+// Appel API pour les kinds reception-* : renvoie { reply, session } ou null (null
+// = vrai échec réseau/serveur sans corps exploitable). Aucun effet DOM ici : c'est
+// reception.js qui décide quoi afficher.
+async function appelerReceptionApi(corps) {
+  try {
+    const { data, error } = await supabase.functions.invoke('pwa-api', { body: corps });
+    if (error) {
+      const corpsErreur = await lireCorpsReponse(error);
+      if (corpsErreur && (corpsErreur.reply || corpsErreur.session)) return corpsErreur;
+      console.error('Erreur pwa-api réception Stovo :', error.message || error);
+      return null;
+    }
+    return data || null;
+  } catch (erreur) {
+    console.error('Erreur réseau réception Stovo :', erreur);
+    return null;
+  }
+}
+
+const modeReception = creerModeReception({
+  elements: {
+    demarrer: document.getElementById('btn-reception-demarrer'),
+    panneau: document.getElementById('reception-panneau'),
+    titreTotal: document.getElementById('reception-total'),
+    liste: document.getElementById('reception-liste'),
+    inconnus: document.getElementById('reception-inconnus'),
+    actions: document.getElementById('reception-actions'),
+    valider: document.getElementById('btn-reception-valider'),
+    abandon: document.getElementById('btn-reception-abandon'),
+    reprise: document.getElementById('reception-reprise'),
+    repriseTexte: document.getElementById('reception-reprise-texte'),
+    reprendre: document.getElementById('btn-reprendre'),
+    repriseAbandon: document.getElementById('btn-reprise-abandon'),
+    champ: champTexte,
+    boutonEnvoyer: btnEnvoyer,
+    boutonImport: btnImport,
+    confirmation: zoneConfirmation,
+  },
+  appeler: appelerReceptionApi,
+  confirmer: (message) => globalThis.confirm(message),
+  afficher: (texte) => { zoneReponse.textContent = texte; },
+  doc: document,
+});
+
+// Reprise : si une réception a été laissée en cours (app fermée en plein milieu),
+// on la fait remonter au chargement, une fois la session confirmée (l'appel
+// reception-etat exige un JWT valide). Sans session, on ne tente rien.
+getSessionActuelle().then((session) => {
+  if (session) modeReception.verifierReprise();
 });
 
 // --- Import catalogue .xlsx (lot 12a) ---
