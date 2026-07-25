@@ -31,6 +31,7 @@
 
 import { supabase } from './supabase.js';
 import { creerModeReception } from './reception.js';
+import { creerModeInventaire } from './inventaire.js';
 import { getSessionActuelle } from './auth.js';
 
 const zoneReponse = document.getElementById('parler-reponse');
@@ -84,6 +85,16 @@ formParler.addEventListener('submit', async (evenement) => {
     btnEnvoyer.textContent = 'Ajout…';
     await modeReception.ajouterLigne(texte);
     btnEnvoyer.textContent = 'Ajouter';
+    return;
+  }
+
+  // Lot CM-C (25/07/2026) : en inventaire guidé, la phrase est le CHIFFRE
+  // compté du produit affiché à l'écran, pas une déclaration.
+  if (modeInventaire.estEnInventaire()) {
+    btnEnvoyer.textContent = 'Compte…';
+    await modeInventaire.compter(texte);
+    btnEnvoyer.textContent = 'Compter';
+    champTexte.value = '';
     return;
   }
 
@@ -166,11 +177,69 @@ const modeReception = creerModeReception({
   doc: document,
 });
 
+// --- Mode inventaire complet guidé (CM-C, 25/07/2026) ---
+// Même montage que la réception : la logique vit dans inventaire.js (module
+// isolé), on lui injecte ici le vrai Supabase et le vrai DOM. Les kinds
+// inventaire-* renvoient { reply, inventaire }.
+
+// La liste des produits actifs est lue en direct (mêmes colonnes et même clé
+// publishable que le dashboard, lecture seule). L'ordre alphabétique est
+// appliqué par le module.
+async function chargerProduitsActifs() {
+  const { data, error } = await supabase
+    .from('produits')
+    .select('id, nom, stock_actuel, unite')
+    .eq('actif', true);
+  if (error) {
+    console.error('Erreur lecture produits (inventaire) :', error.message || error);
+    return [];
+  }
+  return data || [];
+}
+
+const modeInventaire = creerModeInventaire({
+  elements: {
+    demarrer: document.getElementById('btn-inventaire-demarrer'),
+    panneau: document.getElementById('inventaire-panneau'),
+    parcours: document.getElementById('inventaire-parcours'),
+    cloture: document.getElementById('inventaire-cloture'),
+    progression: document.getElementById('inventaire-progression'),
+    nomProduit: document.getElementById('inventaire-nom-produit'),
+    stockTheorique: document.getElementById('inventaire-stock-theorique'),
+    dejaCompte: document.getElementById('inventaire-deja-compte'),
+    aveugle: document.getElementById('inventaire-aveugle'),
+    total: document.getElementById('inventaire-total'),
+    passer: document.getElementById('btn-inventaire-passer'),
+    terminer: document.getElementById('btn-inventaire-terminer'),
+    recap: document.getElementById('inventaire-recap'),
+    valider: document.getElementById('btn-inventaire-valider'),
+    abandon: document.getElementById('btn-inventaire-abandon'),
+    reprise: document.getElementById('inventaire-reprise'),
+    repriseTexte: document.getElementById('inventaire-reprise-texte'),
+    reprendre: document.getElementById('btn-inventaire-reprendre'),
+    repriseAbandon: document.getElementById('btn-inventaire-reprise-abandon'),
+    champ: champTexte,
+    boutonEnvoyer: btnEnvoyer,
+    boutonImport: btnImport,
+    confirmation: zoneConfirmation,
+  },
+  // Les kinds inventaire-* utilisent le même transport que reception-* (et donc
+  // la même lecture du corps sur un 400).
+  appeler: appelerReceptionApi,
+  chargerProduits: chargerProduitsActifs,
+  confirmer: (message) => globalThis.confirm(message),
+  afficher: (texte) => { zoneReponse.textContent = texte; },
+});
+
 // Reprise : si une réception a été laissée en cours (app fermée en plein milieu),
 // on la fait remonter au chargement, une fois la session confirmée (l'appel
 // reception-etat exige un JWT valide). Sans session, on ne tente rien.
+// Même chose pour un inventaire interrompu (CM-C).
 getSessionActuelle().then((session) => {
-  if (session) modeReception.verifierReprise();
+  if (session) {
+    modeReception.verifierReprise();
+    modeInventaire.verifierReprise();
+  }
 });
 
 // --- Import catalogue .xlsx (lot 12a) ---

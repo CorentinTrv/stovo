@@ -250,6 +250,58 @@
           <button class="btn-reception-secondaire" type="button" id="btn-reception-abandon">Abandonner</button>
         </div>
 
+        <!-- ============ Inventaire complet guidé (CM-C, 25/07/2026) ============
+             L'écran présente les produits UN PAR UN : le nom est porté par
+             l'écran, donc on annonce le CHIFFRE SEUL. Le rempart de confirmation
+             se déplace de chaque ligne vers UNE validation groupée finale, comme
+             pour la réception. Même architecture front : inventaire.js est isolé
+             (DOM et API injectés), cette section n'est que sa surface. -->
+
+        <!-- Bannière de reprise : inventaire laissé en cours (app fermée). -->
+        <div class="reception-reprise" id="inventaire-reprise" hidden>
+          <p class="reception-reprise-texte" id="inventaire-reprise-texte"></p>
+          <div class="reception-reprise-actions">
+            <button class="btn-reception-primaire" type="button" id="btn-inventaire-reprendre">Reprendre</button>
+            <button class="btn-reception-secondaire" type="button" id="btn-inventaire-reprise-abandon">Abandonner</button>
+          </div>
+        </div>
+
+        <button class="btn-reception-demarrer" type="button" id="btn-inventaire-demarrer">📋 Faire mon inventaire</button>
+
+        <section class="inventaire-panneau" id="inventaire-panneau" hidden>
+          <!-- Phase 1 : le parcours produit par produit -->
+          <div id="inventaire-parcours" hidden>
+            <div class="reception-entete">
+              <h2 class="reception-titre">Inventaire en cours</h2>
+              <span class="reception-total" id="inventaire-progression"></span>
+            </div>
+            <p class="inventaire-nom" id="inventaire-nom-produit"></p>
+            <p class="inventaire-stock" id="inventaire-stock-theorique"></p>
+            <p class="inventaire-deja" id="inventaire-deja-compte"></p>
+            <!-- Comptage à l'aveugle : masque le stock attendu pour ne pas
+                 biaiser le comptage. Règle d'inventaire classique. -->
+            <label class="inventaire-aveugle">
+              <input type="checkbox" id="inventaire-aveugle" />
+              Comptage à l'aveugle (masquer le stock attendu)
+            </label>
+            <p class="inventaire-total" id="inventaire-total"></p>
+            <div class="reception-actions">
+              <button class="btn-reception-secondaire" type="button" id="btn-inventaire-passer">Passer ce produit</button>
+              <button class="btn-reception-secondaire" type="button" id="btn-inventaire-terminer">Terminer maintenant</button>
+            </div>
+          </div>
+
+          <!-- Phase 2 : le récap des écarts + LA validation groupée -->
+          <div id="inventaire-cloture" hidden>
+            <h2 class="reception-titre">Récapitulatif</h2>
+            <p class="inventaire-recap" id="inventaire-recap"></p>
+            <div class="reception-actions">
+              <button class="btn-reception-primaire" type="button" id="btn-inventaire-valider">Valider l'inventaire</button>
+              <button class="btn-reception-secondaire" type="button" id="btn-inventaire-abandon">Abandonner</button>
+            </div>
+          </div>
+        </section>
+
         <!--
           Micro on-device (lot 11a) : reste `disabled` ici dans le HTML par
           defaut (etat de secours si JS ne tourne pas). C'est parler.js qui
@@ -284,11 +336,33 @@
     </div>
   </div>
 
-  <!-- ================= Navigation à 3 onglets ================= -->
+  <!-- ================= Écran « Aide » (25/07/2026) =================
+       Le mode d'emploi de Stovo, dans Stovo : comprendre les écrans et les
+       chiffres, la liste exacte des phrases comprises, et les pièges à
+       connaître. 100 % lecture seule, ZÉRO appel réseau : tout le contenu
+       est écrit en dur dans aide.js. Seule interaction : taper un exemple
+       le recopie dans le champ de l'écran « Parler » (sans jamais l'envoyer)
+       et bascule sur cet écran. -->
+  <div id="ecran-aide" class="ecran">
+    <div class="aide-page wrap">
+      <h2 class="section-title">💡 Aide et astuces</h2>
+      <p class="aide-intro">
+        Comment marche Stovo, tout ce que tu peux lui dire, et les pièges à éviter.
+      </p>
+      <div class="aide-liste" id="aide-liste">
+        <div class="state">Chargement…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Navigation à 4 onglets ================= -->
+  <!-- Libellé du 1er onglet raccourci en « Pilotage » à l'ajout du 4e
+       (25/07) : 4 colonnes doivent tenir sur la largeur d'un téléphone.
+       Le sens ne change pas (division gravée : piloter / trouver / agir). -->
   <nav class="nav-bar">
     <button class="nav-item actif" type="button" data-onglet="dashboard">
       <span class="nav-icone" aria-hidden="true">📊</span>
-      <span class="nav-label">Tableau de bord</span>
+      <span class="nav-label">Pilotage</span>
     </button>
     <button class="nav-item" type="button" data-onglet="stock">
       <span class="nav-icone" aria-hidden="true">📦</span>
@@ -297,6 +371,10 @@
     <button class="nav-item" type="button" data-onglet="parler">
       <span class="nav-icone" aria-hidden="true">🎙️</span>
       <span class="nav-label">Parler</span>
+    </button>
+    <button class="nav-item" type="button" data-onglet="aide">
+      <span class="nav-icone" aria-hidden="true">💡</span>
+      <span class="nav-label">Aide</span>
     </button>
   </nav>
 

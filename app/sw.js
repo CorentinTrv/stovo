@@ -42,7 +42,14 @@
 // multi-produits sur l'ecran "Parler" (liste vivante + validation groupee).
 // NOUVEAU fichier reception.js ajoute au precache ; index.html, parler.js,
 // styles.css modifies.
-const CACHE_NAME = 'stovo-app-v12';
+// v13 (onglet "Aide", 25/07/2026) : 4e onglet, mode d'emploi de Stovo dans
+// Stovo (comprendre / les phrases / astuces), avec exemples cliquables qui
+// remplissent le champ de l'ecran "Parler". NOUVEAU fichier aide.js ajoute au
+// precache ; index.html, app.js, styles.css modifies. Aucun fichier backend
+// touche, aucun appel reseau ajoute.
+// v14 (CM-C, 25/07/2026) : parcours d'inventaire complet guide. Nouveau module
+// front `inventaire.js` (a precacher), + index.html/parler.js/styles.css modifies.
+const CACHE_NAME = 'stovo-app-v14';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -54,10 +61,12 @@ const FICHIERS_COQUILLE = [
   './app.js',
   './dashboard.js',
   './stock.js',
+  './aide.js',
   './supabase.js',
   './auth.js',
   './parler.js',
   './reception.js',
+  './inventaire.js',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',

@@ -25,6 +25,11 @@ import './parler.js';
 // effet de bord comme parler.js : stock.js branche ses écouteurs (recherche,
 // dépli des lignes) et attend les données publiées par dashboard.js.
 import './stock.js';
+// Onglet « Aide » (25/07) : import pour effet de bord, comme stock.js. Le
+// module rend son contenu (écrit en dur, aucune donnée, aucun réseau) et
+// branche les exemples cliquables, qui remplissent le champ de l'écran
+// « Parler » puis demandent la bascule via l'événement 'stovo:onglet'.
+import './aide.js';
 
 const ecranLogin = document.getElementById('ecran-login');
 const appShell = document.getElementById('app-shell');
@@ -100,12 +105,13 @@ btnDeconnexion.addEventListener('click', async () => {
   // onAuthChange ci-dessus rebasculera vers l'écran de connexion.
 });
 
-// --- Bascule entre les 3 onglets de l'app (dashboard / stock / parler) ---
+// --- Bascule entre les 4 onglets de l'app (dashboard / stock / parler / aide) ---
 
 const ECRANS = {
   dashboard: document.getElementById('ecran-dashboard'),
   stock: document.getElementById('ecran-stock'),
   parler: document.getElementById('ecran-parler'),
+  aide: document.getElementById('ecran-aide'),
 };
 const ONGLETS = document.querySelectorAll('.nav-item');
 
@@ -120,6 +126,15 @@ function afficherOnglet(nomOnglet) {
 
 ONGLETS.forEach((bouton) => {
   bouton.addEventListener('click', () => afficherOnglet(bouton.dataset.onglet));
+});
+
+// Bascule demandée par un autre module (aide.js quand on tape un exemple).
+// Garde : on ne bascule que vers un écran connu, jamais sur un nom arbitraire.
+document.addEventListener('stovo:onglet', (evenement) => {
+  const cible = evenement.detail && evenement.detail.onglet;
+  if (cible && Object.prototype.hasOwnProperty.call(ECRANS, cible)) {
+    afficherOnglet(cible);
+  }
 });
 
 // Écran par défaut : le tableau de bord (rappel du lot 9a, la spec l'impose).

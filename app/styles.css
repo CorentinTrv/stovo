@@ -404,22 +404,29 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .reception-reprise-actions { display: flex; gap: 12px; }
 .reception-reprise-actions .btn-reception-primaire { flex: 1; }
 
-/* Barre de navigation a 2 onglets, fixee en bas (style app mobile). */
+/* Barre de navigation, fixee en bas (style app mobile).
+   Passee a 4 onglets le 25/07 (ajout de « Aide ») : les colonnes sont
+   resserrees (max-width, padding, taille du libelle) et les libelles ne se
+   coupent plus sur deux lignes, pour tenir sur la largeur d'un telephone. */
 .nav-bar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
   display: flex; justify-content: space-around;
   background: #ffffff; border-top: 1px solid var(--border);
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
   box-shadow: 0 -2px 10px rgba(15,23,42,.06);
 }
 .nav-item {
-  flex: 1; max-width: 160px; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  background: none; border: none; padding: 8px 4px; border-radius: 12px;
+  flex: 1; max-width: 130px; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: none; border: none; padding: 8px 2px; border-radius: 12px;
   font-family: inherit; color: var(--muted); cursor: pointer;
   transition: color .15s, background .15s;
 }
 .nav-item .nav-icone { font-size: 20px; line-height: 1; }
-.nav-item .nav-label { font-size: 11.5px; font-weight: 600; }
+.nav-item .nav-label {
+  font-size: 11px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
 .nav-item.actif { color: var(--brand-dark); background: var(--ok-bg); }
 .nav-item:active { transform: translateY(1px); }
 
@@ -605,3 +612,129 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .sl-stock { font-size: 13.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .sl-stock b { color: var(--text); }
 .stock-detail { padding: 0 2px 12px; font-size: 12.5px; color: var(--muted); line-height: 1.7; }
+
+/* ---------- Onglet « Aide » (25/07/2026) ----------
+   Le mode d'emploi dans l'app. Trois sections depliables (<details> natif,
+   comme l'inventaire du dashboard et les lignes de l'onglet Stock), avec des
+   exemples cliquables qui recopient la phrase dans l'ecran « Parler ».
+   Aucune couleur nouvelle : on reutilise les variables de la charte. */
+.aide-page { padding-top: 22px; padding-bottom: 30px; }
+.aide-intro { font-size: 14px; color: var(--muted); margin: -6px 0 16px; }
+
+.aide-section {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  margin-bottom: 12px; overflow: hidden;
+}
+.aide-sommaire {
+  cursor: pointer; list-style: none; user-select: none;
+  display: flex; align-items: center; gap: 11px;
+  padding: 15px 16px; font-weight: 700; font-size: 15.5px;
+}
+.aide-sommaire::-webkit-details-marker { display: none; }
+.aide-icone { font-size: 19px; line-height: 1; }
+/* Chevron a droite, tourne quand la section est ouverte. */
+.aide-titre { flex: 1; }
+.aide-sommaire::after {
+  content: '▾'; color: var(--muted-light); font-size: 13px;
+  transition: transform .15s;
+}
+.aide-section[open] > .aide-sommaire::after { transform: rotate(180deg); }
+.aide-section[open] > .aide-sommaire { border-bottom: 1px solid var(--border); }
+.aide-contenu { padding: 4px 16px 16px; }
+
+.aide-texte { font-size: 14px; color: var(--text); line-height: 1.65; margin: 12px 0; }
+.aide-texte b { font-weight: 700; }
+
+.aide-defs { margin: 12px 0; }
+.aide-defs dt { font-weight: 700; font-size: 13.5px; margin-top: 12px; }
+.aide-defs dt:first-child { margin-top: 0; }
+.aide-defs dd { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin: 2px 0 0; }
+
+/* Listes a puces DANS une section. Classe volontairement distincte du
+   conteneur #aide-liste : sinon tout l'ecran heriterait du retrait. */
+.aide-puces { margin: 12px 0; padding-left: 20px; font-size: 14px; line-height: 1.7; }
+
+/* Un geste = un bloc encadre : ce qu'il fait, des exemples, une note. */
+.aide-geste {
+  border-top: 1px solid var(--border);
+  padding: 16px 0 4px;
+}
+.aide-geste:first-of-type { border-top: none; }
+.aide-geste-titre { font-size: 14.5px; font-weight: 700; margin-bottom: 5px; }
+.aide-geste-quoi { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+
+.aide-exemples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 9px; }
+/* L'exemple est un BOUTON : le taper recopie la phrase dans l'ecran Parler
+   (aide.js), il doit donc se voir comme cliquable. */
+.aide-exemple {
+  font-family: inherit; font-size: 13px; font-style: italic;
+  color: var(--brand-dark); background: var(--ok-bg);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 7px 13px; cursor: pointer; text-align: left;
+  transition: background .15s, border-color .15s;
+}
+.aide-exemple::before { content: '« '; font-style: normal; }
+.aide-exemple::after { content: ' »'; font-style: normal; }
+.aide-exemple:hover { border-color: var(--brand); }
+.aide-exemple:active { transform: translateY(1px); }
+
+.aide-note {
+  font-size: 12.5px; color: var(--muted); line-height: 1.6;
+  border-left: 2px solid var(--border); padding-left: 10px;
+}
+
+/* Une astuce = un encadre plein, pour trancher visuellement avec les gestes. */
+.aide-astuce {
+  background: var(--bg); border-radius: 12px;
+  padding: 13px 14px; margin-bottom: 11px;
+}
+.aide-astuce-titre { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.aide-astuce .aide-texte { margin: 4px 0 0; font-size: 13.5px; }
+
+/* ===================== Inventaire complet guidé (CM-C, 25/07/2026) =====================
+   Réutilise volontairement les classes de la réception (.reception-panneau,
+   .reception-actions, .btn-reception-*) : même mécanique, même langage visuel.
+   Seuls les éléments propres au parcours produit-par-produit sont stylés ici. */
+
+.inventaire-panneau {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--bordure, #d8ddd6);
+  border-radius: 12px;
+  background: var(--carte, #fff);
+}
+
+/* Le nom du produit à compter : c'est LE point d'attention de l'écran, donc
+   l'élément le plus gros. C'est lui qui dispense de répéter le nom à la voix. */
+.inventaire-nom {
+  margin: 10px 0 4px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.inventaire-stock,
+.inventaire-deja,
+.inventaire-total {
+  margin: 2px 0;
+  font-size: 0.92rem;
+  opacity: 0.75;
+}
+
+.inventaire-deja:empty { display: none; }
+
+.inventaire-aveugle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 6px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+.inventaire-recap {
+  margin: 8px 0 14px;
+  line-height: 1.5;
+}
