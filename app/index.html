@@ -220,6 +220,27 @@
           <div class="reception-liste" id="reception-liste"></div>
           <!-- Produits dictés absents du catalogue : signalés, exclus du lot (transitoires). -->
           <p class="reception-inconnus" id="reception-inconnus" hidden></p>
+
+          <!--
+            Lot P-3 (25/07/2026) : lire le bon de livraison en le PHOTOGRAPHIANT.
+            `capture="environment"` ouvre directement l'appareil photo arrière sur
+            mobile (la galerie reste accessible). L'image est réduite dans le
+            navigateur (app/photo.js, ~2000 px) AVANT l'envoi, puis lue côté
+            serveur par pwa-api (kind="reception-photo").
+            Les lignes lues rejoignent la liste ci-dessus : même relecture, même
+            validation groupée. Une photo n'écrit jamais rien toute seule.
+          -->
+          <input type="file" id="champ-photo-bl" accept="image/*" capture="environment" hidden />
+          <button class="btn-photo-bl" type="button" id="btn-photo-bl">📷 Photographier le bon de livraison</button>
+
+          <!--
+            Journal de lecture (lot P-3) : ce que la photo DISAIT en face de ce
+            que Stovo en a fait. Rempart contre la seule erreur invisible du
+            chantier : « PATE FEUILLETEE 230G » rapproché de « Pâtes » a l'air
+            normal dans la liste, mais pas en face de son libellé d'origine.
+            Transitoire, jamais persisté, vidé à l'entrée et à la sortie.
+          -->
+          <div class="reception-lecture" id="reception-lecture" hidden></div>
         </section>
 
         <!-- Déclaration au clavier -->

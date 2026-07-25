@@ -32,6 +32,7 @@
 import { supabase } from './supabase.js';
 import { creerModeReception } from './reception.js';
 import { creerModeInventaire } from './inventaire.js';
+import { creerReducteurPhoto } from './photo.js';
 import { getSessionActuelle } from './auth.js';
 
 const zoneReponse = document.getElementById('parler-reponse');
@@ -263,6 +264,10 @@ const modeReception = creerModeReception({
     boutonEnvoyer: btnEnvoyer,
     boutonImport: btnImport,
     confirmation: zoneConfirmation,
+    // Lot P-3 : photo du bon de livraison (dans le panneau de réception).
+    boutonPhoto: document.getElementById('btn-photo-bl'),
+    champPhoto: document.getElementById('champ-photo-bl'),
+    lecture: document.getElementById('reception-lecture'),
   },
   appeler: appelerReceptionApi,
   confirmer: (message) => globalThis.confirm(message),
@@ -271,6 +276,10 @@ const modeReception = creerModeReception({
   // Lot S-0 : exclusivité des modes (voir le bloc verrou en haut de ce fichier).
   prendreVerrou,
   rendreVerrou,
+  // Lot P-3 : réduction de la photo côté navigateur (~2000 px, JPEG, EXIF
+  // respecté) avant l'envoi. Le module photo.js ne connaît ni Supabase ni le
+  // reste de l'app : on lui laisse ses dépendances navigateur par défaut.
+  reduirePhoto: creerReducteurPhoto(),
 });
 
 // --- Mode inventaire complet guidé (CM-C, 25/07/2026) ---

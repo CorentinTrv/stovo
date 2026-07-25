@@ -54,7 +54,13 @@
 // renommer, N4 question de reappro, S-0 verrou de mode). Seul aide.js change,
 // rien de nouveau a precacher. Contenu re-verifie phrase par phrase contre le
 // cerveau deterministe reel (banc offline, 65/65).
-const CACHE_NAME = 'stovo-app-v16';
+// v17 (lot P-3, 25/07/2026) : lecture d'un bon de livraison PHOTOGRAPHIE depuis
+// le mode reception. NOUVEAU fichier photo.js (reduction de l'image cote
+// navigateur, ~2000 px, EXIF respecte) ajoute au precache ; index.html,
+// parler.js, reception.js, styles.css modifies. Le geste change, le rempart ne
+// change pas : les lignes lues rejoignent la liste vivante et ne partent en base
+// qu'a la validation groupee.
+const CACHE_NAME = 'stovo-app-v17';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -72,6 +78,7 @@ const FICHIERS_COQUILLE = [
   './parler.js',
   './reception.js',
   './inventaire.js',
+  './photo.js',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',

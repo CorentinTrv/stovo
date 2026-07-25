@@ -45,7 +45,12 @@ function texteInconnus(inconnus) {
   return `Pas dans ton catalogue : ${inconnus.join(', ')}. Crée-les d'abord.`;
 }
 
-export function creerModeReception({ elements, appeler, confirmer, afficher, doc, prendreVerrou, rendreVerrou }) {
+// Lot P-3 (25/07/2026) : messages du chemin photo. Le travail de lecture est
+// serveur (Gemini) ; ici on ne fait que préparer l'image et afficher la réponse.
+const MSG_PHOTO_ENVOI = 'Je lis ta photo, un instant…';
+const MSG_PHOTO_ILLISIBLE = "Je n'ai pas réussi à préparer cette photo. Reprends-la, ou dicte les lignes.";
+
+export function creerModeReception({ elements, appeler, confirmer, afficher, doc, prendreVerrou, rendreVerrou, reduirePhoto }) {
   const document = doc || globalThis.document;
 
   // Lot S-0 (25/07/2026) : verrou de mode, injecté par parler.js (voir son bloc
@@ -132,6 +137,7 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     elements.champ.placeholder = PLACEHOLDER_RECEPTION;
     elements.champ.value = '';
     afficher(MSG_ENTREE);
+    rendreLecture([]); // pas de journal de lecture tant qu'aucune photo n'est prise
     rendre(session || { active: true, lignes: [], inconnus: [], total: 0 });
   }
 
@@ -145,6 +151,7 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     elements.boutonEnvoyer.textContent = 'Envoyer';
     elements.champ.placeholder = PLACEHOLDER_NORMAL;
     elements.champ.value = '';
+    rendreLecture([]); // le journal de lecture ne survit pas a la session
     // La zone réponse n'est PAS touchée : elle garde le message de succès
     // (« Réception enregistrée : N ligne(s). ») après une validation.
   }
@@ -170,6 +177,84 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
       rendre(payload.session);
       elements.champ.value = ''; // champ vidé seulement si l'ajout a abouti
     }
+    // Toute autre action que la photo périme son journal de lecture : le laisser
+    // affiché donnerait à relire un état qui n'est plus celui de la liste.
+    rendreLecture(payload.lecture);
+  }
+
+  // --- Ajouter des lignes depuis une PHOTO de bon de livraison (lot P-3) ---
+  //
+  // Le geste change (photographier au lieu de dicter), le circuit de sécurité
+  // NE change pas : les lignes lues atterrissent dans la même liste vivante,
+  // se relisent à l'écran, se retirent à la croix, et ne partent en base qu'à
+  // la validation groupée. La photo raccourcit la SAISIE, jamais le rempart.
+  async function envoyerPhoto(fichier) {
+    if (!fichier) return;
+    if (typeof reduirePhoto !== 'function') { afficher(MSG_PHOTO_ILLISIBLE); return; }
+
+    // La réduction se fait AVANT toute désactivation de contrôle : sur un gros
+    // fichier elle prend un instant, autant que l'écran le dise tout de suite.
+    afficher(MSG_PHOTO_ENVOI);
+
+    let reduite = null;
+    try {
+      reduite = await reduirePhoto(fichier);
+    } catch (_e) {
+      reduite = null;
+    }
+    if (!reduite || !reduite.base64) { afficher(MSG_PHOTO_ILLISIBLE); return; }
+
+    const payload = await executer(
+      { kind: 'reception-photo', contenuBase64: reduite.base64, mimeType: reduite.mimeType },
+      [elements.boutonPhoto, elements.boutonEnvoyer, elements.champ, elements.valider, elements.abandon],
+    );
+    if (!payload) { afficher(MSG_ERREUR); return; }
+    if (payload.reply) afficher(payload.reply);
+    if (payload.session) rendre(payload.session);
+    rendreLecture(payload.lecture);
+  }
+
+  // Journal de lecture : ce que la photo DISAIT, en face de ce que Stovo en a
+  // fait. C'est le rempart contre la seule erreur vraiment dangereuse du
+  // chantier photo, celle qu'on ne voit pas dans la liste.
+  //
+  // Exemple concret : le BL dit « PATE FEUILLETEE 230G », Stovo l'a rapproché de
+  // « Pâtes ». Dans la liste, la ligne « Pâtes +6 » a l'air parfaitement normale
+  // et se valide sans réfléchir. Affiché en face de son libellé d'origine,
+  // l'écart saute aux yeux, et le papier est sous les yeux de Corentin.
+  function rendreLecture(lecture) {
+    if (!elements.lecture) return;
+    const lignes = Array.isArray(lecture) ? lecture : [];
+    if (lignes.length === 0) {
+      elements.lecture.hidden = true;
+      elements.lecture.innerHTML = '';
+      return;
+    }
+    elements.lecture.innerHTML = '';
+
+    const titre = document.createElement('p');
+    titre.className = 'lecture-titre';
+    titre.textContent = 'Ce que j’ai lu sur la photo (vérifie les rapprochements) :';
+    elements.lecture.appendChild(titre);
+
+    for (const l of lignes) {
+      const item = document.createElement('p');
+      item.className = 'lecture-item';
+      const source = document.createElement('span');
+      source.className = 'lecture-source';
+      source.textContent = l.libelle;
+      const fleche = document.createElement('span');
+      fleche.className = 'lecture-fleche';
+      fleche.textContent = ' → ';
+      const cible = document.createElement('span');
+      cible.className = 'lecture-cible';
+      cible.textContent = `${l.nom} +${l.quantite}`;
+      item.appendChild(source);
+      item.appendChild(fleche);
+      item.appendChild(cible);
+      elements.lecture.appendChild(item);
+    }
+    elements.lecture.hidden = false;
   }
 
   // --- Retirer une ligne (croix) ---
@@ -181,6 +266,7 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     if (!payload) { afficher(MSG_ERREUR); return; }
     if (payload.reply) afficher(payload.reply);
     if (payload.session) rendre(payload.session);
+    rendreLecture(payload.lecture); // le journal de la photo est périmé (voir ajouterLigne)
     // On reste en réception même si la liste devient vide : l'utilisateur peut
     // redicter ou abandonner.
   }
@@ -239,11 +325,26 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
   elements.reprendre.addEventListener('click', () => { if (sessionReprise) entrer(sessionReprise); });
   elements.repriseAbandon.addEventListener('click', abandonner);
 
+  // Lot P-3 : le bouton ouvre le sélecteur natif (appareil photo sur mobile),
+  // c'est le champ fichier qui porte l'événement utile. Les deux sont optionnels
+  // pour que les bancs d'essai écrits avant ce lot continuent de tourner tels quels.
+  if (elements.boutonPhoto && elements.champPhoto) {
+    elements.boutonPhoto.addEventListener('click', () => elements.champPhoto.click());
+    elements.champPhoto.addEventListener('change', async () => {
+      const fichier = elements.champPhoto.files && elements.champPhoto.files[0];
+      // On vide le champ AVANT de traiter : sans ça, reprendre deux fois la même
+      // photo ne déclencherait pas de second 'change' (valeur identique).
+      elements.champPhoto.value = '';
+      if (fichier) await envoyerPhoto(fichier);
+    });
+  }
+
   // parler.js pilote le formulaire (partagé avec la saisie normale) et déclenche
   // la reprise au chargement.
   return {
     estEnReception: () => enReception,
     ajouterLigne,
+    envoyerPhoto,
     verifierReprise,
   };
 }

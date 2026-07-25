@@ -315,6 +315,44 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .btn-import:disabled { opacity: .7; cursor: wait; }
 
 /* =====================================================================
+   Photo du bon de livraison (lot P-3) — dans le panneau de réception.
+   Même sobriété que le bouton d'import : l'action principale de l'écran
+   reste "Ajouter" (dicter une ligne), la photo est une autre façon de
+   remplir la même liste, pas un geste concurrent.
+   ===================================================================== */
+.btn-photo-bl {
+  display: block; width: 100%; margin-top: 12px;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  padding: 11px 16px; border: 1px dashed var(--border); border-radius: 10px;
+  background: #fff; color: var(--muted); cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.btn-photo-bl:hover { background: var(--ok-bg); border-color: #99f6e4; color: var(--brand-dark); }
+.btn-photo-bl:active { transform: translateY(1px); }
+.btn-photo-bl:disabled { opacity: .7; cursor: wait; }
+
+/* Journal de lecture de la photo : le libellé du papier en face du produit
+   retenu. Volontairement discret mais lisible : c'est un outil de contrôle,
+   pas une décoration. */
+.reception-lecture {
+  margin-top: 12px; padding: 10px 12px;
+  border: 1px solid var(--border); border-left: 3px solid var(--brand, #14b8a6);
+  border-radius: 8px; background: #fafafa;
+}
+.lecture-titre {
+  margin: 0 0 8px; font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .03em; color: var(--muted);
+}
+.lecture-item {
+  margin: 0 0 4px; font-size: 13px; line-height: 1.45;
+  display: flex; flex-wrap: wrap; align-items: baseline;
+}
+.lecture-item:last-child { margin-bottom: 0; }
+.lecture-source { color: var(--muted); word-break: break-word; }
+.lecture-fleche { color: var(--muted); }
+.lecture-cible { font-weight: 700; color: var(--brand-dark, #0f766e); }
+
+/* =====================================================================
    Mode réception multi-produits (N1, lots FR-4 + FR-5) — écran de
    contrôle : bouton d'entrée, liste vivante, actions de clôture,
    bannière de reprise. Reprend les tokens existants (--brand, --border…).
