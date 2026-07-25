@@ -46,6 +46,75 @@ const zoneEtat = document.getElementById('parler-etat');
 const champImport = document.getElementById('champ-import');
 const btnImport = document.getElementById('btn-import');
 
+// --- Verrou de mode unique (lot S-0, 25/07/2026) ---
+// Stovo a plusieurs modes de session (réception N1, inventaire guidé CM-C, et
+// bientôt sortie N3). Avant ce lot, chaque mode ne masquait QUE son propre bouton
+// « Démarrer » et le routage de la phrase dictée testait les modes en cascade :
+// on pouvait donc avoir deux modes ouverts en même temps, et un chiffre dicté
+// pour l'inventaire partait dans le tampon de la réception (risque R4 du cadrage
+// N1, dans sa version humaine).
+//
+// parler.js est le seul module qui connaît TOUS les modes (c'est lui qui les
+// construit), donc c'est lui qui arbitre. Les modes reçoivent prendreVerrou /
+// rendreVerrou par injection, comme ils reçoivent déjà `appeler` et `afficher` :
+// ils ne connaissent toujours ni le DOM réel ni les autres modes, ce qui garde le
+// banc d'essai offline valable.
+let modeCourant = null; // null | 'reception' | 'inventaire'  (+ 'sortie' au lot S-5)
+
+const boutonsDemarrer = {
+  reception: document.getElementById('btn-reception-demarrer'),
+  inventaire: document.getElementById('btn-inventaire-demarrer'),
+};
+
+// Masque les boutons « Démarrer » de tous les modes SAUF celui passé (null =
+// tous visibles). Chaque mode continue de masquer le sien dans son propre
+// entrer()/demarrer() : ici on ne s'occupe que des autres.
+function majBoutonsDemarrer(modeActif) {
+  for (const [nom, bouton] of Object.entries(boutonsDemarrer)) {
+    if (!bouton || nom === modeActif) continue;
+    bouton.hidden = modeActif !== null;
+  }
+}
+
+// Messages de refus, écrits en entier pour que l'accord soit juste (« Termine-LA »
+// pour une réception, « Termine-LE » pour un inventaire). Mêmes phrases que le
+// filet serveur (_shared/verrou_mode.ts), pour que l'utilisateur lise la même
+// chose quel que soit l'étage qui a refusé.
+const MESSAGES_VERROU = {
+  reception: 'Tu as une réception en cours. Termine-la ou abandonne-la d\'abord.',
+  inventaire: 'Tu as un inventaire en cours. Termine-le ou abandonne-le d\'abord.',
+};
+
+// Renvoie false si un AUTRE mode détient déjà le verrou, et explique alors le
+// refus à l'écran : c'est l'arbitre qui sait nommer le mode bloquant, un module
+// de mode ne connaît pas les autres. L'appelant n'a plus qu'à renoncer sans rien
+// changer à l'affichage.
+// `silencieux` sert aux bannières de reprise, jouées automatiquement au
+// chargement : un refus y est normal (deux résidus de session peuvent coexister,
+// c'est justement le défaut qu'on répare) et afficher un reproche alors que
+// l'utilisateur n'a rien demandé serait déroutant.
+function prendreVerrou(nom, silencieux) {
+  if (modeCourant !== null && modeCourant !== nom) {
+    if (!silencieux) {
+      zoneReponse.textContent = MESSAGES_VERROU[modeCourant]
+        || 'Tu as déjà une opération en cours. Termine-la ou abandonne-la d\'abord.';
+    }
+    return false;
+  }
+  modeCourant = nom;
+  majBoutonsDemarrer(nom);
+  return true;
+}
+
+// Le paramètre `nom` n'est pas décoratif : sans lui, un mode pourrait libérer le
+// verrou d'un autre (par exemple une reprise refusée qui appellerait quand même
+// son nettoyage). On ne libère que si on est bien le détenteur.
+function rendreVerrou(nom) {
+  if (modeCourant !== nom) return;
+  modeCourant = null;
+  majBoutonsDemarrer(null);
+}
+
 // Affiche le message renvoyé par pwa-api et montre/cache les boutons Oui/Non
 // selon `enAttente` (vrai s'il y a une déclaration en attente de confirmation).
 function afficherReponse(texte, enAttente) {
@@ -81,21 +150,45 @@ formParler.addEventListener('submit', async (evenement) => {
   const texte = champTexte.value.trim();
   if (!texte) return;
 
-  if (modeReception.estEnReception()) {
-    btnEnvoyer.textContent = 'Ajout…';
-    await modeReception.ajouterLigne(texte);
-    btnEnvoyer.textContent = 'Ajouter';
-    return;
-  }
+  // Lot S-0 : routage EXPLICITE par le verrou, au lieu d'une cascade de `if` où
+  // le premier mode écrit dans le code gagnait. Il n'y a plus d'ordre de priorité
+  // implicite à connaître pour savoir où part une phrase.
+  //
+  // Le `switch` lit modeCourant pour choisir la BRANCHE, mais chaque mode garde
+  // son propre état interne, qui reste la vérité de « suis-je dans le panneau ».
+  // Les deux ne disent pas la même chose, et c'est normal : une bannière de
+  // reprise prend le verrou alors que le mode n'est pas encore ouvert (on n'a pas
+  // cliqué « Reprendre »). Dans ce cas la phrase doit partir en saisie normale,
+  // avec son rempart Oui/Non. On ne libère PAS le verrou au passage : la bannière
+  // est toujours à l'écran et le résidu existe toujours.
+  //
+  // Donc la règle : le verrou choisit la branche, l'état du mode confirme, et à
+  // défaut on retombe sur le comportement le plus sûr (la saisie normale), jamais
+  // sur un tampon de session.
+  switch (modeCourant) {
+    case 'reception':
+      if (modeReception.estEnReception()) {
+        btnEnvoyer.textContent = 'Ajout…';
+        await modeReception.ajouterLigne(texte);
+        btnEnvoyer.textContent = 'Ajouter';
+        return;
+      }
+      break;
 
-  // Lot CM-C (25/07/2026) : en inventaire guidé, la phrase est le CHIFFRE
-  // compté du produit affiché à l'écran, pas une déclaration.
-  if (modeInventaire.estEnInventaire()) {
-    btnEnvoyer.textContent = 'Compte…';
-    await modeInventaire.compter(texte);
-    btnEnvoyer.textContent = 'Compter';
-    champTexte.value = '';
-    return;
+    // Lot CM-C (25/07/2026) : en inventaire guidé, la phrase est le CHIFFRE
+    // compté du produit affiché à l'écran, pas une déclaration.
+    case 'inventaire':
+      if (modeInventaire.estEnInventaire()) {
+        btnEnvoyer.textContent = 'Compte…';
+        await modeInventaire.compter(texte);
+        btnEnvoyer.textContent = 'Compter';
+        champTexte.value = '';
+        return;
+      }
+      break;
+
+    default:
+      break;
   }
 
   btnEnvoyer.textContent = 'Envoi…';
@@ -175,6 +268,9 @@ const modeReception = creerModeReception({
   confirmer: (message) => globalThis.confirm(message),
   afficher: (texte) => { zoneReponse.textContent = texte; },
   doc: document,
+  // Lot S-0 : exclusivité des modes (voir le bloc verrou en haut de ce fichier).
+  prendreVerrou,
+  rendreVerrou,
 });
 
 // --- Mode inventaire complet guidé (CM-C, 25/07/2026) ---
@@ -229,6 +325,9 @@ const modeInventaire = creerModeInventaire({
   chargerProduits: chargerProduitsActifs,
   confirmer: (message) => globalThis.confirm(message),
   afficher: (texte) => { zoneReponse.textContent = texte; },
+  // Lot S-0 : exclusivité des modes (voir le bloc verrou en haut de ce fichier).
+  prendreVerrou,
+  rendreVerrou,
 });
 
 // Reprise : si une réception a été laissée en cours (app fermée en plein milieu),

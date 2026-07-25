@@ -45,8 +45,16 @@ function texteInconnus(inconnus) {
   return `Pas dans ton catalogue : ${inconnus.join(', ')}. Crée-les d'abord.`;
 }
 
-export function creerModeReception({ elements, appeler, confirmer, afficher, doc }) {
+export function creerModeReception({ elements, appeler, confirmer, afficher, doc, prendreVerrou, rendreVerrou }) {
   const document = doc || globalThis.document;
+
+  // Lot S-0 (25/07/2026) : verrou de mode, injecté par parler.js (voir son bloc
+  // « Verrou de mode unique »). Défauts permissifs OBLIGATOIRES : sans eux, tous
+  // les scénarios du banc d'essai offline écrits avant ce lot tomberaient d'un
+  // coup, et on ne saurait plus distinguer une vraie régression d'un harnais de
+  // test incomplet. Ce module ne connaît toujours pas les autres modes.
+  const verrouPrendre = prendreVerrou || (() => true);
+  const verrouRendre = rendreVerrou || (() => {});
 
   let enReception = false;      // état purement front (la session « naît » à la 1re ligne serveur)
   let sessionReprise = null;    // état renvoyé par reception-etat, en attente d'un clic « Reprendre »
@@ -110,6 +118,9 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
 
   // --- Bascule d'affichage : entrer / sortir du mode réception ---
   function entrer(session) {
+    // Lot S-0 : on ne touche à RIEN si un autre mode est ouvert. Le message de
+    // refus est affiché par l'arbitre (il est le seul à savoir qui bloque).
+    if (!verrouPrendre('reception')) return;
     enReception = true;
     elements.reprise.hidden = true;
     elements.demarrer.hidden = true;
@@ -126,6 +137,7 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
 
   function sortir() {
     enReception = false;
+    verrouRendre('reception'); // Lot S-0 : libère les autres modes.
     elements.panneau.hidden = true;
     elements.actions.hidden = true;
     elements.demarrer.hidden = false;
@@ -208,6 +220,11 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     if (!payload || !payload.session) return;
     const session = payload.session;
     if (session.active && (session.total || 0) > 0) {
+      // Lot S-0 : une session résiduelle prend le verrou dès sa bannière, pour
+      // qu'on ne puisse pas démarrer un autre mode que le serveur refuserait
+      // ensuite. En silencieux : un refus ici est normal (deux résidus peuvent
+      // coexister) et le second réapparaîtra au prochain chargement.
+      if (!verrouPrendre('reception', true)) return;
       sessionReprise = session;
       elements.repriseTexte.textContent =
         `Tu as une réception en cours (${libelleLignes(session.total)}). Reprends-la ou abandonne-la.`;

@@ -25,7 +25,13 @@ function libelleProduits(n) {
 // Pas de paramètre `doc` ici (contrairement à reception.js) : ce module ne crée
 // aucun nœud, il ne fait que remplir des éléments qu'on lui passe. Ne pas
 // accepter une dépendance dont on ne se sert pas.
-export function creerModeInventaire({ elements, appeler, chargerProduits, confirmer, afficher }) {
+export function creerModeInventaire({ elements, appeler, chargerProduits, confirmer, afficher, prendreVerrou, rendreVerrou }) {
+  // Lot S-0 (25/07/2026) : verrou de mode, injecté par parler.js (voir son bloc
+  // « Verrou de mode unique »). Défauts permissifs OBLIGATOIRES : sans eux, les
+  // scénarios du banc d'essai offline écrits avant ce lot tomberaient tous, et on
+  // ne saurait plus distinguer une vraie régression d'un harnais incomplet.
+  const verrouPrendre = prendreVerrou || (() => true);
+  const verrouRendre = rendreVerrou || (() => {});
   // --- État local du parcours ---
   let produits = [];      // liste alphabétique des produits actifs
   let index = 0;          // position dans le parcours
@@ -111,6 +117,7 @@ export function creerModeInventaire({ elements, appeler, chargerProduits, confir
 
   function terminerParcours() {
     actif = false;
+    verrouRendre('inventaire'); // Lot S-0 : libère les autres modes.
     index = 0;
     comptes = new Map();
     montrer(el.panneau, false);
@@ -123,8 +130,16 @@ export function creerModeInventaire({ elements, appeler, chargerProduits, confir
   // --- Actions publiques ---
 
   async function demarrer() {
+    // Lot S-0 : verrou pris AVANT le chargement du catalogue, pour qu'un autre
+    // mode ne puisse pas se glisser pendant l'appel réseau. Le message de refus
+    // est affiché par l'arbitre (seul à savoir qui bloque).
+    if (!verrouPrendre('inventaire')) return;
+
     const liste = await chargerProduits();
     if (!liste || liste.length === 0) {
+      // On renonce : il faut rendre le verrou qu'on venait de prendre, sinon les
+      // autres modes resteraient bloqués par un inventaire qui n'a jamais démarré.
+      verrouRendre('inventaire');
       afficher('Ton catalogue est vide, il n\'y a rien à inventorier.');
       return;
     }
@@ -214,6 +229,14 @@ export function creerModeInventaire({ elements, appeler, chargerProduits, confir
       montrer(el.reprise, false);
       return;
     }
+    // Lot S-0 : un inventaire résiduel prend le verrou dès sa bannière, pour qu'on
+    // ne puisse pas démarrer un autre mode que le serveur refuserait ensuite. En
+    // silencieux : un refus est normal si la réception a déjà pris la main, et sa
+    // bannière réapparaîtra au prochain chargement.
+    if (!verrouPrendre('inventaire', true)) {
+      montrer(el.reprise, false);
+      return;
+    }
     montrer(el.reprise, true);
     if (el.repriseTexte) {
       el.repriseTexte.textContent =
@@ -237,6 +260,11 @@ export function creerModeInventaire({ elements, appeler, chargerProduits, confir
     const reponse = await appeler({ kind: 'inventaire-abandon' });
     afficher(reponse && reponse.reply ? reponse.reply : 'Inventaire abandonné.');
     montrer(el.reprise, false);
+    // Lot S-0 : ce chemin ne passe PAS par terminerParcours (aucun parcours n'était
+    // ouvert, juste la bannière), donc c'est ici qu'il faut rendre le verrou pris
+    // par verifierReprise. Sans ça, abandonner depuis la bannière laisserait les
+    // autres modes bloqués jusqu'au rechargement.
+    verrouRendre('inventaire');
   }
 
   // --- Câblage des boutons (le doc injecté rend ceci testable hors navigateur) ---
