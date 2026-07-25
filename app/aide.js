@@ -70,7 +70,7 @@ export const CONTENU = [
         items: [
           { terme: '📊 Pilotage', texte: 'Ce qu\'il faut faire aujourd\'hui : le bandeau « Ce matin », les indicateurs, ce qui est à commander, l\'inventaire complet et les derniers mouvements.' },
           { terme: '📦 Stock', texte: 'Trouver un produit. La liste complète avec une recherche à la frappe. Tape sur une ligne pour voir le détail (prix, valeur, autonomie).' },
-          { terme: '🎙️ Parler', texte: 'Agir. Le micro, le clavier, le mode réception et l\'import de catalogue. C\'est le seul écran qui écrit en base.' },
+          { terme: '🎙️ Parler', texte: 'Agir. Le micro, le clavier, le mode réception, le parcours d\'inventaire et l\'import de catalogue. C\'est le seul écran qui écrit en base.' },
           { terme: '💡 Aide', texte: 'Cette page.' },
         ],
       },
@@ -134,6 +134,13 @@ export const CONTENU = [
       },
       {
         type: 'geste',
+        titre: '🛒 Demander ce qu\'il faut commander',
+        quoi: 'Ta liste de courses à la voix : Stovo te dit tout ce qui est passé sous son point de commande, sans que tu ailles regarder le tableau de bord.',
+        exemples: ['qu\'est-ce que je dois commander ?', 'ma liste de courses', 'qu\'est-ce qui me manque ?'],
+        note: 'Ne mets <b>aucun chiffre</b> dans cette phrase : un nombre fait comprendre à Stovo que tu veux modifier quelque chose, pas poser une question.',
+      },
+      {
+        type: 'geste',
         titre: '🗑️ Déclarer une perte',
         quoi: 'De la casse, un produit périmé, un vol. C\'est une sortie, mais tracée avec sa raison, pour ne pas fausser ta consommation moyenne.',
         exemples: ["j'ai jeté 3 yaourts périmés", "j'ai cassé 2 bières", "on m'a volé 4 bières"],
@@ -163,9 +170,16 @@ export const CONTENU = [
       {
         type: 'geste',
         titre: '✏️ Modifier un produit',
-        quoi: 'Changer le prix d\'achat, le seuil d\'alerte, ou le délai de réappro.',
-        exemples: ['le prix des pâtes c\'est 1,20', 'le seuil des bières c\'est 6', 'le délai de livraison du riz c\'est 3 jours'],
-        note: 'La virgule française marche (1,20 = 1,20 €). Pour changer l\'unité, dis-le simplement : Stovo n\'a pas de règle figée pour ça et demandera confirmation.',
+        quoi: 'Changer le prix d\'achat, le seuil d\'alerte, le délai de réappro, ou l\'unité.',
+        exemples: ['le prix des pâtes c\'est 1,20', 'le seuil des bières c\'est 6', 'le délai de livraison du riz c\'est 3 jours', 'l\'unité des pâtes c\'est paquet'],
+        note: 'La virgule française marche (1,20 = 1,20 €). Pour l\'unité, Stovo connaît les unités du commerce : kilo, kg, gramme, litre, centilitre, millilitre, pièce, unité, paquet, boîte, bouteille, carton, sachet, pack. Une unité fantaisiste, il préfère demander.',
+      },
+      {
+        type: 'geste',
+        titre: '🔤 Renommer un produit',
+        quoi: 'Corriger un nom mal orthographié, ou lui donner son vrai nom commercial.',
+        exemples: ['renomme les pâtes en macaroni', 'renomme le jus en jus d\'orange'],
+        note: 'La structure est imposée : <b>renomme X en Y</b>. Le mot « en » est le séparateur, sans lui Stovo ne devine pas. À ne pas confondre avec le surnom : renommer change le vrai nom, un surnom en ajoute un deuxième.',
       },
       {
         type: 'geste',
@@ -180,6 +194,13 @@ export const CONTENU = [
         quoi: 'Quand la reconnaissance vocale écorche toujours le même mot, apprends-lui le mot que TU dis.',
         exemples: ['appelle les céréales serial', 'surnomme le café jus', 'oublie serial'],
         note: 'Un surnom = <b>un seul mot</b>, 3 lettres minimum, et il ne peut désigner qu\'un seul produit. Une fois posé, il est reconnu comme le vrai nom. « oublie X » le retire.',
+      },
+      {
+        type: 'geste',
+        titre: '📋 Faire l\'inventaire de tout le magasin',
+        quoi: 'Le bouton « Faire mon inventaire » sur l\'écran Parler. Stovo te présente tes produits un par un : tu comptes, tu dictes juste le chiffre, il passe au suivant. À la fin, il te montre le récapitulatif des écarts et UNE seule validation recale tout.',
+        exemples: [],
+        note: 'Tu dis <b>le chiffre seul</b>, rien d\'autre. Tu peux passer un produit, t\'arrêter en cours de route, et cocher le <b>comptage à l\'aveugle</b> pour ne pas voir le stock théorique avant de compter (c\'est la bonne pratique : on compte ce qu\'on voit, pas ce qu\'on s\'attend à voir).',
       },
       {
         type: 'geste',
@@ -233,6 +254,16 @@ export const CONTENU = [
         type: 'astuce',
         titre: 'Deux produits qui se ressemblent ? Précise',
         texte: 'Si tu as « Lait » et « Lait entier » et que tu dis juste « lait », Stovo <b>ne choisit pas au hasard</b> : il te demande lequel. C\'est voulu, et ça devient précieux quand ton catalogue grossit. Réponds avec le nom complet.',
+      },
+      {
+        type: 'astuce',
+        titre: 'Un seul chantier à la fois',
+        texte: 'Tu ne peux pas avoir une réception <b>et</b> un inventaire ouverts en même temps : Stovo refuse et te dit lequel terminer d\'abord. Ce n\'est pas une limite, c\'est une protection : sans elle, un chiffre dicté pour l\'inventaire pourrait partir dans la réception et ajouter du stock au lieu de le recaler.',
+      },
+      {
+        type: 'astuce',
+        titre: 'Compte à l\'aveugle, tu compteras juste',
+        texte: 'Dans le parcours d\'inventaire, coche « comptage à l\'aveugle ». Voir le stock théorique avant de compter influence toujours : on trouve ce qu\'on s\'attend à trouver, et les petits écarts passent à la trappe. C\'est la règle de base d\'un inventaire sérieux, et c\'est là que tu retrouves ta démarque inconnue.',
       },
       {
         type: 'astuce',

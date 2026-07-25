@@ -49,7 +49,12 @@
 // touche, aucun appel reseau ajoute.
 // v14 (CM-C, 25/07/2026) : parcours d'inventaire complet guide. Nouveau module
 // front `inventaire.js` (a precacher), + index.html/parler.js/styles.css modifies.
-const CACHE_NAME = 'stovo-app-v15';
+// v16 (mise a jour de l'aide, 25/07/2026) : l'onglet "Aide" rattrape les
+// chantiers livres dans la journee (CM-B unite, CM-C inventaire guide, CM-D
+// renommer, N4 question de reappro, S-0 verrou de mode). Seul aide.js change,
+// rien de nouveau a precacher. Contenu re-verifie phrase par phrase contre le
+// cerveau deterministe reel (banc offline, 65/65).
+const CACHE_NAME = 'stovo-app-v16';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
