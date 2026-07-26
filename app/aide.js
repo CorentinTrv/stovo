@@ -21,6 +21,14 @@
 // version v14 / v28 du 25/07/2026) : verbes reconnus, marqueurs de creation,
 // signaux d'alias, ordre de la cascade. Si le cerveau evolue, cette page doit
 // evoluer avec lui, sinon elle ment.
+//
+// LOT P-4 (26/07/2026, chantier PILOTAGE) : les phrases sur l'autonomie, les
+// trois etats (mesure/dormant/insuffisant) et le bandeau de pause sont
+// relevees dans le module partage app/pilotage.js (constantes FENETRE_JOURS,
+// PLANCHER_OBSERVATION_JOURS, GESTE_VIVANT_JOURS, SEUIL_DORMANT_JOURS) et
+// dans les textes reels de app/dashboard.js (carteProduit, majBandeauPilotage)
+// et _shared/reappro.ts (construireMessageReappro). Meme regle : si l'un de
+// ces fichiers change, cette page doit suivre, sinon elle ment.
 
 const $ = (id) => document.getElementById(id);
 
@@ -89,9 +97,11 @@ export const CONTENU = [
       {
         type: 'defs',
         items: [
-          { terme: 'Il te reste ≈ X jours', texte: 'Ton autonomie. Stovo divise le stock qui reste par ta consommation moyenne mesurée. Tant qu\'il n\'a pas assez de sorties enregistrées, il affiche « pas encore de ventes mesurées » plutôt que d\'inventer un chiffre.' },
+          { terme: 'Il te reste ≈ X jours', texte: 'Ton autonomie. Stovo divise le stock qui reste par ta consommation moyenne, mesurée sur tes 30 derniers jours de ventes (7 jours minimum pour un produit tout jeune, le temps qu\'il ait du recul). Selon ce qu\'il sait, la carte affiche : « Il te reste ≈ X jours » quand c\'est mesuré, « Pas assez de sorties pour estimer » quand il manque encore des sorties déclarées, ou « Rien n\'est sorti depuis 30 jours » quand le produit ne bouge plus du tout.' },
           { terme: 'Point de commande', texte: 'Le niveau auquel il faut recommander pour ne pas tomber en rupture pendant le délai de livraison. Marqué <b>auto</b>, il suit ton rythme réel de ventes et bouge tout seul. Marqué <b>fixe</b>, c\'est le seuil que tu as dicté, faute de ventes assez nombreuses pour calculer.' },
           { terme: 'Valeur du stock', texte: 'Ce que tu as immobilisé en euros, au prix d\'achat que tu as dicté. Les produits sans prix ne sont pas comptés : le total est alors annoncé comme partiel.' },
+          { terme: 'Pourquoi Stovo dit parfois qu\'il ne sait pas', texte: 'Une carte qui affiche « Pas assez de sorties pour estimer » n\'est pas en panne : il manque encore des sorties déclarées pour que Stovo apprenne ton rythme. Dis-lui tes ventes au fil de l\'eau (« j\'ai vendu 3 pâtes ») et le calcul s\'allume tout seul. Si tout ton catalogue reste sans sortie pendant 7 jours, un bandeau « Ton pilotage est en pause » apparaît en haut de l\'écran avec un bouton « Déclarer une sortie » qui te prépare la phrase ; il disparaît tout seul dès ta première sortie déclarée.' },
+          { terme: 'Stock dormant', texte: '« Rien n\'est sorti depuis 30 jours » signale un produit assez ancien qui n\'a eu aucune sortie sur tout ce temps, alors que tu continues d\'en déclarer ailleurs dans ton catalogue. C\'est de l\'argent immobilisé dans un stock qui ne tourne pas : si le prix est connu, Stovo t\'indique ce que ça représente en euros.' },
         ],
       },
       {
@@ -137,7 +147,7 @@ export const CONTENU = [
         titre: '🛒 Demander ce qu\'il faut commander',
         quoi: 'Ta liste de courses à la voix : Stovo te dit tout ce qui est passé sous son point de commande, sans que tu ailles regarder le tableau de bord.',
         exemples: ['qu\'est-ce que je dois commander ?', 'ma liste de courses', 'qu\'est-ce qui me manque ?'],
-        note: 'Ne mets <b>aucun chiffre</b> dans cette phrase : un nombre fait comprendre à Stovo que tu veux modifier quelque chose, pas poser une question.',
+        note: 'Ne mets <b>aucun chiffre</b> dans cette phrase : un nombre fait comprendre à Stovo que tu veux modifier quelque chose, pas poser une question. Si aucun produit n\'a encore de consommation mesurable, Stovo ne répond plus « rien à commander » par confort : il te dit qu\'il n\'a pas assez de sorties déclarées et t\'invite à les dicter au fil de l\'eau.',
       },
       {
         type: 'geste',

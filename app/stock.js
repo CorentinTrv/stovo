@@ -9,10 +9,18 @@
 // parle jamais a Supabase. Il ecoute l'evenement 'stovo:donnees' que
 // dashboard.js emet a chaque chargement (initial + rafraichissement
 // 30 s + bouton Rafraichir) avec les produits DEJA calcules
-// (_couverture, _pointCommande, _valeur). Memes chiffres partout,
+// (_couverture, _pointCommande, _valeur, _etat). Memes chiffres partout,
 // aucun recalcul, aucune requete en plus meme a 300 references.
+//
+// LOT P-3 (26/07/2026) : version courte des trois etats de pilotage
+// (mesure/dormant/insuffisant, plan §3 Q2 niveau 3). AUCUN calcul propre :
+// _etat est deja pose sur chaque produit par dashboard.js. SEUIL_DORMANT_JOURS
+// est importe directement de pilotage.js (module pur, aucun DOM/reseau) pour
+// le libelle "Rien n'est sorti depuis X jours", plutot que de le faire
+// transiter par dashboard.js.
 
 import { fmtEuro, fmtNombre, txtCouverture, urgence } from './dashboard.js';
+import { SEUIL_DORMANT_JOURS } from './pilotage.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -46,7 +54,14 @@ function badgeDe(p) {
 // autonomie, point de commande — chiffres deja calcules).
 function ligneStock(p) {
   const cov = p._couverture;
-  const autonomieTxt = cov !== null ? `Il te reste ${txtCouverture(cov)}` : 'Pas encore de ventes mesurées';
+  // LOT P-3 : version courte des trois etats, memes textes que la carte du
+  // dashboard mais sans la ligne de detail (l'espace de l'onglet Stock est
+  // compact, cf. plan §3 Q2 niveau 3).
+  const autonomieTxt = p._etat === 'mesure'
+    ? `Il te reste ${txtCouverture(cov)}`
+    : p._etat === 'dormant'
+      ? `Rien n'est sorti depuis ${SEUIL_DORMANT_JOURS} jours`
+      : `Pas assez de sorties pour estimer`;
   const aPrix = (p.prix_achat !== null && p.prix_achat !== undefined);
   const prixTxt = aPrix ? `<b>${fmtEuro(p.prix_achat)}</b> / ${p.unite}` : 'non renseigné';
   const valeurTxt = (aPrix && p._valeur !== null) ? ` · Valeur : <b>${fmtEuro(p._valeur)}</b>` : '';
@@ -65,6 +80,10 @@ function ligneStock(p) {
       </div>
     </details>`;
 }
+// ligneStock exportee pour le banc offline (LOT P-3) : fonction pure (ne
+// depend que de son parametre p et de lignesOuvertes en lecture), testable
+// sans DOM.
+export { ligneStock };
 
 function rendre() {
   const zone = $('stock-liste');

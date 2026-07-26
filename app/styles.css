@@ -776,3 +776,63 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   margin: 8px 0 14px;
   line-height: 1.5;
 }
+
+/* Lot P-3 (chantier PILOTAGE, 26/07/2026) : bandeau "pilotage en pause",
+   affiche sous le verdict quand aucune sortie n'est declaree depuis
+   GESTE_VIVANT_JOURS. Reutilise .card pour la boite (deja stylee). */
+.bandeau-pilotage { border-left: 4px solid var(--warn); margin: 10px 0 2px; }
+.bandeau-pilotage .bp-titre { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+.bandeau-pilotage .bp-texte { font-size: 13.5px; color: var(--muted); margin-bottom: 8px; line-height: 1.5; }
+.bandeau-pilotage .bp-bouton {
+  font-family: inherit; font-size: 13px; font-weight: 700;
+  padding: 9px 16px; border-radius: 10px; border: 1px solid #99f6e4;
+  background: var(--ok-bg); color: var(--brand-dark); cursor: pointer;
+}
+
+/* Lot P-5 (chantier PILOTAGE, 26/07/2026) : phrase de synthese du stock
+   dormant, sous le bloc "Valeur du stock". */
+.dormant-resume {
+  font-size: 12.5px;
+  color: var(--muted-light);
+  margin: -2px 0 8px;
+  padding: 0 2px;
+}
+
+/* ---------- Chantier C1 (26/07/2026) : demarque valorisee "Ce que tu as
+   jete" ---------- Rendu par app/pertes.js (calculerDemarque + rendreDemarque),
+   injecte dans #pertes-contenu, lui-meme a l'interieur du <details
+   class="inv-groupe"> dedie (voir index.html) : le chevron et le style du
+   sommaire sont deja herites de .inv-groupe/.inv-sommaire, rien a refaire ici.
+   Marge propre a CE <details> (id, pas la classe .inv-groupe partagee) : il
+   vit hors de #inv-grid/.inv-groupes (qui donne le gap de 12px entre les 3
+   groupes d'inventaire), donc sans cette marge il serait colle au bloc du
+   dessus (reappro, souvent masque) et au dessous. */
+#pertes-groupe { margin: 18px 0 6px; }
+.pertes-vide { padding: 10px 2px 4px; color: var(--muted); font-size: 14px; }
+
+.pertes-total { font-size: 26px; font-weight: 800; color: var(--brand-dark); margin: 10px 0 8px; line-height: 1.15; }
+.pertes-total .pertes-partiel { font-size: 13px; font-weight: 600; color: var(--muted-light); margin-left: 4px; }
+
+.pertes-motifs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.pertes-motif {
+  display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600;
+  background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn);
+  padding: 5px 12px; border-radius: 999px;
+}
+.pertes-motif .pm-nom { text-transform: capitalize; }
+.pertes-motif .pm-montant { font-weight: 800; }
+
+.pertes-liste { margin-top: 2px; }
+.pertes-ligne {
+  display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center;
+  padding: 12px 2px; border-top: 1px solid var(--border);
+}
+.pertes-ligne:first-child { border-top: none; }
+.pertes-ligne .pp-main { min-width: 0; }
+.pertes-ligne .pp-nom { font-weight: 700; font-size: 14.5px; }
+.pertes-ligne .pp-detail { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.pertes-ligne .pp-right { text-align: right; white-space: nowrap; font-size: 15px; font-weight: 700; }
+.pertes-ligne .pp-sansprix { font-size: 12.5px; color: var(--muted-light); font-weight: 500; font-style: italic; }
+
+.pertes-note { font-size: 12.5px; color: var(--muted-light); margin-top: 10px; }
+.pertes-methode { font-size: 11.5px; color: var(--muted-light); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }

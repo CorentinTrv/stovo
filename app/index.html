@@ -148,14 +148,46 @@
         <div class="sv-sub" id="kpi-valeur-sub"></div>
       </section>
 
+      <!-- Chiffre de synthèse du stock dormant (LOT P-5, 26/07/2026,
+           optionnel "coupable sans regret") : rempli par dashboard.js
+           (majResumeDormant), visible UNIQUEMENT s'il y a au moins un
+           produit dormant ET si le geste de sortie est vivant (sinon le
+           bandeau "pilotage en pause" ci-dessous explique déjà la
+           situation). Classe "dormant-resume" stylée en fin de styles.css
+           (ajoutée par le Jarvis après relecture du lot P-5). -->
+      <div class="dormant-resume" id="dormant-resume" style="display:none"></div>
+
       <!-- Verdict en langage simple : la réponse avant tout scroll (assemblé depuis les compteurs déjà calculés) -->
       <div class="verdict" id="verdict" style="display:none"></div>
+
+      <!-- Bandeau "pilotage en pause" (Niveau 1, LOT P-3, 26/07/2026) : rendu
+           entièrement par dashboard.js (majBandeauPilotage), affiché
+           UNIQUEMENT quand aucune sortie sans motif n'a été déclarée sur tout
+           le catalogue depuis GESTE_VIVANT_JOURS jours (pilotage.js).
+           Disparaît tout seul dès la première sortie déclarée, rien à
+           fermer. Voir le plan pilotage §3 Q2. Classe "card" réutilisée pour
+           la boîte (fond/bordure/ombre/padding) ; bp-titre/bp-texte/bp-bouton
+           stylés en fin de styles.css (ajouté par le Jarvis après relecture
+           du lot P-3, le Codeur avait laissé ces classes sans règle). -->
+      <section class="bandeau-pilotage card" id="bandeau-pilotage" style="display:none"></section>
 
       <!-- Priorité d'action : à réapprovisionner, trié du plus urgent au moins urgent -->
       <div id="reorder-bloc" style="display:none;">
         <h2 class="section-title">⚠️ À réapprovisionner en priorité <span class="count" id="reorder-count"></span></h2>
         <div class="reorder" id="reorder-list"></div>
       </div>
+
+      <!-- Démarque valorisée "Ce que tu as jeté" (chantier C1, 26/07/2026) :
+           lecture seule sur les 30 jours de mouvements déjà chargés
+           ci-dessus (casse/péremption/vol uniquement, jamais les
+           régularisations d'inventaire ni les corrections). Repliée par
+           défaut (lecture mensuelle, pas quotidienne), même motif <details>
+           que l'inventaire ci-dessous. Contenu rempli par dashboard.js
+           (majPertes), calculé et rendu par le module pur app/pertes.js. -->
+      <details class="inv-groupe" id="pertes-groupe" data-groupe="pertes">
+        <summary class="inv-sommaire">💸 Ce que tu as jeté · 30 derniers jours</summary>
+        <div id="pertes-contenu"></div>
+      </details>
 
       <!-- Inventaire complet, regroupé par état en sections dépliables (brique 2) :
            chaque groupe est un <details> natif rempli par dashboard.js. -->

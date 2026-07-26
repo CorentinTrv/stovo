@@ -60,7 +60,16 @@
 // parler.js, reception.js, styles.css modifies. Le geste change, le rempart ne
 // change pas : les lignes lues rejoignent la liste vivante et ne partent en base
 // qu'a la validation groupee.
-const CACHE_NAME = 'stovo-app-v17';
+// v18 (lot P-1 du chantier PILOTAGE, 26/07/2026) : la formule de consommation/
+// reappro (dashboard.js) est extraite dans un module partage. NOUVEAU fichier
+// pilotage.js ajoute au precache ; dashboard.js modifie (aucun changement de
+// chiffre, pur refactor juge par _shared/pilotage_cas.ts).
+// v19 (chantier C1 "ce que tu as jete", 26/07/2026) : demarque valorisee
+// (casse/peremption/vol) sur les 30 jours de mouvements deja charges, zero
+// requete supplementaire. NOUVEAU fichier pertes.js (module pur, calcul +
+// rendu HTML) ajoute au precache ; dashboard.js (jointure mouvements +
+// prix_achat, appel du rendu), index.html et styles.css modifies.
+const CACHE_NAME = 'stovo-app-v19';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -71,6 +80,8 @@ const FICHIERS_COQUILLE = [
   './styles.css',
   './app.js',
   './dashboard.js',
+  './pilotage.js',
+  './pertes.js',
   './stock.js',
   './aide.js',
   './supabase.js',
