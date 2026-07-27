@@ -69,7 +69,10 @@
 // requete supplementaire. NOUVEAU fichier pertes.js (module pur, calcul +
 // rendu HTML) ajoute au precache ; dashboard.js (jointure mouvements +
 // prix_achat, appel du rendu), index.html et styles.css modifies.
-const CACHE_NAME = 'stovo-app-v19';
+// v20 (lot S-5, 27/07/2026) : mode sortie de stock multi-produits sur l'ecran
+// "Parler", jumeau du mode reception. NOUVEAU fichier sortie.js ajoute au
+// precache ; index.html, parler.js, styles.css modifies.
+const CACHE_NAME = 'stovo-app-v20';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -89,6 +92,7 @@ const FICHIERS_COQUILLE = [
   './parler.js',
   './reception.js',
   './inventaire.js',
+  './sortie.js',
   './photo.js',
   './manifest.json',
   './icons/icon.svg',

@@ -405,6 +405,12 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   100% { background: #fff; border-color: var(--border); }
 }
 
+/* Lot S-5 (chantier mode sortie) : ligne dont la sortie dictée dépasse le
+   stock connu (stockApres < 0). Avertissement NON BLOQUANT (§Q1 du plan) :
+   la ligne reste valide et validable, elle est juste signalée. Mêmes
+   variables que .reception-inconnus juste en dessous, aucune couleur neuve. */
+.reception-item.alerte { border-color: var(--warn-border); background: var(--warn-bg); }
+
 /* Produits dictés hors catalogue : signalés en orange, exclus du lot. */
 .reception-inconnus {
   margin-top: 10px; padding: 9px 11px; border-radius: 10px;

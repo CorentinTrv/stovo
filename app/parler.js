@@ -32,6 +32,7 @@
 import { supabase } from './supabase.js';
 import { creerModeReception } from './reception.js';
 import { creerModeInventaire } from './inventaire.js';
+import { creerModeSortie } from './sortie.js';
 import { creerReducteurPhoto } from './photo.js';
 import { getSessionActuelle } from './auth.js';
 
@@ -60,11 +61,12 @@ const btnImport = document.getElementById('btn-import');
 // rendreVerrou par injection, comme ils reçoivent déjà `appeler` et `afficher` :
 // ils ne connaissent toujours ni le DOM réel ni les autres modes, ce qui garde le
 // banc d'essai offline valable.
-let modeCourant = null; // null | 'reception' | 'inventaire'  (+ 'sortie' au lot S-5)
+let modeCourant = null; // null | 'reception' | 'inventaire' | 'sortie'
 
 const boutonsDemarrer = {
   reception: document.getElementById('btn-reception-demarrer'),
   inventaire: document.getElementById('btn-inventaire-demarrer'),
+  sortie: document.getElementById('btn-sortie-demarrer'),
 };
 
 // Masque les boutons « Démarrer » de tous les modes SAUF celui passé (null =
@@ -84,6 +86,7 @@ function majBoutonsDemarrer(modeActif) {
 const MESSAGES_VERROU = {
   reception: 'Tu as une réception en cours. Termine-la ou abandonne-la d\'abord.',
   inventaire: 'Tu as un inventaire en cours. Termine-le ou abandonne-le d\'abord.',
+  sortie: 'Tu as une sortie en cours. Termine-la ou abandonne-la d\'abord.',
 };
 
 // Renvoie false si un AUTRE mode détient déjà le verrou, et explique alors le
@@ -184,6 +187,15 @@ formParler.addEventListener('submit', async (evenement) => {
         await modeInventaire.compter(texte);
         btnEnvoyer.textContent = 'Compter';
         champTexte.value = '';
+        return;
+      }
+      break;
+
+    case 'sortie':
+      if (modeSortie.estEnSortie()) {
+        btnEnvoyer.textContent = 'Ajout…';
+        await modeSortie.ajouterLigne(texte);
+        btnEnvoyer.textContent = 'Ajouter';
         return;
       }
       break;
@@ -339,14 +351,49 @@ const modeInventaire = creerModeInventaire({
   rendreVerrou,
 });
 
+// --- Mode sortie de stock multi-produits (chantier S, lot S-5) ---
+// Même montage que la réception et l'inventaire : la logique vit dans
+// sortie.js (module isolé, testable au banc offline). Ici on lui injecte le
+// vrai Supabase et le vrai DOM. Les kinds sortie-* utilisent le même
+// transport que reception-*/inventaire-* (même lecture du corps sur un 400)
+// et renvoient { reply, sortie } (et non { reply, session }).
+const modeSortie = creerModeSortie({
+  elements: {
+    demarrer: document.getElementById('btn-sortie-demarrer'),
+    panneau: document.getElementById('sortie-panneau'),
+    titreTotal: document.getElementById('sortie-total'),
+    liste: document.getElementById('sortie-liste'),
+    inconnus: document.getElementById('sortie-inconnus'),
+    actions: document.getElementById('sortie-actions'),
+    valider: document.getElementById('btn-sortie-valider'),
+    abandon: document.getElementById('btn-sortie-abandon'),
+    reprise: document.getElementById('sortie-reprise'),
+    repriseTexte: document.getElementById('sortie-reprise-texte'),
+    reprendre: document.getElementById('btn-sortie-reprendre'),
+    repriseAbandon: document.getElementById('btn-sortie-reprise-abandon'),
+    champ: champTexte,
+    boutonEnvoyer: btnEnvoyer,
+    boutonImport: btnImport,
+    confirmation: zoneConfirmation,
+  },
+  appeler: appelerReceptionApi,
+  confirmer: (message) => globalThis.confirm(message),
+  afficher: (texte) => { zoneReponse.textContent = texte; },
+  doc: document,
+  // Lot S-0 : exclusivité des modes (voir le bloc verrou en haut de ce fichier).
+  prendreVerrou,
+  rendreVerrou,
+});
+
 // Reprise : si une réception a été laissée en cours (app fermée en plein milieu),
 // on la fait remonter au chargement, une fois la session confirmée (l'appel
 // reception-etat exige un JWT valide). Sans session, on ne tente rien.
-// Même chose pour un inventaire interrompu (CM-C).
+// Même chose pour un inventaire interrompu (CM-C) et pour une sortie (lot S-5).
 getSessionActuelle().then((session) => {
   if (session) {
     modeReception.verifierReprise();
     modeInventaire.verifierReprise();
+    modeSortie.verifierReprise();
   }
 });
 

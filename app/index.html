@@ -303,6 +303,47 @@
           <button class="btn-reception-secondaire" type="button" id="btn-reception-abandon">Abandonner</button>
         </div>
 
+        <!-- ===== Mode sortie de stock (chantier S, lot S-5) =====
+             Jumeau du bloc réception ci-dessus : « La voix saisit, l'écran
+             contrôle ». Toute la logique est dans sortie.js (instancié par
+             parler.js). Ces blocs sont masqués tant qu'aucune sortie n'est en
+             cours. Le signe MOINS devant la quantité (posé par sortie.js) est
+             le repère visuel qui distingue une sortie d'une réception au
+             premier coup d'œil. Pas de bloc photo : la sortie n'a pas de bon
+             de livraison à lire. -->
+
+        <!-- Bannière de reprise : affichée au chargement si une sortie a été
+             laissée en cours (sortie.js -> sortie-etat). -->
+        <div class="reception-reprise" id="sortie-reprise" hidden>
+          <p class="reception-reprise-texte" id="sortie-reprise-texte"></p>
+          <div class="reception-reprise-actions">
+            <button class="btn-reception-primaire" type="button" id="btn-sortie-reprendre">Reprendre</button>
+            <button class="btn-reception-secondaire" type="button" id="btn-sortie-reprise-abandon">Abandonner</button>
+          </div>
+        </div>
+
+        <!-- Panneau de la sortie en cours (liste vivante). Masqué hors session. -->
+        <section class="reception-panneau" id="sortie-panneau" hidden>
+          <div class="reception-entete">
+            <h2 class="reception-titre">Sortie de stock</h2>
+            <span class="reception-total" id="sortie-total">0 ligne</span>
+          </div>
+          <div class="reception-liste" id="sortie-liste"></div>
+          <!-- Produits dictés absents du catalogue : signalés, exclus du lot (transitoires). -->
+          <p class="reception-inconnus" id="sortie-inconnus" hidden></p>
+        </section>
+
+        <!-- Entrée en mode sortie (visible hors session). Bascule purement
+             front : la session « naît » côté serveur à la première ligne dictée. -->
+        <button class="btn-reception-demarrer" type="button" id="btn-sortie-demarrer">➖ Démarrer une sortie</button>
+
+        <!-- Actions de clôture (visibles seulement en session) : UNE validation
+             groupée (le rempart Oui/Non déplacé ici) ou l'abandon. -->
+        <div class="reception-actions" id="sortie-actions" hidden>
+          <button class="btn-reception-primaire" type="button" id="btn-sortie-valider" disabled>Valider la sortie</button>
+          <button class="btn-reception-secondaire" type="button" id="btn-sortie-abandon">Abandonner</button>
+        </div>
+
         <!-- ============ Inventaire complet guidé (CM-C, 25/07/2026) ============
              L'écran présente les produits UN PAR UN : le nom est porté par
              l'écran, donc on annonce le CHIFFRE SEUL. Le rempart de confirmation
