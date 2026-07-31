@@ -216,7 +216,8 @@
   <!-- ================= Écran « Parler » (clavier lot 10b + micro on-device lot 11a) ================= -->
   <div id="ecran-parler" class="ecran">
     <div class="parler-page">
-      <div class="parler-centre">
+      <main class="parler-centre">
+        <h1 class="sr-only">Parler à Stovo</h1>
 
         <!-- Message du bot (dernière réponse de pwa-api, ou message d'accueil par défaut) -->
         <div class="parler-reponse" id="parler-reponse" aria-live="polite" aria-atomic="true">Écris ce que tu as fait, par exemple : j'ai reçu 10 pâtes.</div>
@@ -408,7 +409,7 @@
         <!-- Etat du micro (ecoute / erreur / indisponible), rempli par parler.js -->
         <p id="parler-etat" class="parler-etat" aria-live="assertive" hidden></p>
         <p class="parler-texte">Appuie sur le micro et parle, ou écris au clavier.</p>
-      </div>
+      </main>
     </div>
   </div>
 
@@ -420,15 +421,15 @@
        Division des écrans : Tableau de bord = piloter, Stock = trouver,
        Parler = agir. -->
   <div id="ecran-stock" class="ecran">
-    <div class="stock-page wrap">
-      <h2 class="section-title"><span aria-hidden="true">📦</span> Stock <span class="count" id="stock-count"></span></h2>
+    <main class="stock-page wrap">
+      <h1 class="section-title"><span aria-hidden="true">📦</span> Stock <span class="count" id="stock-count"></span></h1>
       <input type="search" id="stock-recherche" class="stock-recherche"
              placeholder="Rechercher un produit…" autocomplete="off"
              aria-label="Rechercher un produit" />
       <div class="stock-liste" id="stock-liste">
         <div class="state">Chargement…</div>
       </div>
-    </div>
+    </main>
   </div>
 
   <!-- ================= Écran « Aide » (25/07/2026) =================
@@ -439,15 +440,15 @@
        le recopie dans le champ de l'écran « Parler » (sans jamais l'envoyer)
        et bascule sur cet écran. -->
   <div id="ecran-aide" class="ecran">
-    <div class="aide-page wrap">
-      <h2 class="section-title"><span aria-hidden="true">💡</span> Aide et astuces</h2>
+    <main class="aide-page wrap">
+      <h1 class="section-title"><span aria-hidden="true">💡</span> Aide et astuces</h1>
       <p class="aide-intro">
         Comment marche Stovo, tout ce que tu peux lui dire, et les pièges à éviter.
       </p>
       <div class="aide-liste" id="aide-liste">
         <div class="state">Chargement…</div>
       </div>
-    </div>
+    </main>
   </div>
 
   <!-- ================= Navigation à 4 onglets ================= -->
