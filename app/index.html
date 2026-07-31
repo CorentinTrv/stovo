@@ -142,11 +142,12 @@
       </section>
 
       <!-- Valeur du stock (trésorerie immobilisée), en bandeau dédié pour bien la mettre en avant -->
-      <section class="stock-value" title="Valeur au prix d'achat dicté (pas une valorisation comptable type coût moyen pondéré)">
+      <section class="stock-value">
         <div class="sv-label">Valeur du stock <span class="sv-note">au prix d'achat</span></div>
         <div class="sv-amount" id="kpi-valeur">—</div>
         <div class="sv-sub" id="kpi-valeur-sub"></div>
       </section>
+      <p class="sv-avertissement">Au prix d'achat dicté, pas une valorisation comptable.</p>
 
       <!-- Chiffre de synthèse du stock dormant (LOT P-5, 26/07/2026,
            optionnel "coupable sans regret") : rempli par dashboard.js
@@ -173,7 +174,7 @@
 
       <!-- Priorité d'action : à réapprovisionner, trié du plus urgent au moins urgent -->
       <div id="reorder-bloc" style="display:none;">
-        <h2 class="section-title">⚠️ À réapprovisionner en priorité <span class="count" id="reorder-count"></span></h2>
+        <h2 class="section-title"><span aria-hidden="true">⚠️</span> À réapprovisionner en priorité <span class="count" id="reorder-count"></span></h2>
         <div class="reorder" id="reorder-list"></div>
       </div>
 
@@ -185,19 +186,19 @@
            que l'inventaire ci-dessous. Contenu rempli par dashboard.js
            (majPertes), calculé et rendu par le module pur app/pertes.js. -->
       <details class="inv-groupe" id="pertes-groupe" data-groupe="pertes">
-        <summary class="inv-sommaire">💸 Ce que tu as jeté · 30 derniers jours</summary>
+        <summary class="inv-sommaire"><span aria-hidden="true">💸</span> Ce que tu as jeté · 30 derniers jours</summary>
         <div id="pertes-contenu"></div>
       </details>
 
       <!-- Inventaire complet, regroupé par état en sections dépliables (brique 2) :
            chaque groupe est un <details> natif rempli par dashboard.js. -->
-      <h2 class="section-title">📦 Inventaire complet <span class="count" id="inv-count"></span></h2>
+      <h2 class="section-title"><span aria-hidden="true">📦</span> Inventaire complet <span class="count" id="inv-count"></span></h2>
       <div class="inv-groupes" id="inv-grid">
         <div class="state">Chargement de l'inventaire…</div>
       </div>
 
       <!-- Derniers mouvements -->
-      <h2 class="section-title">🕑 Derniers mouvements</h2>
+      <h2 class="section-title"><span aria-hidden="true">🕑</span> Derniers mouvements</h2>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Quand</th><th>Produit</th><th>Mouvement</th><th>Source</th></tr></thead>
@@ -218,7 +219,7 @@
       <div class="parler-centre">
 
         <!-- Message du bot (dernière réponse de pwa-api, ou message d'accueil par défaut) -->
-        <div class="parler-reponse" id="parler-reponse">Écris ce que tu as fait, par exemple : j'ai reçu 10 pâtes.</div>
+        <div class="parler-reponse" id="parler-reponse" aria-live="polite" aria-atomic="true">Écris ce que tu as fait, par exemple : j'ai reçu 10 pâtes.</div>
 
         <!-- Boutons Oui/Non : cachés par défaut, affichés seulement quand pwa-api renvoie enAttente=true -->
         <div class="parler-confirmation" id="parler-confirmation" hidden>
@@ -247,11 +248,11 @@
         <section class="reception-panneau" id="reception-panneau" hidden>
           <div class="reception-entete">
             <h2 class="reception-titre">Réception en cours</h2>
-            <span class="reception-total" id="reception-total">0 ligne</span>
+            <span class="reception-total" id="reception-total" aria-live="polite">0 ligne</span>
           </div>
           <div class="reception-liste" id="reception-liste"></div>
           <!-- Produits dictés absents du catalogue : signalés, exclus du lot (transitoires). -->
-          <p class="reception-inconnus" id="reception-inconnus" hidden></p>
+          <p class="reception-inconnus" id="reception-inconnus" aria-live="polite" hidden></p>
 
           <!--
             Lot P-3 (25/07/2026) : lire le bon de livraison en le PHOTOGRAPHIANT.
@@ -277,7 +278,7 @@
 
         <!-- Déclaration au clavier -->
         <form id="form-parler" class="parler-form">
-          <input type="text" id="champ-parler" name="texte" placeholder="Ex. : j'ai reçu 10 pâtes" autocomplete="off" />
+          <input type="text" id="champ-parler" name="texte" placeholder="Ex. : j'ai reçu 10 pâtes" autocomplete="off" aria-label="Ce que tu as fait" />
           <button type="submit" class="btn-envoyer" id="btn-envoyer">Envoyer</button>
         </form>
 
@@ -326,11 +327,11 @@
         <section class="reception-panneau" id="sortie-panneau" hidden>
           <div class="reception-entete">
             <h2 class="reception-titre">Sortie de stock</h2>
-            <span class="reception-total" id="sortie-total">0 ligne</span>
+            <span class="reception-total" id="sortie-total" aria-live="polite">0 ligne</span>
           </div>
           <div class="reception-liste" id="sortie-liste"></div>
           <!-- Produits dictés absents du catalogue : signalés, exclus du lot (transitoires). -->
-          <p class="reception-inconnus" id="sortie-inconnus" hidden></p>
+          <p class="reception-inconnus" id="sortie-inconnus" aria-live="polite" hidden></p>
         </section>
 
         <!-- Entrée en mode sortie (visible hors session). Bascule purement
@@ -367,7 +368,7 @@
           <div id="inventaire-parcours" hidden>
             <div class="reception-entete">
               <h2 class="reception-titre">Inventaire en cours</h2>
-              <span class="reception-total" id="inventaire-progression"></span>
+              <span class="reception-total" id="inventaire-progression" aria-live="polite"></span>
             </div>
             <p class="inventaire-nom" id="inventaire-nom-produit"></p>
             <p class="inventaire-stock" id="inventaire-stock-theorique"></p>
@@ -405,7 +406,7 @@
         -->
         <button class="btn-micro" type="button" id="btn-micro" disabled aria-label="Micro">🎙️</button>
         <!-- Etat du micro (ecoute / erreur / indisponible), rempli par parler.js -->
-        <p id="parler-etat" class="parler-etat" hidden></p>
+        <p id="parler-etat" class="parler-etat" aria-live="assertive" hidden></p>
         <p class="parler-texte">Appuie sur le micro et parle, ou écris au clavier.</p>
       </div>
     </div>
@@ -420,7 +421,7 @@
        Parler = agir. -->
   <div id="ecran-stock" class="ecran">
     <div class="stock-page wrap">
-      <h2 class="section-title">📦 Stock <span class="count" id="stock-count"></span></h2>
+      <h2 class="section-title"><span aria-hidden="true">📦</span> Stock <span class="count" id="stock-count"></span></h2>
       <input type="search" id="stock-recherche" class="stock-recherche"
              placeholder="Rechercher un produit…" autocomplete="off"
              aria-label="Rechercher un produit" />
@@ -439,7 +440,7 @@
        et bascule sur cet écran. -->
   <div id="ecran-aide" class="ecran">
     <div class="aide-page wrap">
-      <h2 class="section-title">💡 Aide et astuces</h2>
+      <h2 class="section-title"><span aria-hidden="true">💡</span> Aide et astuces</h2>
       <p class="aide-intro">
         Comment marche Stovo, tout ce que tu peux lui dire, et les pièges à éviter.
       </p>
@@ -453,8 +454,8 @@
   <!-- Libellé du 1er onglet raccourci en « Pilotage » à l'ajout du 4e
        (25/07) : 4 colonnes doivent tenir sur la largeur d'un téléphone.
        Le sens ne change pas (division gravée : piloter / trouver / agir). -->
-  <nav class="nav-bar">
-    <button class="nav-item actif" type="button" data-onglet="dashboard">
+  <nav class="nav-bar" aria-label="Navigation principale">
+    <button class="nav-item actif" type="button" data-onglet="dashboard" aria-current="page">
       <span class="nav-icone" aria-hidden="true">📊</span>
       <span class="nav-label">Pilotage</span>
     </button>
