@@ -72,7 +72,12 @@
 // v20 (lot S-5, 27/07/2026) : mode sortie de stock multi-produits sur l'ecran
 // "Parler", jumeau du mode reception. NOUVEAU fichier sortie.js ajoute au
 // precache ; index.html, parler.js, styles.css modifies.
-const CACHE_NAME = 'stovo-app-v20';
+// v21 (lot A1 accessibilite, 31/07/2026) : regions live (aria-live), aria-label
+// du champ principal, contrastes remontes au-dessus de 4,5:1, cible tactile de
+// 44 px sur la croix de suppression, prefers-reduced-motion. index.html,
+// styles.css, app.js modifies. Pas de nouveau fichier a precacher, seulement
+// du contenu qui change.
+const CACHE_NAME = 'stovo-app-v21';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
