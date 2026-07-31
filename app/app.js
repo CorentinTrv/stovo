@@ -120,7 +120,13 @@ function afficherOnglet(nomOnglet) {
     element.classList.toggle('ecran-actif', nom === nomOnglet);
   }
   ONGLETS.forEach((bouton) => {
-    bouton.classList.toggle('actif', bouton.dataset.onglet === nomOnglet);
+    const estActif = bouton.dataset.onglet === nomOnglet;
+    bouton.classList.toggle('actif', estActif);
+    if (estActif) {
+      bouton.setAttribute('aria-current', 'page');
+    } else {
+      bouton.removeAttribute('aria-current');
+    }
   });
 }
 
