@@ -22,11 +22,14 @@
   --danger: #dc2626;
   --danger-bg: #fef2f2;
   --danger-border: #fecaca;
+  --danger-text: #b91c1c;
   --warn: #ea580c;
   --warn-bg: #fff7ed;
   --warn-border: #fed7aa;
+  --warn-text: #c2410c;
   --ok: #0d9488;
   --ok-bg: #f0fdfa;
+  --brand-light: #99f6e4;
 
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, .04);
   --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 10px 30px rgba(15, 23, 42, .05);
@@ -88,26 +91,26 @@ header {
 .kpi .k-value { font-size: 32px; font-weight: 800; line-height: 1.1; margin-top: 6px; }
 .kpi.danger .k-value { color: var(--danger); }
 .kpi.warn .k-value { color: var(--warn); }
-.kpi .k-sub { font-size: 12px; color: var(--muted-light); margin-top: 2px; }
+.kpi .k-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
 /* ---------- Bandeau valeur du stock (ROI) ---------- */
 .stock-value {
-  background: var(--card); border: 1px solid #99f6e4; border-left: 4px solid var(--brand);
+  background: var(--card); border: 1px solid var(--brand-light); border-left: 4px solid var(--brand);
   border-radius: var(--radius); box-shadow: var(--shadow);
   padding: 16px 22px; margin: 16px 0 8px;
   display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px;
 }
 .stock-value .sv-label { font-size: 13px; color: var(--muted); font-weight: 600; }
-.stock-value .sv-note { color: var(--muted-light); font-weight: 500; }
+.stock-value .sv-note { color: var(--muted); font-weight: 500; }
 .stock-value .sv-amount { font-size: 30px; font-weight: 800; color: var(--brand-dark); line-height: 1.1; }
-.stock-value .sv-sub { font-size: 12.5px; color: var(--muted-light); margin-left: auto; }
+.stock-value .sv-sub { font-size: 12.5px; color: var(--muted); margin-left: auto; }
 @media (max-width: 560px) { .stock-value .sv-sub { margin-left: 0; flex-basis: 100%; } }
 
 /* ---------- Phrase de verdict (la réponse en un coup d'œil, avant tout scroll) ---------- */
 .verdict { font-size: 15.5px; font-weight: 700; margin: 14px 0 2px; padding: 12px 18px; border-radius: 12px; }
-.verdict.v-ok { color: var(--brand-dark); background: var(--ok-bg); border: 1px solid #99f6e4; }
-.verdict.v-warn { color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-border); }
-.verdict.v-crit { color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger-border); }
+.verdict.v-ok { color: var(--brand-dark); background: var(--ok-bg); border: 1px solid var(--brand-light); }
+.verdict.v-warn { color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); }
+.verdict.v-crit { color: var(--danger-text); background: var(--danger-bg); border: 1px solid var(--danger-border); }
 
 /* ---------- Titres de section ---------- */
 .section-title { font-size: 17px; font-weight: 700; margin: 30px 0 14px; display: flex; align-items: center; gap: 10px; }
@@ -133,7 +136,7 @@ header {
 .reorder-item .ri-cover { font-size: 19px; font-weight: 800; }
 .reorder-item .ri-cover.c-crit { color: var(--danger); }
 .reorder-item .ri-cover.c-warn { color: var(--warn); }
-.reorder-item .ri-coverlabel { font-size: 11.5px; color: var(--muted-light); text-transform: uppercase; letter-spacing: .3px; }
+.reorder-item .ri-coverlabel { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
 .reorder-item .ri-qty { font-size: 22px; font-weight: 800; color: var(--danger); cursor: help; }
 .reorder-item .ri-warning { font-size: 12.5px; font-weight: 600; color: var(--danger); margin-top: 6px; }
 
@@ -151,12 +154,12 @@ header {
 .card .c-hero.h-crit { color: var(--danger); }
 .card .c-hero.h-warn { color: var(--warn); }
 .card .c-hero.h-ok { color: var(--ok); }
-.card .c-hero.h-muted { color: var(--muted-light); font-weight: 700; font-size: 16px; }
+.card .c-hero.h-muted { color: var(--muted); font-weight: 700; font-size: 16px; }
 /* Stock brut, rétrogradé en information secondaire */
 .card .c-stockline { font-size: 13.5px; color: var(--muted); margin-bottom: 12px; }
 .card .c-stockline b { color: var(--text); font-size: 15px; font-weight: 800; }
 /* Détail (prix, valeur, conso, point de commande) : petit, gris, en pied de carte */
-.card .c-detail { font-size: 12px; color: var(--muted-light); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.7; }
+.card .c-detail { font-size: 12px; color: var(--muted); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.7; }
 .card .c-detail b { color: var(--muted); font-weight: 700; }
 
 /* jauge de niveau : repère du seuil au milieu (50%) */
@@ -167,7 +170,7 @@ header {
 
 /* badges / pills */
 .badge { font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
-.badge.ok { color: var(--ok); background: var(--ok-bg); border: 1px solid #99f6e4; }
+.badge.ok { color: var(--ok); background: var(--ok-bg); border: 1px solid var(--brand-light); }
 .badge.danger { color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger-border); }
 .badge.warn { color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-border); }
 
@@ -181,17 +184,17 @@ tbody tr:hover { background: #fafbfc; }
 .pill { font-weight: 700; font-size: 13.5px; }
 .pill.entree { color: var(--ok); }
 .pill.sortie { color: var(--warn); }
-.src { font-size: 12px; color: var(--muted-light); }
+.src { font-size: 12px; color: var(--muted); }
 /* étiquette des mouvements de régularisation (motif), pour les distinguer d'une vente */
 .tag-motif { font-size: 11px; font-weight: 700; color: #475569; background: #eef2f7; border: 1px solid var(--border); padding: 1px 8px; border-radius: 999px; margin-left: 7px; vertical-align: middle; }
-.tag-auto { font-size: 10.5px; font-weight: 700; color: var(--brand-dark); background: var(--ok-bg); border: 1px solid #99f6e4; padding: 0 7px; border-radius: 999px; vertical-align: middle; cursor: help; }
+.tag-auto { font-size: 10.5px; font-weight: 700; color: var(--brand-dark); background: var(--ok-bg); border: 1px solid var(--brand-light); padding: 0 7px; border-radius: 999px; vertical-align: middle; cursor: help; }
 .tag-fixe { font-size: 10.5px; font-weight: 700; color: var(--muted); background: #f1f5f9; border: 1px solid var(--border); padding: 0 7px; border-radius: 999px; vertical-align: middle; cursor: help; }
 
 /* ---------- États ---------- */
 .state { padding: 38px; text-align: center; color: var(--muted); }
 .state.error { color: var(--danger); }
 
-footer { margin-top: 36px; font-size: 12.5px; color: var(--muted-light); text-align: center; }
+footer { margin-top: 36px; font-size: 12.5px; color: var(--muted); text-align: center; }
 
 /* ---------- Mobile ---------- */
 @media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
@@ -223,13 +226,16 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   display: flex; align-items: center; justify-content: center; padding: 24px;
 }
 .parler-centre { text-align: center; max-width: 340px; width: 100%; }
+/* A-6 (audit accessibilité 31/07) : sur grand écran, 340px bride tout le
+   panneau de réception/sortie et l'inventaire (noms de produits tronqués). */
+@media (min-width: 700px) { .parler-centre { max-width: 640px; } }
 .btn-micro {
   width: 90px; height: 90px; border-radius: 999px;
   background: #e2e8f0; border: 2px solid var(--border); color: var(--muted-light);
   font-size: 36px; display: grid; place-items: center; margin: 24px auto 8px;
   cursor: not-allowed;
 }
-.parler-texte { color: var(--muted-light); font-size: 12.5px; }
+.parler-texte { color: var(--muted); font-size: 12.5px; }
 
 /* =====================================================================
    Micro on-device (lot 11a) — activé par parler.js seulement si l'API
@@ -238,7 +244,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    ===================================================================== */
 
 .btn-micro:not(:disabled) {
-  background: var(--ok-bg); border-color: #99f6e4; color: var(--brand-dark);
+  background: var(--ok-bg); border-color: var(--brand-light); color: var(--brand-dark);
   cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s;
 }
 .btn-micro:not(:disabled):active { transform: translateY(1px); }
@@ -277,7 +283,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 }
 .btn-confirmation:active { transform: translateY(1px); }
 .btn-confirmation:disabled { opacity: .6; cursor: wait; }
-.btn-oui { background: var(--ok-bg); border: 1px solid #99f6e4; color: var(--brand-dark); }
+.btn-oui { background: var(--ok-bg); border: 1px solid var(--brand-light); color: var(--brand-dark); }
 .btn-non { background: var(--danger-bg); border: 1px solid var(--danger-border); color: var(--danger); }
 
 /* Champ texte + bouton Envoyer, sur une ligne. */
@@ -310,7 +316,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   background: #fff; color: var(--muted); cursor: pointer;
   transition: background .15s, border-color .15s, transform .1s;
 }
-.btn-import:hover { background: var(--ok-bg); border-color: #99f6e4; color: var(--brand-dark); }
+.btn-import:hover { background: var(--ok-bg); border-color: var(--brand-light); color: var(--brand-dark); }
 .btn-import:active { transform: translateY(1px); }
 .btn-import:disabled { opacity: .7; cursor: wait; }
 
@@ -327,7 +333,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   background: #fff; color: var(--muted); cursor: pointer;
   transition: background .15s, border-color .15s, transform .1s;
 }
-.btn-photo-bl:hover { background: var(--ok-bg); border-color: #99f6e4; color: var(--brand-dark); }
+.btn-photo-bl:hover { background: var(--ok-bg); border-color: var(--brand-light); color: var(--brand-dark); }
 .btn-photo-bl:active { transform: translateY(1px); }
 .btn-photo-bl:disabled { opacity: .7; cursor: wait; }
 
@@ -336,7 +342,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    pas une décoration. */
 .reception-lecture {
   margin-top: 12px; padding: 10px 12px;
-  border: 1px solid var(--border); border-left: 3px solid var(--brand, #14b8a6);
+  border: 1px solid var(--border); border-left: 3px solid var(--brand);
   border-radius: 8px; background: #fafafa;
 }
 .lecture-titre {
@@ -350,7 +356,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .lecture-item:last-child { margin-bottom: 0; }
 .lecture-source { color: var(--muted); word-break: break-word; }
 .lecture-fleche { color: var(--muted); }
-.lecture-cible { font-weight: 700; color: var(--brand-dark, #0f766e); }
+.lecture-cible { font-weight: 700; color: var(--brand-dark); }
 
 /* =====================================================================
    Mode réception multi-produits (N1, lots FR-4 + FR-5) — écran de
@@ -366,7 +372,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   background: var(--ok-bg); color: var(--brand-dark); cursor: pointer;
   transition: background .15s, border-color .15s, transform .1s;
 }
-.btn-reception-demarrer:hover { background: #ccfbf1; border-color: #99f6e4; }
+.btn-reception-demarrer:hover { background: #ccfbf1; border-color: var(--brand-light); }
 .btn-reception-demarrer:active { transform: translateY(1px); }
 
 /* Panneau de la réception en cours (la liste vivante). */
@@ -390,18 +396,28 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ri-qte { font-size: 14.5px; font-weight: 800; color: var(--brand-dark); white-space: nowrap; }
 .ri-retirer {
+  position: relative;
   flex: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
-  border: 1px solid var(--danger-border); background: var(--danger-bg); color: var(--danger);
+  border: 1px solid var(--danger-border); background: var(--danger-bg); color: var(--danger-text);
   font-size: 14px; line-height: 1; display: grid; place-items: center;
   transition: background .12s, transform .1s;
 }
 .ri-retirer:hover { background: #fee2e2; }
 .ri-retirer:active { transform: translateY(1px); }
+/* Zone tactile agrandie à 44x44 px (A-5, audit accessibilité 31/07) : ce
+   bouton supprime une ligne de réception/sortie en cours, usage réel debout
+   une main. Le pseudo-élément agrandit la cible sans changer la taille
+   visible du bouton (28x28 px). */
+.ri-retirer::after {
+  content: ""; position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 44px; height: 44px;
+}
 
 /* Flash bref quand une ligne vient d'être fusionnée (dictée à nouveau). */
 .reception-item.fusionnee { animation: flash-fusion 1s ease-out 1; }
 @keyframes flash-fusion {
-  0% { background: var(--ok-bg); border-color: #99f6e4; }
+  0% { background: var(--ok-bg); border-color: var(--brand-light); }
   100% { background: #fff; border-color: var(--border); }
 }
 
@@ -414,7 +430,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 /* Produits dictés hors catalogue : signalés en orange, exclus du lot. */
 .reception-inconnus {
   margin-top: 10px; padding: 9px 11px; border-radius: 10px;
-  background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn);
+  background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text);
   font-size: 13px; line-height: 1.4;
 }
 
@@ -444,7 +460,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius);
   padding: 14px 16px; margin-bottom: 16px; text-align: left;
 }
-.reception-reprise-texte { font-size: 14px; font-weight: 600; color: var(--warn); margin-bottom: 10px; }
+.reception-reprise-texte { font-size: 14px; font-weight: 600; color: var(--warn-text); margin-bottom: 10px; }
 .reception-reprise-actions { display: flex; gap: 12px; }
 .reception-reprise-actions .btn-reception-primaire { flex: 1; }
 
@@ -507,7 +523,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .login-brand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 6px; }
 .login-brand .logo {
   width: 44px; height: 44px; border-radius: 13px;
-  background: var(--ok-bg); border: 1px solid #99f6e4; color: var(--brand-dark);
+  background: var(--ok-bg); border: 1px solid var(--brand-light); color: var(--brand-dark);
   display: grid; place-items: center; font-size: 22px; font-weight: 800;
 }
 .login-brand h1 { font-size: 24px; font-weight: 800; letter-spacing: -.5px; color: var(--text); }
@@ -535,7 +551,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .login-erreur {
   margin-top: 14px; padding: 10px 14px; border-radius: 10px;
   font-size: 13.5px; font-weight: 600;
-  color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger-border);
+  color: var(--danger-text); background: var(--danger-bg); border: 1px solid var(--danger-border);
 }
 
 @media (max-width: 420px) {
@@ -568,7 +584,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .matin-titre { font-size: 17px; font-weight: 800; }
 .matin-copier {
   font-family: inherit; font-size: 12.5px; font-weight: 700; white-space: nowrap;
-  padding: 8px 13px; border-radius: 10px; border: 1px solid #99f6e4;
+  padding: 8px 13px; border-radius: 10px; border: 1px solid var(--brand-light);
   background: var(--ok-bg); color: var(--brand-dark); cursor: pointer;
   transition: background .15s, transform .1s;
 }
@@ -588,7 +604,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .matin-item:first-child { border-top: none; }
 .mi-nom { font-weight: 700; font-size: 14.5px; }
 .mi-qte { font-weight: 800; font-size: 14.5px; color: var(--danger); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.mi-qte-label { font-weight: 600; font-size: 11px; color: var(--muted-light); text-transform: uppercase; letter-spacing: .3px; }
+.mi-qte-label { font-weight: 600; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
 .mi-cov { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
 .mi-cov.urgent { color: var(--danger); font-weight: 700; }
 
@@ -599,7 +615,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   background: none; border: none; padding: 0; margin: 0;
   font-family: inherit; color: inherit; cursor: pointer; text-align: left;
 }
-.matin-chevron { font-size: 12px; color: var(--muted-light); transition: transform .15s; }
+.matin-chevron { font-size: 12px; color: var(--muted); transition: transform .15s; }
 .matin.replie .matin-chevron { transform: rotate(-90deg); }
 .matin.replie .matin-liste { display: none; }
 
@@ -614,7 +630,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 }
 .inv-sommaire::-webkit-details-marker { display: none; }
 .inv-sommaire::before {
-  content: '▸'; color: var(--muted-light); font-size: 12px; transition: transform .15s;
+  content: '▸'; color: var(--muted); font-size: 12px; transition: transform .15s;
 }
 .inv-groupe[open] > .inv-sommaire::before { transform: rotate(90deg); }
 .inv-sym-commander { color: var(--danger); }
@@ -680,7 +696,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 /* Chevron a droite, tourne quand la section est ouverte. */
 .aide-titre { flex: 1; }
 .aide-sommaire::after {
-  content: '▾'; color: var(--muted-light); font-size: 13px;
+  content: '▾'; color: var(--muted); font-size: 13px;
   transition: transform .15s;
 }
 .aide-section[open] > .aide-sommaire::after { transform: rotate(180deg); }
@@ -744,9 +760,9 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .inventaire-panneau {
   margin-top: 14px;
   padding: 14px;
-  border: 1px solid var(--bordure, #d8ddd6);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--carte, #fff);
+  background: var(--card);
 }
 
 /* Le nom du produit à compter : c'est LE point d'attention de l'écran, donc
@@ -791,7 +807,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .bandeau-pilotage .bp-texte { font-size: 13.5px; color: var(--muted); margin-bottom: 8px; line-height: 1.5; }
 .bandeau-pilotage .bp-bouton {
   font-family: inherit; font-size: 13px; font-weight: 700;
-  padding: 9px 16px; border-radius: 10px; border: 1px solid #99f6e4;
+  padding: 9px 16px; border-radius: 10px; border: 1px solid var(--brand-light);
   background: var(--ok-bg); color: var(--brand-dark); cursor: pointer;
 }
 
@@ -799,7 +815,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    dormant, sous le bloc "Valeur du stock". */
 .dormant-resume {
   font-size: 12.5px;
-  color: var(--muted-light);
+  color: var(--muted);
   margin: -2px 0 8px;
   padding: 0 2px;
 }
@@ -817,12 +833,12 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .pertes-vide { padding: 10px 2px 4px; color: var(--muted); font-size: 14px; }
 
 .pertes-total { font-size: 26px; font-weight: 800; color: var(--brand-dark); margin: 10px 0 8px; line-height: 1.15; }
-.pertes-total .pertes-partiel { font-size: 13px; font-weight: 600; color: var(--muted-light); margin-left: 4px; }
+.pertes-total .pertes-partiel { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 4px; }
 
 .pertes-motifs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .pertes-motif {
   display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600;
-  background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn);
+  background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text);
   padding: 5px 12px; border-radius: 999px;
 }
 .pertes-motif .pm-nom { text-transform: capitalize; }
@@ -838,7 +854,57 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .pertes-ligne .pp-nom { font-weight: 700; font-size: 14.5px; }
 .pertes-ligne .pp-detail { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
 .pertes-ligne .pp-right { text-align: right; white-space: nowrap; font-size: 15px; font-weight: 700; }
-.pertes-ligne .pp-sansprix { font-size: 12.5px; color: var(--muted-light); font-weight: 500; font-style: italic; }
+.pertes-ligne .pp-sansprix { font-size: 12.5px; color: var(--muted); font-weight: 500; font-style: italic; }
 
-.pertes-note { font-size: 12.5px; color: var(--muted-light); margin-top: 10px; }
-.pertes-methode { font-size: 11.5px; color: var(--muted-light); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.pertes-note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+.pertes-methode { font-size: 11.5px; color: var(--muted); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+/* =====================================================================
+   Accessibilité (lot A1, audit Impeccable du 31/07/2026).
+   ===================================================================== */
+
+/* A-9 : l'avertissement "prix d'achat, pas une valorisation comptable"
+   sortait du `title` (invisible sur mobile) vers un paragraphe statique,
+   sous le bandeau "Valeur du stock". Discret : ce n'est pas l'info
+   principale de l'écran, juste le garde-fou qui évite un contresens. */
+.sv-avertissement {
+  font-size: 12.5px; color: var(--muted);
+  margin: -4px 0 8px; padding: 0 2px;
+}
+
+/* A-7 : aucune règle prefers-reduced-motion n'existait alors que la
+   pulsation du micro en écoute (pulse-micro) tourne en boucle infinie.
+   Le micro reste reconnaissable sans le mouvement (fond --danger-bg et
+   bordure --danger-border déjà posés par .btn-micro.ecoute ci-dessus) :
+   seule l'animation disparaît, jamais le changement de couleur.
+   Correctif A-7 bis (31/07/2026) : la première version neutralisait TOUTES
+   les transitions du site (`* { transition-duration: 0.01ms !important; }`),
+   un motif explicitement dénoncé par le référentiel Impeccable car il
+   détruit aussi le retour d'information utile (un bouton qui change de
+   couleur au clic, par exemple). Un utilisateur qui demande moins de
+   mouvement veut supprimer le DÉPLACEMENT et les boucles, pas les fondus.
+   La règle ci-dessous cible donc uniquement : les deux animations en
+   boucle, et le tassement `translateY(1px)` au clic des boutons (état
+   `:active`) + le survol `.card:hover` (`translateY(-1px)`). Les
+   transitions de `background`, `border-color`, `color`, `opacity` et
+   `box-shadow` restent actives partout, aucune n'est touchée ici. */
+@media (prefers-reduced-motion: reduce) {
+  .btn-micro.ecoute { animation: none; }
+  .reception-item.fusionnee { animation: none; }
+  .btn-refresh:active,
+  .btn-envoyer:active,
+  .btn-login:active,
+  .btn-import:active,
+  .btn-photo-bl:active,
+  .btn-confirmation:active,
+  .btn-reception-primaire:active,
+  .btn-reception-secondaire:active,
+  .btn-reception-demarrer:active,
+  .ri-retirer:active,
+  .matin-copier:active,
+  .aide-exemple:active,
+  .nav-item:active,
+  .card:hover {
+    transform: none;
+  }
+}
