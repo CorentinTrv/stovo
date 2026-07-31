@@ -77,7 +77,12 @@
 // 44 px sur la croix de suppression, prefers-reduced-motion. index.html,
 // styles.css, app.js modifies. Pas de nouveau fichier a precacher, seulement
 // du contenu qui change.
-const CACHE_NAME = 'stovo-app-v21';
+// v22 (lot A2 accessibilite, 31/07/2026, seconde passe) : contrastes des
+// boutons pleins et de l'en-tete portes au-dessus de 4,5:1, anneau de focus
+// au clavier, reperes de structure (main et h1) sur les ecrans Stock, Parler
+// et Aide, cibles tactiles a 44 px. index.html, styles.css modifies. Pas de
+// nouveau fichier a precacher.
+const CACHE_NAME = 'stovo-app-v22';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
