@@ -91,7 +91,13 @@
 // de classe de la tuile KPI "Produits suivis" et le debordement horizontal de
 // la ligne du matin. index.html, styles.css, dashboard.js modifies. Pas de
 // nouveau fichier a precacher.
-const CACHE_NAME = 'stovo-app-v23';
+// v24 (lot A4 accessibilite, 01/08/2026) : contraste du bouton micro (WCAG
+// 1.4.11), sa bordure au repos passe a 5:1 et sa bordure en ecoute a 5,91:1
+// contre le fond de page (le 2,08:1 signale par le balayage etait un faux
+// positif : l'emoji n'est pas colore par `color`, et c'etait l'etat
+// desactive, jamais vu). styles.css seul modifie. Pas de nouveau fichier a
+// precacher.
+const CACHE_NAME = 'stovo-app-v24';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,

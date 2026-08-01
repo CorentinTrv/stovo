@@ -247,14 +247,21 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    ===================================================================== */
 
 .btn-micro:not(:disabled) {
-  background: var(--ok-bg); border-color: var(--brand-light); color: var(--brand-dark);
+  /* Correctif contraste du 01/08 : bordure --brand-light mesurée à 1,15:1
+     contre --bg, le bouton actif était quasi invisible (WCAG 1.4.11 exige
+     3:1 pour un composant d'interface). --brand-dark donne ~5:1. */
+  background: var(--ok-bg); border-color: var(--brand-dark); color: var(--brand-dark);
   cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s;
 }
 .btn-micro:not(:disabled):active { transform: translateY(1px); }
 
-/* État "en écoute" : pulsation discrète pour montrer que le micro capte. */
+/* État "en écoute" : pulsation discrète pour montrer que le micro capte.
+   Correctif contraste du 01/08 : --danger-border mesurée à 1,32:1 contre
+   --bg rendait l'état "j'enregistre" moins visible que le repos (5:1) —
+   inversion contre-intuitive. --danger-text donne ~5,9:1, au moins aussi
+   visible que le repos. Fond et pulsation inchangés. */
 .btn-micro.ecoute {
-  background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text);
+  background: var(--danger-bg); border-color: var(--danger-text); color: var(--danger-text);
   animation: pulse-micro 1.4s ease-in-out infinite;
 }
 @keyframes pulse-micro {
