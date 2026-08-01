@@ -585,6 +585,12 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .matin + .kpis { margin-top: 16px; }
 
 .matin-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* Correctif du 01/08/2026 (mesure Playwright) : "Ce matin" devient un <h2>
+   (voir index.html) pour rendre a la section son titre de niveau. Le <h2>
+   ne fait qu'envelopper le bouton, il ne doit imposer ni marge ni taille de
+   police a lui : c'est toujours .matin-titre (le <span> a l'interieur) qui
+   pilote l'apparence. */
+.matin-titre-h2 { margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; }
 .matin-titre { font-size: 17px; font-weight: 800; }
 .matin-copier {
   font-family: inherit; font-size: 12.5px; font-weight: 700; white-space: nowrap;
@@ -601,7 +607,15 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .matin.matin-warn .matin-resume { color: var(--warn-text); }
 .matin.matin-crit .matin-resume { color: var(--danger); }
 
-.matin-liste { margin-top: 13px; }
+/* Correctif du 01/08/2026 : #matin-liste devient une vraie <ul> (voir
+   index.html) pour qu'un lecteur d'ecran annonce "liste de N elements" au
+   lieu d'un simple bloc. list-style retire les puces (les <li> heritent de
+   "none") ; margin/padding remis a zero explicitement en plus du reset
+   global "* { margin:0; padding:0; }" deja present en tete de fichier, par
+   robustesse si ce reset venait a changer. Le reste (grid-template-columns,
+   grid-column, le bloc @media plus bas) n'est PAS touche : .matin-item
+   garde exactement le meme rendu, seule sa balise change (div -> li). */
+.matin-liste { list-style: none; margin: 13px 0 0; padding: 0; }
 .matin-item {
   display: grid; grid-template-columns: 1fr auto auto; gap: 4px 14px; align-items: baseline;
   padding: 10px 0; border-top: 1px solid var(--border);
@@ -626,7 +640,20 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   display: flex; align-items: center; gap: 8px;
   background: none; border: none; padding: 0; margin: 0;
   font-family: inherit; color: inherit; cursor: pointer; text-align: left;
+  /* Cible tactile 44px (mesure Playwright du 01/08/2026, le bouton mesurait
+     103x22px). min-height agit directement sur le bouton, pas sur la ligne :
+     align-items:center (deja present) garde le titre centre dans cette
+     hauteur, sans changer sa largeur ni son texte. */
+  min-height: 44px;
 }
+/* Une compensation en marge negative a ete essayee ici sur l'etat "rien a
+   commander", puis retiree apres mesure (01/08/2026) : elle partait de l'idee
+   qu'il fallait annuler la croissance de la ligne, alors que min-height:44px
+   s'applique au bouton dans TOUS les etats et que cette hauteur est
+   precisement ce qui rend la cible tactile conforme. Mesure a l'appui : avec
+   la compensation, le titre remontait a 18px du haut du bandeau contre 29px
+   dans l'etat normal, et la zone cliquable empietait de 11px dans le padding
+   de la carte. Sans elle, les deux etats sont alignes au pixel pres. */
 .matin-chevron { font-size: 12px; color: var(--muted); transition: transform .15s; }
 .matin.replie .matin-chevron { transform: rotate(-90deg); }
 .matin.replie .matin-liste { display: none; }

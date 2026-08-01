@@ -58,6 +58,17 @@ const $ = (id) => document.getElementById(id);
 const fmtNombre = (v) => { const n = Number(v); return Number.isInteger(n) ? n.toString() : n.toFixed(2).replace(/\.?0+$/, ''); };
 const fmtEuro = (v) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(v));
 const fmtDate = (iso) => new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+// Echappement HTML minimal (correctif du 01/08/2026) : le nom et l'unite
+// d'un produit viennent de la base, alimentee par la dictee vocale et par
+// l'import .xlsx (source tierce) — un "<" ou un "&" dedans ne doit jamais
+// casser l'affichage ni injecter du HTML. Utilisee pour l'instant UNIQUEMENT
+// par majEcranDuMatin (ecran du matin) : le meme motif d'injection existe a
+// une quinzaine d'autres endroits de ce fichier (carteProduit, tableau des
+// mouvements...), traites separement (voir le rapport de passation du
+// 01/08/2026).
+const echapperHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}[c]));
 
 // Texte lisible de la couverture en jours
 const txtCouverture = (c) => {
@@ -332,30 +343,49 @@ function majEcranDuMatin(produits, aCommander, ruptureImminente) {
     const cb = b._couverture === null ? Infinity : b._couverture;
     return ca - cb;
   });
+  // Accord simple de l'unite (correctif du 01/08/2026) : les unites sont
+  // stockees au pluriel en base ("pieces", "cartons"...). Sous 2, on retire
+  // le "s" final s'il y en a un ; les unites qui n'en portent pas (kg, L...)
+  // ne sont jamais touchees. Pas une vraie grammaire, juste la regle
+  // deterministe qui couvre le cas reel (principe n2 : IA reduite a
+  // l'indispensable, une regle suffit ici).
+  const accorderUnite = (unite, quantite) => (quantite < 2 && unite.endsWith('s'))
+    ? unite.slice(0, -1) : unite;
   // Quantite a commander = _qteCommander (deja calcule). Null si aucune vente
   // recente pour l'estimer : on affiche alors "a commander" sans quantite.
+  // Version texte brut, pour le copier-coller (jamais inseree en HTML) : pas
+  // d'echappement, un "&" dans un nom doit rester un "&" une fois colle.
   const qteTxt = (p) => (p._qteCommander !== null && p._qteCommander > 0)
-    ? `${fmtNombre(p._qteCommander)} ${p.unite}` : 'à commander';
+    ? `${fmtNombre(p._qteCommander)} ${accorderUnite(p.unite, p._qteCommander)}` : 'à commander';
+  // Meme quantite, version HTML : seule l'unite est echappee (le nombre ne
+  // contient jamais de caractere a risque). Utilisee uniquement dans le
+  // rendu liste.innerHTML ci-dessous.
+  const qteTxtHtml = (p) => (p._qteCommander !== null && p._qteCommander > 0)
+    ? `${fmtNombre(p._qteCommander)} ${echapperHtml(accorderUnite(p.unite, p._qteCommander))}` : 'à commander';
   // A l'ecran, la quantite porte son libelle "a commander :" (friction du
   // 16/07 : sans lui, on peut la confondre avec le stock restant). Le texte
-  // copie garde la forme courte, son titre "Liste de courses" suffit.
+  // copie garde la forme courte, son titre "Liste de courses" suffit. Le
+  // libelle est un <span> statique (aucune donnee produit dedans), il ne
+  // passe pas par echapperHtml : seule qteTxtHtml(p) (qui contient l'unite)
+  // en a besoin.
   const qteAffichee = (p) => (p._qteCommander !== null && p._qteCommander > 0)
-    ? `<span class="mi-qte-label">à commander :</span> ${qteTxt(p)}`
+    ? `<span class="mi-qte-label">à commander :</span> ${qteTxtHtml(p)}`
     : 'à commander';
   liste.innerHTML = tries.map(p => {
     const cov = p._couverture;
     const urgent = cov !== null && cov < 1.5;
     const covTxt = cov !== null ? `reste ${txtCouverture(cov)}` : 'stock bas';
-    return `<div class="matin-item">
-        <span class="mi-nom">${p.nom}</span>
+    return `<li class="matin-item">
+        <span class="mi-nom">${echapperHtml(p.nom)}</span>
         <span class="mi-qte">${qteAffichee(p)}</span>
         <span class="mi-cov${urgent ? ' urgent' : ''}">${covTxt}${urgent ? ' ⚠' : ''}</span>
-      </div>`;
+      </li>`;
   }).join('');
   btnCopier.hidden = false;
 
   // Texte "liste de courses" a copier : simple, collable dans un SMS/WhatsApp au
-  // fournisseur. Pas de HTML, une ligne par produit.
+  // fournisseur. Pas de HTML, une ligne par produit : qteTxt(p) (version
+  // texte brut) et le nom sans echappement, comme avant ce correctif.
   const dateJour = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' }).format(new Date());
   texteListeCourses = `Liste de courses Stovo — ${dateJour}\n`
     + tries.map(p => `- ${p.nom} : ${qteTxt(p)}`).join('\n');

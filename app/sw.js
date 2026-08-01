@@ -82,7 +82,16 @@
 // au clavier, reperes de structure (main et h1) sur les ecrans Stock, Parler
 // et Aide, cibles tactiles a 44 px. index.html, styles.css modifies. Pas de
 // nouveau fichier a precacher.
-const CACHE_NAME = 'stovo-app-v22';
+// v23 (lot A3 accessibilite, 01/08/2026, troisieme passe) : l'ecran du matin,
+// oublie par A1 et A2. Sa cible tactile passe de 22 a 44 px (mesure
+// Playwright), "Ce matin" devient un vrai <h2> pour exister dans la
+// hierarchie des titres, aria-controls ajoute, la liste de courses devient une
+// <ul>/<li>, le nom du produit est echappe avant insertion HTML, et l'unite
+// s'accorde au singulier ("1 piece" et non "1 pieces"). Meme lot : la collision
+// de classe de la tuile KPI "Produits suivis" et le debordement horizontal de
+// la ligne du matin. index.html, styles.css, dashboard.js modifies. Pas de
+// nouveau fichier a precacher.
+const CACHE_NAME = 'stovo-app-v23';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
