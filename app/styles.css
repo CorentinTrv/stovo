@@ -89,7 +89,7 @@ header {
 .kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--muted-light); }
 .kpi.danger::before { background: var(--danger); }
 .kpi.warn::before { background: var(--warn); }
-.kpi.brand::before { background: var(--brand); }
+.kpi.suivi::before { background: var(--brand); }
 .kpi .k-label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
 .kpi .k-value { font-size: 32px; font-weight: 800; line-height: 1.1; margin-top: 6px; }
 .kpi.danger .k-value { color: var(--danger); }
@@ -607,7 +607,14 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   padding: 10px 0; border-top: 1px solid var(--border);
 }
 .matin-item:first-child { border-top: none; }
-.mi-nom { font-weight: 700; font-size: 14.5px; }
+/* min-width:0 + overflow-wrap : la colonne du nom (1fr) est un grid item,
+   dont la largeur minimale par defaut vaut la largeur du mot le plus long
+   (min-content). Sans ce correctif, un nom tres long (ou un mot compose sans
+   espace) pourrait toujours forcer la page a s'elargir, meme sur grand
+   ecran. Avec, il se compresse et revient a la ligne au besoin (jamais
+   tronque). Correctif du 01/08/2026 (mesure Playwright), voir aussi le
+   bloc mobile de .matin-item ci-dessous. */
+.mi-nom { font-weight: 700; font-size: 14.5px; min-width: 0; overflow-wrap: break-word; }
 .mi-qte { font-weight: 800; font-size: 14.5px; color: var(--danger); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .mi-qte-label { font-weight: 600; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
 .mi-cov { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
@@ -645,6 +652,22 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 
 @media (max-width: 560px) {
   .matin { margin-top: -14px; }
+
+  /* Correctif du 01/08/2026 (defaut mesure a la loupe Playwright : le
+     document faisait 419-420px de large quel que soit l'ecran, a cause de
+     cette ligne). En dessous de 560px, la grille "1fr auto auto" imposait sa
+     largeur totale a TOUTE la page : ses deux colonnes "auto" (.mi-qte et
+     .mi-cov, juste en dessous) sont en white-space:nowrap, donc jamais
+     compressibles. La couverture (ex. "reste moins d'1 jour ⚠") passe donc
+     sur sa propre ligne, sous le nom + la quantite qui restent groupes (le
+     libelle "A COMMANDER :" reste visible devant la quantite, correctif du
+     18/07). Avec 3 enfants directs (.mi-nom, .mi-qte, .mi-cov, dans cet
+     ordre dans le DOM) et seulement 2 colonnes ici, l'auto-placement standard
+     met deja .mi-nom et .mi-qte sur la 1re ligne ; .mi-cov, en demandant
+     explicitement les 2 colonnes (grid-column), ne peut plus tenir sur cette
+     1re ligne (occupee) et redescend seul sur une 2e ligne pleine largeur. */
+  .matin-item { grid-template-columns: 1fr auto; }
+  .mi-cov { grid-column: 1 / -1; white-space: normal; }
 }
 
 /* ---------- Onglet « Stock » (QW-C, 18/07/2026) ----------
