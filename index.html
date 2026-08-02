@@ -4,29 +4,388 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<meta http-equiv="refresh" content="0; url=app/">
-<link rel="canonical" href="https://corentintrv.github.io/stovo/app/">
-<title>Stovo</title>
+<meta name="theme-color" content="#0d9488">
+<link rel="canonical" href="https://corentintrv.github.io/stovo/">
+<title>Stovo, tenez votre stock à la voix</title>
+<meta name="description" content="Une application simple pour tenir le stock d'un petit commerce en parlant, sans formation et sans tableur.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="Stovo, tenez votre stock à la voix">
+<meta property="og:description" content="Une application simple pour tenir le stock d'un petit commerce en parlant, sans formation et sans tableur.">
 <style>
-  :root{--brand-dark:#0f766e;--brand-darker:#115e59;--bg:#f1f5f9;--text:#0f172a;}
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;}
-  main{max-width:360px;}
-  h1{font-size:22px;margin-bottom:10px;}
-  p{font-size:15px;margin-bottom:20px;}
-  a.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 24px;background:var(--brand-dark);color:#fff;text-decoration:none;font-weight:700;font-size:15px;border-radius:10px;}
-  a.btn:hover{background:var(--brand-darker);}
-  a.btn:focus-visible{outline:3px solid var(--text);outline-offset:2px;}
+  /* ---------- Fondations ---------- */
+  :root{
+    --brand:#0d9488;         /* teal de marque, PRODUCT.md §Brand Commitments. Reserve aux elements non textuels (bordures, fonds larges) : en texte fin sur blanc il ne tient pas 4,5:1. */
+    --brand-dark:#0f766e;    /* teal utilisable en texte/liens sur fond clair, 5,47:1 sur blanc */
+    --brand-darker:#115e59;  /* teal fonce, fond de la section "ce que Stovo ne fait pas" */
+    --brand-light:#ccfbf1;   /* teal tres clair, fond de la section contact */
+    --bg:#ffffff;
+    --bg-alt:#f1f5f9;
+    --text:#0f172a;
+    --text-muted:#334155;
+    --border:#cbd5e1;
+    --border-capture:#64748b; /* --border ne donne que 1,36:1 sur --bg-alt (invisible). --border-capture donne 4,34:1 sur --bg-alt, au-dessus du seuil 3:1 exige pour un element non textuel porteur d'info (WCAG 1.4.11). */
+    --focus:#0f172a;
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.6;
+    overflow-x:hidden; /* filet de securite : aucune regle ci-dessous ne doit forcer une largeur superieure au viewport */
+  }
+  main, footer{display:block;}
+  h1,h2,h3,p,ul,li,figure,figcaption{margin:0;}
+  img{max-width:100%;}
+
+  .conteneur{
+    max-width:640px;
+    margin:0 auto;
+    padding:56px 20px;
+  }
+  @media (min-width:640px){
+    .conteneur{padding:72px 24px;}
+  }
+
+  .section{border-bottom:1px solid var(--border);}
+  .section:last-of-type{border-bottom:none;}
+  .section--alt{background:var(--bg-alt);}
+  .section--sombre{background:var(--brand-darker);color:#ffffff;border-bottom-color:var(--brand-darker);}
+  .section--accent{background:var(--brand-light);border-bottom-color:var(--brand-light);}
+
+  /* ---------- Accroche ---------- */
+  .kicker{
+    color:var(--brand-dark);
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin-bottom:12px;
+  }
+  h1{
+    font-size:clamp(28px,6vw,40px);
+    line-height:1.15;
+    font-weight:800;
+    margin-bottom:16px;
+  }
+  .soustitre{
+    font-size:clamp(16px,3vw,19px);
+    color:var(--text-muted);
+    max-width:32ch;
+  }
+
+  /* ---------- Titres de section ---------- */
+  h2{
+    font-size:clamp(22px,4vw,28px);
+    font-weight:700;
+    line-height:1.25;
+    margin-bottom:20px;
+  }
+  h3{
+    font-size:18px;
+    font-weight:700;
+    margin-bottom:10px;
+  }
+  .section p + p{margin-top:14px;}
+  .section h2 + p{margin-top:0;}
+
+  /* Titre discret de la section 3 : ce n'est pas une accroche marketing,
+     juste le repere structurel de l'emplacement de l'animation a venir. */
+  .titre-discret{
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-bottom:16px;
+  }
+
+  /* ---------- Comment ca marche ---------- */
+  .gestes{
+    display:grid;
+    gap:32px;
+    grid-template-columns:1fr; /* une seule colonne par defaut : voir la media query 900px plus bas, jamais de 2+1 intermediaire */
+    align-items:start; /* chaque colonne garde sa hauteur naturelle, pas d'etirement sur la ligne la plus haute : un paysage court a cote de deux portraits, c'est normal */
+  }
+  .geste{
+    display:flex;
+    flex-direction:column;
+  }
+  .geste p{margin-top:10px;}
+  .geste figure{
+    display:flex;
+    flex-direction:column;
+    align-items:center;    /* centre l'image et la legende, quelle que soit leur largeur propre */
+    margin-top:16px;       /* l'image suit directement le texte, la legende suit directement l'image : pas de poussee vers le bas */
+  }
+  .capture-image{
+    display:block;
+    width:auto;
+    height:auto;
+    /* Chaque image ne s'affiche jamais plus grande que sa taille CSS native
+       (le fichier fait le double en pixels reels, densite de capture x2 :
+       --cap-w = largeur fichier / 2), et jamais plus large que sa colonne
+       (min(100%, ...)). Les deux portraits recoivent en plus --cap-h pour
+       ne pas etirer la ligne : voir les attributs style sur chaque <img>. */
+    max-width:min(100%, var(--cap-w, 280px));
+    max-height:var(--cap-h, none);
+    margin:0 auto;
+    border:1px solid var(--border-capture);
+    border-radius:10px;
+  }
+  /* En dessous de 900px, aucun des trois cadrages n'a assez de place pour
+     tenir a trois sur une ligne sans etre ecrase (voir compte rendu) : ils
+     restent empiles. A partir de 900px, la grille passe directement de 1 a
+     3 colonnes (jamais 2). Le .conteneur (donc le h2 "Trois gestes...") ne
+     bouge pas, il reste a 640px comme toutes les autres sections : seule
+     la grille .gestes s'elargit, en s'exprimant entierement par rapport a
+     sa propre largeur de depart (calc(100% + ...), jamais de auto). */
+  @media (min-width:900px){
+    .gestes{
+      grid-template-columns:repeat(3,1fr);
+      /* IMPORTANT : margin-left/right:auto ne produit JAMAIS de marge
+         negative (une valeur auto se resout a 0 quand le bloc est plus
+         large que son conteneur, l'exces reste alors entierement du cote
+         de la marge de fin). C'est l'erreur commise dans une version
+         precedente de cette regle : la grille n'etait pas recentree, elle
+         debordait tout a droite. Ici, la largeur et les deux marges
+         partent toutes les trois de la meme variable --debord, donc la
+         symetrie est garantie par construction et non par un calcul a
+         verifier : la grille deborde de --debord de chaque cote de la
+         largeur de depart (100%, celle qu'elle aurait sans cette regle,
+         soit la largeur de la zone de texte du .conteneur), toujours
+         centree sur le meme axe que lui. A 900px de viewport (le seuil de
+         cette media query), il reste 24px avant le bord de l'ecran, la
+         meme aisance que le .conteneur utilise deja a cette largeur
+         (padding 24px). En dessous de 900px, cette meme aisance tomberait
+         sous zero (d'ou le choix du seuil, et pas 860px). */
+      --debord:130px;
+      width:calc(100% + 2 * var(--debord));
+      margin-left:calc(-1 * var(--debord));
+      margin-right:calc(-1 * var(--debord));
+    }
+  }
+
+  /* ---------- Emplacement de remplacement (animation) ---------- */
+  .placeholder{
+    border:2px dashed var(--border);
+    border-radius:12px;
+    background:var(--bg-alt);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:20px;
+  }
+  .placeholder--anime{
+    min-height:160px;
+  }
+  .placeholder__texte{
+    font-weight:700;
+    color:var(--text-muted);
+    font-size:15px;
+  }
+  figcaption{
+    font-size:14px;
+    color:var(--text);
+    font-weight:700;
+  }
+
+  /* ---------- Contact ---------- */
+  /* Sur fond --brand-light (#ccfbf1), --brand-darker donne 6,73:1 (WCAG 1.4.3,
+     seuil 4,5:1 en texte normal). --brand-dark donnerait 4,86:1, suffisant
+     aussi, mais --brand-darker garde plus de marge.
+     Le soulignement reprend cette meme couleur (currentColor) : --border
+     utilise avant ne tenait que 1,32:1 sur ce fond, invisible a l'oeil et
+     sous le seuil de 3:1 exige pour un indicateur non textuel (WCAG 1.4.11).
+     currentColor herite du 6,73:1 deja calcule ci-dessus, tres au-dessus du
+     seuil. */
+  .lien-contact{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    padding:8px 16px;
+    margin-left:-16px; /* compense le padding-left : le TEXTE s'aligne sur le h2
+                           au-dessus, la zone cliquable garde sa taille (32px +
+                           largeur du texte), elle est juste translatee de 16px
+                           vers la gauche plutot que reduite. */
+    max-width:100%;
+    word-break:break-word;
+    color:var(--brand-darker);
+    font-weight:700;
+    text-decoration:underline;
+    text-decoration-color:currentColor;
+    text-underline-offset:3px;
+  }
+
+  /* ---------- Pied de page ---------- */
+  .pied{
+    background:var(--bg);
+    padding:32px 20px;
+    text-align:center;
+  }
+  .lien-app{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    padding:8px 16px;
+    color:var(--brand-dark);
+    font-weight:700;
+    text-decoration:underline;
+    text-decoration-color:var(--border);
+    text-underline-offset:3px;
+  }
+  .lien-app:hover{
+    color:var(--brand-darker);
+    text-decoration-color:currentColor;
+  }
+
+  /* ---------- Accessibilite : focus et mouvement ---------- */
+  a{transition:color .15s ease, text-decoration-color .15s ease;}
+  a:focus-visible{
+    outline:3px solid var(--focus);
+    outline-offset:2px;
+    border-radius:4px;
+  }
+  .section--sombre a:focus-visible{outline-color:#ffffff;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+
+  /* Filet documente dans la memoire du projet : sans cette regle, un display
+     concurrent peut ecraser [hidden]. Aucun element n'est masque ici
+     aujourd'hui, la regle est posee par prudence pour la suite du chantier. */
+  [hidden]{display:none !important;}
 </style>
-<script>
-  location.replace('app/' + location.search + location.hash);
-</script>
 </head>
 <body>
 <main>
-  <h1>Stovo</h1>
-  <p>Cette page a été remplacée. Redirection vers l'application en cours.</p>
-  <a class="btn" href="app/">Ouvrir Stovo</a>
+
+  <!-- 1. Accroche -->
+  <section id="accroche" class="section">
+    <div class="conteneur">
+      <p class="kicker">Stovo</p>
+      <h1>Tenez votre stock à la voix.</h1>
+      <p class="soustitre">Plus vite qu'avec un cahier ou un tableur. Sans formation.</p>
+    </div>
+  </section>
+
+  <!-- 2. Le problème : aucune preuve necessaire, le visiteur se reconnait -->
+  <section id="probleme" class="section section--alt">
+    <div class="conteneur">
+      <h2>Vous connaissez déjà le problème.</h2>
+      <p>Un client demande un article. Vous pensiez en avoir. Il n'y en a plus.</p>
+      <p>Un carton dort au fond de la réserve depuis des mois. Plus personne ne se souvient de lui.</p>
+      <p>Le soir, boutique fermée, vous ressaisissez votre stock au lieu de rentrer chez vous.</p>
+      <p>Ce n'est pas un problème de sérieux. C'est un problème d'outil. Un cahier ou un tableur demandent de s'asseoir, d'avoir les deux mains libres et de ne pas être dérangé. Votre journée ne ressemble pas à ça.</p>
+    </div>
+  </section>
+
+  <!--
+    3. L'animé.
+
+    Volontairement SANS animation dans cette v1 (voir VITRINE_fondations_2026-08-02.md,
+    section "Cette version est SANS animation"). Ce conteneur reçoit aujourd'hui un
+    simple bloc de remplacement.
+
+    Ce qui viendra s'y greffer plus tard (lot suivant, tâche 9 du plan de production) :
+    la voie C retenue en §7 des fondations, une histoire en 7 plans jouée en SVG + CSS,
+    qui avance avec le défilement de la page (IntersectionObserver ou équivalent CSS),
+    sans dépendance externe, 45 à 60 secondes, muette, avec un mot ou deux à l'écran par
+    plan. Scénario complet plan par plan dans VITRINE_fondations_2026-08-02.md §6, textes
+    à l'écran validés dans VITRINE_textes_v1_2026-08-02.md §Section 3.
+
+    D'ici là : ne pas remplacer ce bloc par un dessin ou une image inventée.
+  -->
+  <section id="anime" class="section" aria-labelledby="anime-titre">
+    <div class="conteneur">
+      <h2 id="anime-titre" class="titre-discret">L'animé</h2>
+      <div class="placeholder placeholder--anime" id="anime-conteneur">
+        <p class="placeholder__texte">Anecdote animée à venir</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Comment ça marche : la demonstration, pas l'affirmation -->
+  <section id="comment-ca-marche" class="section section--alt">
+    <div class="conteneur">
+      <h2>Trois gestes, et c'est tout.</h2>
+      <div class="gestes">
+
+        <div class="geste">
+          <h3>1. Vous parlez.</h3>
+          <p>« J'ai reçu douze jus de fruits. »</p>
+          <p>Aucune formule à retenir, aucun code article à taper. Vous parlez comme vous parleriez à quelqu'un.</p>
+          <figure id="capture-parler">
+            <img class="capture-image" src="media/geste-1-parler.png" width="780" height="1688" style="--cap-w:390px;--cap-h:520px" loading="lazy" decoding="async" alt="Écran de saisie de Stovo avec l'invite « Écris ce que tu as fait, par exemple : j'ai reçu 10 pâtes », un champ de texte avec un bouton Envoyer, et un gros bouton microphone rond en bas de l'écran.">
+            <figcaption>Vous parlez</figcaption>
+          </figure>
+        </div>
+
+        <div class="geste">
+          <h3>2. Stovo propose, vous validez.</h3>
+          <p>L'application vous montre ce qu'elle a compris, et attend. Rien ne s'enregistre tant que vous n'avez pas dit oui. Elle a mal compris ? Vous corrigez avant, pas après.</p>
+          <figure id="capture-valider">
+            <img class="capture-image" src="media/geste-2-valider.png" width="736" height="386" style="--cap-w:368px" loading="lazy" decoding="async" alt="Bulle de confirmation de Stovo, avec le texte « J'ai compris : entree de 12 Jus de fruits. C'est bon ? Reponds oui pour valider, non pour annuler. », et deux boutons en dessous, Oui et Non.">
+            <figcaption>Vous validez</figcaption>
+          </figure>
+        </div>
+
+        <div class="geste">
+          <h3>3. Vous consultez quand vous voulez.</h3>
+          <p>Ce qu'il vous reste, ce qui descend trop vite, ce qu'il faut commander.</p>
+          <figure id="capture-consulter">
+            <img class="capture-image" src="media/geste-3-consulter.png" width="756" height="1504" style="--cap-w:378px;--cap-h:520px" loading="lazy" decoding="async" alt="Écran Pilotage de Stovo : bandeau vert foncé avec le nom Stovo et « Pilotez votre stock en un coup d'œil », la carte « Cet après-midi » annonçant 2 produits à commander et 1 en rupture imminente, puis quatre tuiles de synthèse, à commander 2, rupture imminente 1, produits suivis 13, activité 7 jours 9.">
+            <figcaption>Vous consultez</figcaption>
+          </figure>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Ce que Stovo ne fait pas : dire non pour rendre credible ce qui reste -->
+  <section id="ce-que-stovo-ne-fait-pas" class="section section--sombre">
+    <div class="conteneur">
+      <h2>Stovo tient votre stock. C'est tout, et c'est voulu.</h2>
+      <p>Pas de caisse, pas de paiement, pas de ticket.</p>
+      <p>Pas de facturation, pas de comptabilité.</p>
+      <p>Pas de planning, pas de gestion du personnel.</p>
+      <p>Chaque fonction en plus est une fonction à apprendre. Si vous cherchez un logiciel qui fait tout, ce n'est pas ici, et vous venez de gagner cinq minutes.</p>
+    </div>
+  </section>
+
+  <!-- 6. Où en est le projet : l'honnêteté du stade remplace la preuve sociale -->
+  <section id="etat-du-projet" class="section">
+    <div class="conteneur">
+      <h2>Stovo est en construction, et je préfère vous le dire.</h2>
+      <p>Je m'appelle Corentin. Je viens de la logistique, où j'ai passé des années à organiser des stocks et à faire tourner des équipes. Je fabrique Stovo en m'en servant tous les jours.</p>
+      <p>Ce que ça veut dire pour vous, concrètement : je n'ai pas encore de témoignage à vous montrer, ni de tarif à vous annoncer. Ce que je cherche, ce sont des commerçants prêts à l'essayer pour de vrai et à me dire ce qui coince.</p>
+      <p>Si c'est vous, écrivez-moi.</p>
+    </div>
+  </section>
+
+  <!-- 7. Contact : le seul appel à l'action de la page -->
+  <section id="contact" class="section section--accent">
+    <div class="conteneur">
+      <h2>Une question, une remarque, l'envie d'essayer ?</h2>
+      <a class="lien-contact" id="contact-adresse" href="mailto:bonjour.stovo@outlook.com">bonjour.stovo@outlook.com</a>
+    </div>
+  </section>
+
 </main>
+
+<footer class="pied">
+  <div class="conteneur" style="padding:0;">
+    <a class="lien-app" href="app/">Déjà utilisateur ? Ouvrir l'application</a>
+  </div>
+</footer>
 </body>
 </html>
