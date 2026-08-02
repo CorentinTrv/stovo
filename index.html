@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#0d9488">
+<meta name="theme-color" content="#0E0F11">
 <link rel="canonical" href="https://corentintrv.github.io/stovo/">
 <title>Stovo, tenez votre stock à la voix</title>
 <meta name="description" content="Une application simple pour tenir le stock d'un petit commerce en parlant, sans formation et sans tableur.">
@@ -12,338 +12,1189 @@
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Stovo, tenez votre stock à la voix">
 <meta property="og:description" content="Une application simple pour tenir le stock d'un petit commerce en parlant, sans formation et sans tableur.">
+<link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-  /* ---------- Fondations ---------- */
+  /* ================================================================
+     ARCHIVO, variable, auto-hebergee.
+     Servie depuis ce depot, jamais depuis un CDN tiers : pas de
+     requete sortante vers Google au chargement (RGPD), et pas de
+     dependance reseau qui casserait la page si le CDN tombe.
+     Licence SIL Open Font License 1.1, redistribution autorisee.
+     ================================================================ */
+  @font-face{
+    font-family:'Archivo';
+    font-style:normal;
+    font-weight:100 900;
+    font-stretch:62% 125%;
+    font-display:swap;
+    src:url('fonts/archivo-latin.woff2') format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+
+  /* ================================================================
+     FONDATIONS : le chassis d'un instrument de mesure.
+
+     Toutes les valeurs de contraste ci-dessous sont calculees contre
+     --chassis (#0E0F11) ou --steel (#1A1D21), pas estimees a l'oeil.
+     ================================================================ */
   :root{
-    --brand:#0d9488;         /* teal de marque, PRODUCT.md §Brand Commitments. Reserve aux elements non textuels (bordures, fonds larges) : en texte fin sur blanc il ne tient pas 4,5:1. */
-    --brand-dark:#0f766e;    /* teal utilisable en texte/liens sur fond clair, 5,47:1 sur blanc */
-    --brand-darker:#115e59;  /* teal fonce, fond de la section "ce que Stovo ne fait pas" */
-    --brand-light:#ccfbf1;   /* teal tres clair, fond de la section contact */
-    --bg:#ffffff;
-    --bg-alt:#f1f5f9;
-    --text:#0f172a;
-    --text-muted:#334155;
-    --border:#cbd5e1;
-    --border-capture:#64748b; /* --border ne donne que 1,36:1 sur --bg-alt (invisible). --border-capture donne 4,34:1 sur --bg-alt, au-dessus du seuil 3:1 exige pour un element non textuel porteur d'info (WCAG 1.4.11). */
-    --focus:#0f172a;
+    /* Matiere du chassis */
+    --chassis:#0E0F11;      /* acier noirci, fond de page */
+    --steel:#1A1D21;        /* acier, fond des panneaux */
+    --steel-hi:#22262B;     /* acier eclaire, fond des plaques */
+    --mesh:#3A3F46;         /* maille d'anode, filets et separateurs */
+
+    /* Lueurs. Une seule couleur par role, comme sur un vrai appareil :
+       la VALEUR est orange, le VOYANT de validation est teal, l'ALARME
+       est rouge. Jamais la meme couleur pour deux roles. */
+    --glow:#FF6A00;         /* lueur du tube, la valeur affichee. 6,71:1 sur --chassis */
+    --glow-soft:#FF9A4D;    /* lueur attenuee, etat propose (non valide) */
+    --ok:#14B8A6;           /* voyant valide. 7,73:1 sur --chassis */
+    --brand:#0D9488;        /* teal Stovo de PRODUCT.md, teinte de reference */
+    --alarm:#FF5340;        /* voyant alarme */
+
+    /* Textes. Le gris de gravure --engrave ne donne que 2,70:1 sur
+       --steel : il est reserve au DECOR (filets, vis, rainures) et ne
+       porte jamais d'information. Tout libelle lisible part de
+       --label (6,63:1) au minimum. */
+    --engrave:#5B6168;      /* decor uniquement, jamais du texte porteur */
+    --label:#9BA3AC;        /* libelles graves. 6,63:1 sur --steel */
+    --body:#C3C9D0;         /* corps de texte. 11,9:1 sur --chassis */
+    --bright:#ECEFF2;       /* titres. 15,8:1 sur --chassis */
+
+    /* Grille */
+    --mesure:68ch;          /* longueur de ligne de lecture */
+    --gouttiere:24px;
   }
 
   *{box-sizing:border-box;}
-  html{-webkit-text-size-adjust:100%;}
+  html{-webkit-text-size-adjust:100%; scroll-behavior:smooth;}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}}
+
   body{
     margin:0;
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--bg);
-    color:var(--text);
-    line-height:1.6;
-    overflow-x:hidden; /* filet de securite : aucune regle ci-dessous ne doit forcer une largeur superieure au viewport */
+    font-family:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    font-size:17px;
+    line-height:1.65;
+    color:var(--body);
+    background:var(--chassis);
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
   }
-  main, footer{display:block;}
   h1,h2,h3,p,ul,li,figure,figcaption{margin:0;}
   img{max-width:100%;}
 
-  .conteneur{
-    max-width:640px;
-    margin:0 auto;
-    padding:56px 20px;
-  }
-  @media (min-width:640px){
-    .conteneur{padding:72px 24px;}
+  /* Filet documente dans la memoire du projet : sans cette regle, un
+     display concurrent peut ecraser [hidden]. */
+  [hidden]{display:none !important;}
+
+  /* ---------- Matieres reutilisables ---------- */
+
+  /* La maille d'anode : le grillage fin qu'on voit devant les chiffres
+     dans un vrai tube. Deux familles de diagonales croisees, tres peu
+     opaques. Repetee a 8px, elle ne se lit jamais comme un motif
+     decoratif, seulement comme une texture de metal tisse. */
+  .maille{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cg stroke='%23FFB380' stroke-opacity='0.16' stroke-width='0.5'%3E%3Cpath d='M-2 2 L2 -2 M0 8 L8 0 M6 10 L10 6'/%3E%3Cpath d='M-2 6 L2 10 M0 0 L8 8 M6 -2 L10 2'/%3E%3C/g%3E%3C/svg%3E");
   }
 
-  .section{border-bottom:1px solid var(--border);}
-  .section:last-of-type{border-bottom:none;}
-  .section--alt{background:var(--bg-alt);}
-  .section--sombre{background:var(--brand-darker);color:#ffffff;border-bottom-color:var(--brand-darker);}
-  .section--accent{background:var(--brand-light);border-bottom-color:var(--brand-light);}
+  /* Une vis de chassis. Tete fraisee, fente, et l'ombre portee courte
+     d'une piece reellement vissee dans la tole. */
+  .vis{
+    position:absolute;
+    width:9px; height:9px;
+    border-radius:50%;
+    background:
+      linear-gradient(150deg,#4A5058 0%,#2A2E34 55%,#15181B 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.14),
+      0 1px 2px rgba(0,0,0,.65);
+  }
+  .vis::after{
+    content:'';
+    position:absolute; inset:0;
+    margin:auto;
+    width:5px; height:1px;
+    background:rgba(0,0,0,.55);
+    transform:rotate(38deg);
+  }
 
-  /* ---------- Accroche ---------- */
-  .kicker{
-    color:var(--brand-dark);
-    font-weight:700;
-    font-size:14px;
-    letter-spacing:.08em;
+  /* Un panneau d'appareil : tole d'acier, arete superieure eclairee,
+     arete inferieure dans l'ombre. L'ombre porte un decalage ET un
+     flou, c'est de la profondeur, pas un halo. */
+  .panneau{
+    position:relative;
+    background:linear-gradient(180deg,var(--steel) 0%,#141719 100%);
+    border:1px solid #2B3036;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.055),
+      0 18px 40px -22px rgba(0,0,0,.9);
+  }
+
+  /* Une plaque gravee et vissee : le libelle d'un appareil. Le texte
+     est CREUSE, d'ou l'ombre claire posee sous le glyphe. */
+  .plaque{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    padding:9px 22px;
+    background:linear-gradient(180deg,var(--steel-hi) 0%,#171A1D 100%);
+    border:1px solid #31363C;
+    border-radius:3px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.07),
+      0 2px 6px rgba(0,0,0,.5);
+    font-size:12px;
+    font-weight:600;
+    font-stretch:96%;
+    letter-spacing:.2em;
     text-transform:uppercase;
-    margin-bottom:12px;
+    color:var(--label);
+    text-shadow:0 1px 0 rgba(255,255,255,.07);
   }
-  h1{
-    font-size:clamp(28px,6vw,40px);
-    line-height:1.15;
-    font-weight:800;
-    margin-bottom:16px;
-  }
-  .soustitre{
-    font-size:clamp(16px,3vw,19px);
-    color:var(--text-muted);
-    max-width:32ch;
-  }
+  .plaque .vis{top:50%; margin-top:-4.5px;}
+  .plaque .vis--g{left:7px;}
+  .plaque .vis--d{right:7px;}
+  .plaque--vissee{padding-left:30px; padding-right:30px;}
 
-  /* ---------- Titres de section ---------- */
+  /* ---------- Gabarit ---------- */
+  .zone{
+    max-width:1180px;
+    margin:0 auto;
+    padding:0 var(--gouttiere);
+  }
+  .colonne{max-width:var(--mesure);}
+
+  .section{
+    position:relative;
+    padding:88px 0;
+    border-top:1px solid #1F2328;
+    /* le bandeau est collant : sans cette marge, arriver par une ancre
+       place le titre de section SOUS le bandeau. */
+    scroll-margin-top:78px;
+  }
+  .accroche{scroll-margin-top:78px;}
+  @media (min-width:900px){.section{padding:120px 0;}}
+
+  /* Le defilement se rythme par la MATIERE, pas par des aplats de
+     couleur : on avance dans un appareil, du panneau de demonstration
+     eclaire jusqu'a la zone morte des voyants eteints. */
+  .section--banc{
+    background:linear-gradient(180deg,#171A1E 0%,#101316 100%);
+    border-top-color:#2E343A;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.045);
+  }
+  .section--morte{
+    background:#0A0B0D;
+    border-top-color:#1A1E22;
+  }
+  .section--morte::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    opacity:.22;
+    pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cg stroke='%239BA3AC' stroke-opacity='0.14' stroke-width='0.5'%3E%3Cpath d='M-2 2 L2 -2 M0 8 L8 0 M6 10 L10 6'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  .section--morte > .zone{position:relative;}
+
+  /* ---------- Typographie ---------- */
+  h1{
+    font-size:clamp(38px,7.2vw,74px);
+    line-height:1.02;
+    font-weight:800;
+    font-stretch:88%;
+    letter-spacing:-.035em;
+    color:var(--bright);
+    text-wrap:balance;
+  }
   h2{
-    font-size:clamp(22px,4vw,28px);
-    font-weight:700;
-    line-height:1.25;
-    margin-bottom:20px;
+    font-size:clamp(27px,4.2vw,42px);
+    line-height:1.12;
+    font-weight:750;
+    font-stretch:90%;
+    letter-spacing:-.028em;
+    color:var(--bright);
+    text-wrap:balance;
+    margin-bottom:26px;
   }
   h3{
-    font-size:18px;
+    font-size:20px;
+    line-height:1.25;
     font-weight:700;
-    margin-bottom:10px;
+    font-stretch:94%;
+    letter-spacing:-.012em;
+    color:var(--bright);
   }
-  .section p + p{margin-top:14px;}
-  .section h2 + p{margin-top:0;}
+  .section p + p{margin-top:16px;}
+  .accent{color:var(--bright); font-weight:600;}
 
-  /* Titre discret de la section 3 : ce n'est pas une accroche marketing,
-     juste le repere structurel de l'emplacement de l'animation a venir. */
-  .titre-discret{
-    font-size:13px;
-    font-weight:700;
-    letter-spacing:.08em;
+  /* Un libelle grave, hors plaque. */
+  .grave{
+    font-size:11.5px;
+    font-weight:650;
+    font-stretch:96%;
+    letter-spacing:.24em;
     text-transform:uppercase;
-    color:var(--text-muted);
-    margin-bottom:16px;
+    color:var(--label);
   }
 
-  /* ---------- Comment ca marche ---------- */
-  .gestes{
-    display:grid;
-    gap:32px;
-    grid-template-columns:1fr; /* une seule colonne par defaut : voir la media query 900px plus bas, jamais de 2+1 intermediaire */
-    align-items:start; /* chaque colonne garde sa hauteur naturelle, pas d'etirement sur la ligne la plus haute : un paysage court a cote de deux portraits, c'est normal */
-  }
-  .geste{
-    display:flex;
-    flex-direction:column;
-  }
-  .geste p{margin-top:10px;}
-  .geste figure{
-    display:flex;
-    flex-direction:column;
-    align-items:center;    /* centre l'image et la legende, quelle que soit leur largeur propre */
-    margin-top:16px;       /* l'image suit directement le texte, la legende suit directement l'image : pas de poussee vers le bas */
-  }
-  .capture-image{
-    display:block;
-    width:auto;
-    height:auto;
-    /* Chaque image ne s'affiche jamais plus grande que sa taille CSS native
-       (le fichier fait le double en pixels reels, densite de capture x2 :
-       --cap-w = largeur fichier / 2), et jamais plus large que sa colonne
-       (min(100%, ...)). Les deux portraits recoivent en plus --cap-h pour
-       ne pas etirer la ligne : voir les attributs style sur chaque <img>. */
-    max-width:min(100%, var(--cap-w, 280px));
-    max-height:var(--cap-h, none);
-    margin:0 auto;
-    border:1px solid var(--border-capture);
-    border-radius:10px;
-  }
-  /* En dessous de 900px, aucun des trois cadrages n'a assez de place pour
-     tenir a trois sur une ligne sans etre ecrase (voir compte rendu) : ils
-     restent empiles. A partir de 900px, la grille passe directement de 1 a
-     3 colonnes (jamais 2). Le .conteneur (donc le h2 "Trois gestes...") ne
-     bouge pas, il reste a 640px comme toutes les autres sections : seule
-     la grille .gestes s'elargit, en s'exprimant entierement par rapport a
-     sa propre largeur de depart (calc(100% + ...), jamais de auto). */
-  @media (min-width:900px){
-    .gestes{
-      grid-template-columns:repeat(3,1fr);
-      /* IMPORTANT : margin-left/right:auto ne produit JAMAIS de marge
-         negative (une valeur auto se resout a 0 quand le bloc est plus
-         large que son conteneur, l'exces reste alors entierement du cote
-         de la marge de fin). C'est l'erreur commise dans une version
-         precedente de cette regle : la grille n'etait pas recentree, elle
-         debordait tout a droite. Ici, la largeur et les deux marges
-         partent toutes les trois de la meme variable --debord, donc la
-         symetrie est garantie par construction et non par un calcul a
-         verifier : la grille deborde de --debord de chaque cote de la
-         largeur de depart (100%, celle qu'elle aurait sans cette regle,
-         soit la largeur de la zone de texte du .conteneur), toujours
-         centree sur le meme axe que lui. A 900px de viewport (le seuil de
-         cette media query), il reste 24px avant le bord de l'ecran, la
-         meme aisance que le .conteneur utilise deja a cette largeur
-         (padding 24px). En dessous de 900px, cette meme aisance tomberait
-         sous zero (d'ou le choix du seuil, et pas 860px). */
-      --debord:130px;
-      width:calc(100% + 2 * var(--debord));
-      margin-left:calc(-1 * var(--debord));
-      margin-right:calc(-1 * var(--debord));
-    }
-  }
+  /* ================================================================
+     LE TUBE
 
-  /* ---------- Emplacement de remplacement (animation) ---------- */
-  .placeholder{
-    border:2px dashed var(--border);
-    border-radius:12px;
-    background:var(--bg-alt);
+     Un tube compte UN chiffre. Les dix chiffres sont tous presents et
+     empiles dans le verre : neuf sont eteints, en gris de metal, et un
+     seul est allume. C'est ce qui distingue un tube Nixie d'un afficheur
+     a sept segments, et c'est le seul detail qui rend l'objet credible.
+     Un changement de valeur est donc un changement de PROFONDEUR, pas un
+     changement de texte : le chiffre sortant s'eteint pendant que le
+     chiffre entrant s'allume, tous deux restant physiquement la.
+     ================================================================ */
+  .tube{
+    position:relative;
+    width:var(--tw,96px);
+    height:var(--th,156px);
+    flex:0 0 auto;
+    /* Une enveloppe de verre soufflee : dome haut, epaules marquees,
+       flancs legerement bombes. L'ancien rayon (48%/26%) donnait une
+       arche de carrelage de metro, pas une ampoule. */
+    border-radius:50% 50% 9% 9% / 34% 34% 4% 4%;
+    background:
+      radial-gradient(120% 80% at 50% 10%, rgba(255,255,255,.07) 0%, rgba(255,255,255,0) 58%),
+      linear-gradient(180deg,#1B1F23 0%,#0F1113 42%,#131619 100%);
+    border:1px solid #2E3339;
+    box-shadow:
+      /* l'epaisseur du verre sur les flancs */
+      inset 3px 0 6px -3px rgba(255,255,255,.10),
+      inset -3px 0 6px -3px rgba(255,255,255,.06),
+      inset 0 0 22px rgba(0,0,0,.85),
+      0 10px 26px -14px rgba(0,0,0,.95);
+    overflow:hidden;
+  }
+  /* la maille d'anode, devant les chiffres */
+  .tube__maille{
+    position:absolute;
+    inset:9% 12% 16% 12%;
+    opacity:.5;
+    pointer-events:none;
+    z-index:2;
+  }
+  /* le reflet du verre : une bande claire a gauche, une plus fine a
+     droite. Sans lui, le tube est un rectangle sombre. */
+  .tube__verre{
+    position:absolute; inset:0;
+    z-index:4;
+    pointer-events:none;
+    background:
+      linear-gradient(102deg,
+        rgba(255,255,255,.10) 0%,
+        rgba(255,255,255,.028) 9%,
+        rgba(255,255,255,0) 22%,
+        rgba(255,255,255,0) 78%,
+        rgba(255,255,255,.045) 93%,
+        rgba(255,255,255,.015) 100%);
+  }
+  /* la base metallique, sertie */
+  .tube__base{
+    position:absolute;
+    left:0; right:0; bottom:0;
+    height:15%;
+    z-index:3;
+    /* Le joint de scellement entre le verre et le culot est une ellipse,
+       jamais une coupe a l'equerre : c'est la ou le verre est pince. */
+    border-radius:46% 46% 8% 8% / 34% 34% 8% 8%;
+    background:linear-gradient(180deg,#454B53 0%,#2A2E34 34%,#101214 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.16),
+      0 -3px 7px -3px rgba(0,0,0,.85);
+  }
+  .tube__pile{
+    position:absolute;
+    inset:0 0 13% 0;
+    z-index:1;
+  }
+  /* Un chiffre Nixie n'est pas un glyphe plein, c'est un FIL DE METAL
+     plie. Les neuf chiffres eteints sont donc rendus en contour seul :
+     pleins, ils formaient un pate illisible ou le chiffre allume
+     disparaissait derriere les autres. Le contour donne la profondeur
+     de la pile sans rien masquer. */
+  .chiffre{
+    position:absolute;
+    inset:0;
     display:flex;
     align-items:center;
     justify-content:center;
-    text-align:center;
-    padding:20px;
+    font-size:var(--tfs,86px);
+    line-height:1;
+    font-weight:340;
+    font-stretch:76%;
+    color:transparent;
+    /* Ces deux valeurs sont la promesse du contrat : la pile des dix
+       chiffres DOIT se voir dans le verre, sinon l'objet redevient un
+       banal afficheur a sept segments. A .75px/#262B32/.62 elles ne
+       donnaient que ~1,3:1 sur l'interieur du tube, donc rien. */
+    -webkit-text-stroke:.9px #454D57;
+    opacity:.85;
+    transition:color .45s ease, text-shadow .45s ease, opacity .45s ease, -webkit-text-stroke-color .45s ease;
   }
-  .placeholder--anime{
-    min-height:160px;
+  /* la pile physique : chaque chiffre est a une profondeur differente
+     dans le tube, donc a une echelle legerement differente. */
+  .chiffre:nth-child(1){transform:scale(1.000);}
+  .chiffre:nth-child(2){transform:scale(0.996);}
+  .chiffre:nth-child(3){transform:scale(0.992);}
+  .chiffre:nth-child(4){transform:scale(0.988);}
+  .chiffre:nth-child(5){transform:scale(0.984);}
+  .chiffre:nth-child(6){transform:scale(0.980);}
+  .chiffre:nth-child(7){transform:scale(0.976);}
+  .chiffre:nth-child(8){transform:scale(0.972);}
+  .chiffre:nth-child(9){transform:scale(0.968);}
+  .chiffre:nth-child(10){transform:scale(0.964);}
+
+  /* Le chiffre allume passe DEVANT la pile : c'est lui que le verre
+     laisse voir en premier, les autres restent au fond du tube. */
+  .chiffre[data-on]{
+    color:var(--glow);
+    -webkit-text-stroke:0;
+    opacity:1;
+    z-index:3;
+    /* La premiere couche blanchissait le coeur du glyphe et le rendait
+       flou : la lueur doit entourer le filament, pas le recouvrir. */
+    text-shadow:
+      0 0 2px rgba(255,190,130,.35),
+      0 0 9px rgba(255,140,40,.9),
+      0 0 24px rgba(255,106,0,.6),
+      0 0 55px rgba(255,90,0,.32),
+      0 0 100px rgba(255,80,0,.16);
   }
-  .placeholder__texte{
-    font-weight:700;
-    color:var(--text-muted);
-    font-size:15px;
+  /* etat PROPOSE : le chiffre est la, mais l'appareil n'a pas encore
+     recu le oui. Il brule a demi-intensite. C'est la traduction exacte
+     de la regle produit : l'app propose, l'utilisateur valide. */
+  .tube--propose .chiffre[data-on]{
+    color:var(--glow-soft);
+    text-shadow:
+      0 0 3px rgba(255,150,60,.5),
+      0 0 12px rgba(255,106,0,.3);
+    animation:respire 1.05s ease-in-out infinite;
   }
-  figcaption{
-    font-size:14px;
-    color:var(--text);
-    font-weight:700;
+  @keyframes respire{
+    0%,100%{opacity:1;}
+    50%{opacity:.42;}
   }
 
-  /* ---------- Contact ---------- */
-  /* Sur fond --brand-light (#ccfbf1), --brand-darker donne 6,73:1 (WCAG 1.4.3,
-     seuil 4,5:1 en texte normal). --brand-dark donnerait 4,86:1, suffisant
-     aussi, mais --brand-darker garde plus de marge.
-     Le soulignement reprend cette meme couleur (currentColor) : --border
-     utilise avant ne tenait que 1,32:1 sur ce fond, invisible a l'oeil et
-     sous le seuil de 3:1 exige pour un indicateur non textuel (WCAG 1.4.11).
-     currentColor herite du 6,73:1 deja calcule ci-dessus, tres au-dessus du
-     seuil. */
-  .lien-contact{
+  /* le halo que le tube projette sur le chassis autour de lui */
+  .banc{
+    position:relative;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+  }
+  .banc::before{
+    content:'';
+    position:absolute;
+    /* jamais de debord horizontal : sur un ecran etroit, le halo
+       poussait le chassis au-dela de la largeur de la page. */
+    inset:-16% 0;
+    /* Trois tubes qui brulent ECLAIRENT la tole autour d'eux. Sans ca,
+       la lueur ne touche rien et le panneau reste plat : c'etait la
+       raison principale du rendu eteint. */
+    background:radial-gradient(80% 65% at 50% 50%, rgba(255,106,0,.28) 0%, rgba(255,106,0,0) 72%);
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .5s ease;
+  }
+  .banc[data-allume]::before{opacity:1;}
+
+  /* ---------- Voyant ---------- */
+  .voyant{
+    position:relative;
+    width:11px; height:11px;
+    flex:0 0 auto;
+    border-radius:50%;
+    background:#20242A;
+    box-shadow:inset 0 1px 1px rgba(0,0,0,.8), inset 0 -1px 0 rgba(255,255,255,.05);
+    transition:background .35s ease, box-shadow .35s ease;
+  }
+  .voyant[data-etat="ecoute"]{
+    background:var(--glow);
+    box-shadow:0 0 10px rgba(255,106,0,.85), 0 0 22px rgba(255,106,0,.4);
+    animation:respire 1.05s ease-in-out infinite;
+  }
+  .voyant[data-etat="propose"]{
+    background:var(--glow-soft);
+    box-shadow:0 0 8px rgba(255,154,77,.6);
+  }
+  .voyant[data-etat="valide"]{
+    background:var(--ok);
+    box-shadow:0 0 10px rgba(20,184,166,.85), 0 0 24px rgba(20,184,166,.35);
+  }
+
+  /* ================================================================
+     BANDEAU : la face avant de l'appareil.
+     ================================================================ */
+  .bandeau{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:linear-gradient(180deg,#15181B 0%,#0D0F11 100%);
+    border-bottom:1px solid #262B31;
+    box-shadow:0 8px 24px -16px rgba(0,0,0,.95);
+  }
+  .bandeau__interieur{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    min-height:66px;
+    padding-top:9px;
+    padding-bottom:9px;
+  }
+
+  /* ---------- LOGOTYPE ----------
+     Un tube miniature, puis le nom grave. Le tube est le voyant
+     d'alimentation de l'appareil : c'est la marque, et elle se
+     redessine a n'importe quelle taille en SVG. */
+  /* min-height : la cible tactile ne descend pas sous 44px, la page se
+     lit et se touche debout, sur un telephone tendu a quelqu'un. */
+  .logo{
+    display:inline-flex;
+    align-items:center;
+    gap:11px;
+    min-height:44px;
+    text-decoration:none;
+  }
+  .logo__tube{display:block; flex:0 0 auto;}
+  .logo__mot{
+    font-size:19px;
+    font-weight:800;
+    font-stretch:92%;
+    letter-spacing:.26em;
+    text-transform:uppercase;
+    color:var(--bright);
+    text-shadow:0 1px 0 rgba(0,0,0,.8);
+  }
+
+  /* ---------- Boutons ----------
+     Coins coupes : la decoupe d'une plaque d'appareil, pas un rayon.
+     Le pseudo-element porte la decoupe pour que le focus reste visible
+     sur l'element lui-meme. */
+  .bouton{
+    position:relative;
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    min-height:44px;
-    padding:8px 16px;
-    margin-left:-16px; /* compense le padding-left : le TEXTE s'aligne sur le h2
-                           au-dessus, la zone cliquable garde sa taille (32px +
-                           largeur du texte), elle est juste translatee de 16px
-                           vers la gauche plutot que reduite. */
+    gap:11px;
+    min-height:46px;
+    padding:12px 24px;
+    font-family:inherit;
+    font-size:12.5px;
+    font-weight:700;
+    font-stretch:96%;
+    letter-spacing:.19em;
+    text-transform:uppercase;
+    text-decoration:none;
+    /* Un libelle grave ne se coupe pas en trois lignes au milieu d'une
+       plaque : il tient sur une ligne, ou la plaque est trop petite. */
+    white-space:nowrap;
+    color:var(--glow);
+    background:linear-gradient(180deg,rgba(255,106,0,.09) 0%,rgba(255,106,0,.03) 100%);
+    border:1px solid rgba(255,106,0,.42);
+    clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
+    transition:color .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+  }
+  .bouton:hover{
+    color:#FFB37A;
+    border-color:rgba(255,106,0,.9);
+    background:linear-gradient(180deg,rgba(255,106,0,.17) 0%,rgba(255,106,0,.06) 100%);
+    box-shadow:0 0 22px -4px rgba(255,106,0,.5), inset 0 0 14px rgba(255,106,0,.09);
+  }
+  /* Au repos, un bouton n'emet pas de lumiere : dans ce monde, seules
+     les sources en emettent (tubes, voyants). Le retroeclairage
+     n'apparait qu'a l'interaction, ci-dessous. */
+  .bouton--fort{
+    min-height:56px;
+    padding:16px 32px;
+    font-size:13.5px;
+    color:#FFC79B;
+    border-color:rgba(255,106,0,.62);
+    background:linear-gradient(180deg,rgba(255,106,0,.16) 0%,rgba(255,106,0,.05) 100%);
+  }
+  .bouton--fort:hover{color:#FFDCC2;}
+  /* Ce libelle-ci est long : le nowrap general le faisait deborder de la
+     page sur telephone (mesure : 401px pour 390 de large). Il a donc le
+     droit de se replier, et son interlettrage est resserre. */
+  .bouton--calme{
+    color:var(--label);
+    border-color:#31363C;
+    background:linear-gradient(180deg,rgba(255,255,255,.03) 0%,rgba(255,255,255,.01) 100%);
+    white-space:normal;
+    text-align:center;
+    letter-spacing:.12em;
     max-width:100%;
-    word-break:break-word;
-    color:var(--brand-darker);
-    font-weight:700;
-    text-decoration:underline;
-    text-decoration-color:currentColor;
-    text-underline-offset:3px;
   }
+  .bouton--calme:hover{
+    color:var(--bright);
+    border-color:#4A5057;
+    background:rgba(255,255,255,.05);
+    box-shadow:none;
+  }
+  .bouton__fleche{
+    width:15px; height:15px;
+    flex:0 0 auto;
+    transition:transform .22s cubic-bezier(.2,.8,.3,1);
+  }
+  .bouton:hover .bouton__fleche{transform:translateX(4px);}
 
-  /* ---------- Pied de page ---------- */
-  .pied{
-    background:var(--bg);
-    padding:32px 20px;
-    text-align:center;
+  /* ================================================================
+     1. ACCROCHE
+     ================================================================ */
+  .accroche{
+    position:relative;
+    /* 28px et non 64 : chaque pixel gagne en haut est un pixel de
+       demonstration visible sans defiler, sur telephone. */
+    padding:28px 0 72px;
+    border-top:none;
+    overflow:hidden;
   }
-  .lien-app{
-    display:inline-flex;
+  @media (min-width:900px){.accroche{padding:104px 0 120px;}}
+  /* la lueur d'ambiance du banc de tubes sur le fond du chassis */
+  .accroche::before{
+    content:'';
+    position:absolute;
+    top:-10%; left:50%;
+    width:min(1100px,140vw);
+    height:620px;
+    transform:translateX(-50%);
+    background:radial-gradient(50% 50% at 50% 50%, rgba(255,106,0,.085) 0%, rgba(255,106,0,0) 72%);
+    pointer-events:none;
+  }
+  .accroche__grille{
+    position:relative;
+    display:grid;
+    gap:38px;
     align-items:center;
-    justify-content:center;
-    min-height:44px;
-    padding:8px 16px;
-    color:var(--brand-dark);
-    font-weight:700;
-    text-decoration:underline;
-    text-decoration-color:var(--border);
-    text-underline-offset:3px;
   }
-  .lien-app:hover{
-    color:var(--brand-darker);
-    text-decoration-color:currentColor;
-  }
+  /* Telephone : l'appareil monte juste sous la promesse, le bouton passe
+     apres. C'est la seule facon que la demonstration tienne au-dessus de
+     la ligne de flottaison sur un ecran de 700px utiles. */
+  .accroche__texte{order:0;}
+  .appareil{order:1;}
+  .accroche__action{order:2;}
 
-  /* ---------- Accessibilite : focus et mouvement ---------- */
-  a{transition:color .15s ease, text-decoration-color .15s ease;}
-  a:focus-visible{
-    outline:3px solid var(--focus);
-    outline-offset:2px;
+  @media (min-width:960px){
+    .accroche__grille{
+      grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      grid-template-rows:auto auto;
+      column-gap:64px;
+      row-gap:36px;
+    }
+    /* Grand ecran : le bouton retrouve sa place sous le texte, a gauche,
+       et l'appareil occupe toute la colonne de droite. */
+    .accroche__texte{grid-column:1; grid-row:1; align-self:end;}
+    .accroche__action{grid-column:1; grid-row:2; align-self:start;}
+    .appareil{grid-column:2; grid-row:1 / span 2; align-self:center;}
+  }
+  /* Pas de max-width en ch ici : l'unite ch se calcule sur la taille de
+     police du CONTENEUR (17px), pas sur celle du titre, et elle etranglait
+     le h1 a ~150px, qui tombait alors en cinq lignes hachees. C'est la
+     colonne de grille qui donne la mesure. */
+  .accroche__texte{min-width:0;}
+  .soustitre{
+    margin-top:22px;
+    font-size:clamp(17px,2.1vw,20px);
+    line-height:1.5;
+    color:var(--body);
+    max-width:34ch;
+  }
+  .accroche__action{margin-top:34px;}
+
+  /* ---------- L'appareil du premier ecran ---------- */
+  .appareil{
+    position:relative;
+    max-width:100%;
+    min-width:0;
+    padding:30px 22px 22px;
     border-radius:4px;
   }
-  .section--sombre a:focus-visible{outline-color:#ffffff;}
+  @media (min-width:520px){.appareil{padding:38px 34px 26px;}}
+  .appareil .vis{width:10px; height:10px;}
+  .appareil .vis--hg{top:12px; left:12px;}
+  .appareil .vis--hd{top:12px; right:12px;}
+  .appareil .vis--bg{bottom:12px; left:12px;}
+  .appareil .vis--bd{bottom:12px; right:12px;}
 
-  @media (prefers-reduced-motion: reduce){
-    *{transition:none !important;}
+  .appareil__plaque{
+    display:flex;
+    justify-content:center;
+    margin-top:22px;
+  }
+  /* la ligne d'etat : ce que l'appareil est en train de faire */
+  .appareil__etat{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    min-height:22px;
+    margin-top:20px;
+  }
+  .appareil__etat-mot{
+    font-size:11.5px;
+    font-weight:650;
+    font-stretch:96%;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--label);
+    transition:color .3s ease;
+  }
+  .appareil__etat[data-etat="valide"] .appareil__etat-mot{color:var(--ok);}
+  .appareil__etat[data-etat="ecoute"] .appareil__etat-mot,
+  .appareil__etat[data-etat="propose"] .appareil__etat-mot{color:var(--glow-soft);}
+
+  .appareil__trace{
+    margin-top:11px;
+    text-align:center;
+    letter-spacing:.2em;
+    transition:opacity .4s ease;
+  }
+  .appareil__trace[data-vide]{opacity:0;}
+
+  /* la phrase dictee, dans son propre logement */
+  .dictee{
+    position:relative;
+    margin-top:22px;
+    padding:15px 18px;
+    min-height:58px;
+    display:flex;
+    align-items:center;
+    gap:13px;
+    background:rgba(0,0,0,.32);
+    border:1px solid #262B31;
+    border-radius:3px;
+    box-shadow:inset 0 2px 8px rgba(0,0,0,.6);
+  }
+  .dictee__micro{width:17px; height:17px; flex:0 0 auto; color:var(--engrave); transition:color .3s ease;}
+  .dictee[data-actif] .dictee__micro{color:var(--glow);}
+  .dictee__texte{
+    font-size:15.5px;
+    line-height:1.45;
+    color:var(--body);
+    font-style:italic;
+  }
+  .dictee__curseur{
+    display:inline-block;
+    width:2px; height:1.05em;
+    margin-left:1px;
+    background:var(--glow);
+    vertical-align:text-bottom;
+    opacity:0;
+  }
+  .dictee[data-actif] .dictee__curseur{animation:clignote .9s steps(1) infinite;}
+  @keyframes clignote{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+
+  /* ================================================================
+     2. LE PROBLEME
+     Chaque constat porte un voyant ETEINT : ce sont exactement les
+     choses que rien ne mesure aujourd'hui.
+     ================================================================ */
+  .constats{
+    margin-top:8px;
+    display:grid;
+    gap:2px;
+  }
+  .constat{
+    display:flex;
+    align-items:flex-start;
+    gap:16px;
+    padding:17px 0;
+    border-bottom:1px solid #1D2126;
+  }
+  .constat:last-child{border-bottom:none;}
+  .constat .voyant{margin-top:.55em;}
+  .constat p{max-width:60ch;}
+  .conclusion{
+    margin-top:34px;
+    padding-left:20px;
+    border-left:1px solid var(--mesh);
+    max-width:62ch;
   }
 
-  /* Filet documente dans la memoire du projet : sans cette regle, un display
-     concurrent peut ecraser [hidden]. Aucun element n'est masque ici
-     aujourd'hui, la regle est posee par prudence pour la suite du chantier. */
-  [hidden]{display:none !important;}
+  /* Les regles .logement ont ete retirees avec la section de l'anime
+     (voir le commentaire a l'emplacement de la section, plus bas). */
+
+  /* ================================================================
+     4. LES TROIS GESTES
+     Un module d'appareil par geste. Le numero est un vrai tube : la
+     sequence porte de l'information, on parle PUIS on valide PUIS on
+     consulte.
+     ================================================================ */
+  .gestes{
+    margin-top:8px;
+    display:grid;
+    gap:56px;
+    align-items:start;
+  }
+  .geste{display:flex; flex-direction:column;}
+
+  /* 960px, le meme seuil que l'accroche : a 940 les gestes passaient sur
+     trois colonnes alors que l'accroche etait encore empilee. */
+  @media (min-width:960px){
+    .gestes{
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      grid-template-rows:auto auto auto;
+      gap:34px;
+    }
+    /* subgrid : les trois titres, les trois textes et les trois ecrans
+       partagent la meme ligne de base d'une colonne a l'autre. Sans lui,
+       chaque capture demarrait a la hauteur ou finissait son propre
+       paragraphe, et la rangee partait en desordre. Cette regle vient
+       APRES le display:flex ci-dessus, sinon elle serait ecrasee. */
+    .geste{
+      display:grid;
+      grid-template-rows:subgrid;
+      grid-row:span 3;
+    }
+  }
+  .geste__tete{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-bottom:16px;
+  }
+  .geste__texte{max-width:46ch;}
+  .geste__texte p{margin-top:12px; font-size:16px;}
+
+  /* le chassis d'ecran : la capture n'est plus posee sur le fond, elle
+     est SERTIE dans l'appareil, derriere une vitre. */
+  /* Les captures partent EN HAUT de leur rangee. Une version precedente
+     les collait en bas pour aligner les trois plaques de legende : cela
+     alignait bien les plaques, mais creusait un trou vertical de ~900px
+     dans la colonne du milieu (le geste 2 est un detail recadre en
+     paysage, bien plus court que les deux ecrans en portrait). Un
+     decalage de legendes se pardonne, un trou de 900px non. */
+  .ecran{
+    margin-top:26px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+  }
+  .ecran__chassis{
+    position:relative;
+    padding:14px 14px 13px;
+    background:linear-gradient(180deg,#23272C 0%,#15181B 100%);
+    border:1px solid #31363C;
+    border-radius:5px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.08),
+      0 22px 44px -26px rgba(0,0,0,.95);
+    max-width:100%;
+  }
+  .ecran__chassis .vis{width:7px; height:7px;}
+  .ecran__chassis .vis--hg{top:4px; left:4px;}
+  .ecran__chassis .vis--hd{top:4px; right:4px;}
+  .ecran__chassis .vis--bg{bottom:4px; left:4px;}
+  .ecran__chassis .vis--bd{bottom:4px; right:4px;}
+  .ecran__vitre{
+    position:relative;
+    display:block;
+    overflow:hidden;
+    border-radius:2px;
+    background:#000;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.9);
+  }
+  /* le reflet de la vitre, tres discret : la capture doit rester lisible */
+  .ecran__vitre::after{
+    content:'';
+    position:absolute; inset:0;
+    pointer-events:none;
+    background:linear-gradient(104deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,0) 26%);
+  }
+  .ecran__image{
+    display:block;
+    width:auto; height:auto;
+    max-width:min(100%,var(--cap-w,300px));
+    max-height:var(--cap-h,none);
+  }
+  .ecran__legende{margin-top:16px;}
+
+  /* ================================================================
+     5. CE QUE STOVO NE FAIT PAS
+     Le panneau des voyants eteints. Un instrument qui montre ce qu'il
+     ne mesure pas.
+     ================================================================ */
+  .refus{
+    margin-top:8px;
+    display:grid;
+    gap:0;
+  }
+  /* Gouttiere de largeur FIXE : les lignes ne portent pas toutes le meme
+     nombre de voyants (3, puis 2, puis 2), et sans largeur fixe les trois
+     paragraphes demarraient a trois abscisses differentes, ce qui se lit
+     comme un bug de rendu. Les voyants se calent sur la premiere ligne du
+     texte, comme dans la section du probleme plus haut. */
+  .refus__ligne{
+    display:flex;
+    align-items:flex-start;
+    gap:18px;
+    padding:19px 0;
+    border-bottom:1px solid #1D2126;
+  }
+  .refus__ligne:last-child{border-bottom:none;}
+  .refus__voyants{
+    display:flex;
+    gap:9px;
+    flex:0 0 auto;
+    width:56px;
+    margin-top:.55em;
+  }
+  .refus__ligne p{font-size:17px;}
+
+  /* ================================================================
+     6. LA PLAQUE DU CONSTRUCTEUR
+     Sur tout instrument il y a une plaque gravee : qui l'a fait, ou,
+     et dans quel etat il est. C'est la signature, sans visage.
+     ================================================================ */
+  .constructeur{
+    position:relative;
+    max-width:760px;
+    padding:44px 28px 40px;
+    border-radius:4px;
+  }
+  @media (min-width:640px){.constructeur{padding:54px 52px 48px;}}
+  .constructeur .vis{width:10px; height:10px;}
+  .constructeur .vis--hg{top:14px; left:14px;}
+  .constructeur .vis--hd{top:14px; right:14px;}
+  .constructeur .vis--bg{bottom:14px; left:14px;}
+  .constructeur .vis--bd{bottom:14px; right:14px;}
+  .constructeur__filet{
+    width:54px; height:1px;
+    margin-bottom:26px;
+    background:linear-gradient(90deg,var(--glow) 0%,rgba(255,106,0,0) 100%);
+  }
+  .constructeur p{max-width:58ch;}
+  .constructeur p + p{margin-top:16px;}
+
+  /* ================================================================
+     7. CONTACT
+     ================================================================ */
+  .contact{text-align:center;}
+  .contact h2{margin-left:auto; margin-right:auto; max-width:22ch;}
+  .contact__action{
+    margin-top:34px;
+    display:flex;
+    justify-content:center;
+  }
+  .contact__adresse{
+    margin-top:22px;
+    font-size:14px;
+    color:var(--label);
+    word-break:break-word;
+  }
+
+  /* ================================================================
+     PIED
+     ================================================================ */
+  .pied{
+    padding:38px 0 46px;
+    border-top:1px solid #1F2328;
+    background:#0A0B0D;
+  }
+  .pied__interieur{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:22px;
+    text-align:center;
+  }
+  /* --engrave (#5B6168) ne donne que 3,15:1 sur ce fond, sous le seuil
+     WCAG de 4,5:1, et sa propre definition dit "jamais du texte porteur".
+     --label donne 6,3:1. */
+  .pied__mention{font-size:13px; color:var(--label); letter-spacing:.02em;}
+
+  /* ================================================================
+     ACCESSIBILITE
+     ================================================================ */
+  a:focus-visible,
+  button:focus-visible{
+    outline:3px solid var(--glow);
+    outline-offset:3px;
+  }
+  .saut{
+    position:absolute;
+    left:-9999px;
+    top:0;
+    z-index:100;
+    padding:12px 20px;
+    background:var(--steel);
+    color:var(--bright);
+    border:1px solid var(--glow);
+  }
+  .saut:focus{left:12px; top:12px;}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{
+      animation-duration:.001ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:.001ms !important;
+    }
+  }
 </style>
 </head>
 <body>
+<!--
+  THESIS: Un stock est un compteur physique, et la voix est ce qui le fait
+  tourner. Refuse la landing SaaS de la categorie : capture en perspective sur
+  fond blanc, trois cartes a icones, degrade bleu-violet.
+  OWN-WORLD: Chassis d'acier noirci (#0E0F11/#1A1D21), maille d'anode, verre,
+  gravure creusee, vis. La VALEUR brule en neon orange (#FF6A00) dans des tubes
+  Nixie ou les dix chiffres restent visibles ; le VOYANT valide est le teal
+  Stovo (#14B8A6) ; l'alarme est rouge. Archivo variable, capitales gravees.
+  STORY: Le visiteur voit un compteur de stock tourner a la voix, comprend que
+  l'appareil propose et que lui valide, voit ce que l'instrument refuse de
+  mesurer, et ecrit a l'adresse gravee.
+  FIRST VIEWPORT: A gauche le titre et le bouton d'action ; a droite un banc de
+  trois tubes dans son chassis visse, plaque JUS DE FRUITS, ligne de dictee en
+  dessous. Le compteur passe de 012 a 024 en demi-intensite (propose) puis en
+  pleine lueur (valide).
+  FORM: Nixie laboratory counter, challenger choisi par l'utilisateur contre le
+  candidat 6 assigne (planning a fiches T), seed d1a1d737.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the
+  finish review, the verdict, and DESIGN.md
+-->
+<a class="saut" href="#accroche">Aller au contenu</a>
+
+<header class="bandeau">
+  <div class="zone bandeau__interieur">
+    <a class="logo" href="#accroche" aria-label="Stovo, retour en haut de la page">
+      <svg class="logo__tube" width="19" height="27" viewBox="0 0 19 27" fill="none" aria-hidden="true" focusable="false">
+        <path d="M1.2 7.4C1.2 3.9 4.9 1.2 9.5 1.2s8.3 2.7 8.3 6.2v13.1H1.2V7.4Z" fill="#131619" stroke="#3A3F46" stroke-width="1.1"/>
+        <path d="M9.5 6.6v9.2M6.6 9.1l2.9-2.5 2.9 2.5" stroke="#FF6A00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="1.2" y="20.5" width="16.6" height="5.3" rx="1.1" fill="#2A2E34" stroke="#454B52" stroke-width="1"/>
+      </svg>
+      <span class="logo__mot">Stovo</span>
+    </a>
+    <a class="bouton" href="#contact">
+      Écrire
+      <svg class="bouton__fleche" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+        <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+  </div>
+</header>
+
 <main>
 
-  <!-- 1. Accroche -->
-  <section id="accroche" class="section">
-    <div class="conteneur">
-      <p class="kicker">Stovo</p>
-      <h1>Tenez votre stock à la voix.</h1>
-      <p class="soustitre">Plus vite qu'avec un cahier ou un tableur. Sans formation.</p>
+  <!-- ============ 1. ACCROCHE ============ -->
+  <section id="accroche" class="accroche">
+    <div class="zone accroche__grille">
+
+      <div class="accroche__texte">
+        <h1>Tenez votre stock à la voix.</h1>
+        <p class="soustitre">Plus vite qu'avec un cahier ou un tableur. Sans formation.</p>
+      </div>
+
+      <!--
+        Le bouton est sorti du bloc de texte pour devenir un element propre
+        de la grille. L'ordre du DOM reste le plus logique au clavier
+        (promesse, action, demonstration) ; c'est le CSS qui, sur telephone
+        seulement, fait passer l'appareil AVANT le bouton.
+        Pourquoi : le bouton poussait la demonstration sous la ligne de
+        flottaison, le voyant VALIDE tombait a 790px, invisible sur un ecran
+        de ~700px utiles. Or c'est ce trio (phrase dite, chiffre qui bouge,
+        validation) qui porte tout le produit dans les 20 secondes ou l'on
+        tend l'ecran a quelqu'un.
+      -->
+      <div class="accroche__action">
+        <a class="bouton bouton--fort" href="#comment-ca-marche">
+          Voir les trois gestes
+          <svg class="bouton__fleche" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+            <path d="M8 2v11M4 9l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+
+      <!--
+        Le compteur. Demonstration, pas statistique : les chiffres ne
+        mesurent aucune adoption, ils montrent une quantite de stock qui
+        bouge quand on parle. Le produit affiche est un exemple.
+      -->
+      <div class="appareil panneau">
+        <span class="vis vis--hg"></span><span class="vis vis--hd"></span>
+        <span class="vis vis--bg"></span><span class="vis vis--bd"></span>
+
+        <!--
+          Les trois tubes sont ecrits EN DUR a leur etat final (024,
+          valide). C'est le vrai repli : si le script echoue ou si le
+          JavaScript est bloque, le premier ecran montre quand meme un
+          compteur allume, la phrase dictee et le voyant valide. Le
+          script vide ce conteneur et reprend la main pour animer.
+        -->
+        <div class="banc" id="banc" data-allume role="img" aria-label="Compteur de stock affichant douze jus de fruits, qui passe à vingt-quatre après validation.">
+          <span class="tube"><span class="tube__pile"><span class="chiffre" data-on>0</span><span class="chiffre">1</span><span class="chiffre">2</span><span class="chiffre">3</span><span class="chiffre">4</span><span class="chiffre">5</span><span class="chiffre">6</span><span class="chiffre">7</span><span class="chiffre">8</span><span class="chiffre">9</span></span><span class="tube__maille maille"></span><span class="tube__verre"></span><span class="tube__base"></span></span>
+          <span class="tube"><span class="tube__pile"><span class="chiffre">0</span><span class="chiffre">1</span><span class="chiffre" data-on>2</span><span class="chiffre">3</span><span class="chiffre">4</span><span class="chiffre">5</span><span class="chiffre">6</span><span class="chiffre">7</span><span class="chiffre">8</span><span class="chiffre">9</span></span><span class="tube__maille maille"></span><span class="tube__verre"></span><span class="tube__base"></span></span>
+          <span class="tube"><span class="tube__pile"><span class="chiffre">0</span><span class="chiffre">1</span><span class="chiffre">2</span><span class="chiffre">3</span><span class="chiffre" data-on>4</span><span class="chiffre">5</span><span class="chiffre">6</span><span class="chiffre">7</span><span class="chiffre">8</span><span class="chiffre">9</span></span><span class="tube__maille maille"></span><span class="tube__verre"></span><span class="tube__base"></span></span>
+        </div>
+
+        <div class="appareil__plaque">
+          <span class="plaque plaque--vissee">
+            <span class="vis vis--g"></span>
+            Jus de fruits &middot; en stock
+            <span class="vis vis--d"></span>
+          </span>
+        </div>
+
+        <p class="dictee" id="dictee">
+          <svg class="dictee__micro" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+            <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          <span class="dictee__texte"><span id="dictee-texte">J'ai reçu douze jus de fruits.</span><span class="dictee__curseur"></span></span>
+        </p>
+
+        <p class="appareil__etat" id="etat" data-etat="valide">
+          <span class="voyant" id="voyant" data-etat="valide"></span>
+          <span class="appareil__etat-mot" id="etat-mot">Validé</span>
+        </p>
+
+        <!-- La trace du mouvement, gravee sous l'appareil. Sans elle,
+             "024" a l'arret ne se relie a rien et peut se lire comme une
+             reference article plutot que comme une quantite. -->
+        <p class="appareil__trace grave" id="trace">012 &rarr; 024</p>
+      </div>
+
     </div>
   </section>
 
-  <!-- 2. Le problème : aucune preuve necessaire, le visiteur se reconnait -->
-  <section id="probleme" class="section section--alt">
-    <div class="conteneur">
-      <h2>Vous connaissez déjà le problème.</h2>
-      <p>Un client demande un article. Vous pensiez en avoir. Il n'y en a plus.</p>
-      <p>Un carton dort au fond de la réserve depuis des mois. Plus personne ne se souvient de lui.</p>
-      <p>Le soir, boutique fermée, vous ressaisissez votre stock au lieu de rentrer chez vous.</p>
-      <p>Ce n'est pas un problème de sérieux. C'est un problème d'outil. Un cahier ou un tableur demandent de s'asseoir, d'avoir les deux mains libres et de ne pas être dérangé. Votre journée ne ressemble pas à ça.</p>
+  <!-- ============ 2. LE PROBLEME ============ -->
+  <section id="probleme" class="section">
+    <div class="zone">
+      <h2 class="colonne">Vous connaissez déjà le problème.</h2>
+
+      <div class="constats">
+        <div class="constat">
+          <span class="voyant" aria-hidden="true"></span>
+          <p>Un client demande un article. Vous pensiez en avoir. Il n'y en a plus.</p>
+        </div>
+        <div class="constat">
+          <span class="voyant" aria-hidden="true"></span>
+          <p>Un carton dort au fond de la réserve depuis des mois. Plus personne ne se souvient de lui.</p>
+        </div>
+        <div class="constat">
+          <span class="voyant" aria-hidden="true"></span>
+          <p>Le soir, boutique fermée, vous ressaisissez votre stock au lieu de rentrer chez vous.</p>
+        </div>
+      </div>
+
+      <p class="conclusion">Ce n'est pas un problème de sérieux. C'est un problème d'outil. Un cahier ou un tableur demandent de s'asseoir, d'avoir les deux mains libres et de ne pas être dérangé. <span class="accent">Votre journée ne ressemble pas à ça.</span></p>
     </div>
   </section>
 
   <!--
-    3. L'animé.
+    ============ L'ANIME : SECTION RETIREE LE 02/08/2026 ============
 
-    Volontairement SANS animation dans cette v1 (voir VITRINE_fondations_2026-08-02.md,
-    section "Cette version est SANS animation"). Ce conteneur reçoit aujourd'hui un
-    simple bloc de remplacement.
+    Cette section portait un logement vide avec la plaque "Anecdote animee a
+    venir". Retiree apres la revue de finition : le visiteur ne lit pas cela
+    comme un emplacement reserve sur un appareil, il lit "ce n'est pas fini".
+    Sur une page de demarchage, c'est un aveu qui ne lui apprend rien.
 
-    Ce qui viendra s'y greffer plus tard (lot suivant, tâche 9 du plan de production) :
-    la voie C retenue en §7 des fondations, une histoire en 7 plans jouée en SVG + CSS,
-    qui avance avec le défilement de la page (IntersectionObserver ou équivalent CSS),
-    sans dépendance externe, 45 à 60 secondes, muette, avec un mot ou deux à l'écran par
-    plan. Scénario complet plan par plan dans VITRINE_fondations_2026-08-02.md §6, textes
-    à l'écran validés dans VITRINE_textes_v1_2026-08-02.md §Section 3.
+    Ce qui devait s'y greffer reste au plan (tache 9 du plan de production) :
+    la voie C retenue en §7 des fondations, une histoire en 7 plans jouee en
+    SVG + CSS, qui avance avec le defilement, sans dependance externe, 45 a 60
+    secondes, muette. Scenario plan par plan dans
+    VITRINE_fondations_2026-08-02.md §6, textes a l'ecran valides dans
+    VITRINE_textes_v1_2026-08-02.md §Section 3.
 
-    D'ici là : ne pas remplacer ce bloc par un dessin ou une image inventée.
+    La section revient le jour ou l'animation existe reellement. D'ici la :
+    ne pas la remplacer par un dessin ou une image inventee.
   -->
-  <section id="anime" class="section" aria-labelledby="anime-titre">
-    <div class="conteneur">
-      <h2 id="anime-titre" class="titre-discret">L'animé</h2>
-      <div class="placeholder placeholder--anime" id="anime-conteneur">
-        <p class="placeholder__texte">Anecdote animée à venir</p>
-      </div>
-    </div>
-  </section>
 
-  <!-- 4. Comment ça marche : la demonstration, pas l'affirmation -->
-  <section id="comment-ca-marche" class="section section--alt">
-    <div class="conteneur">
-      <h2>Trois gestes, et c'est tout.</h2>
+  <!-- ============ 3. COMMENT CA MARCHE ============ -->
+  <section id="comment-ca-marche" class="section section--banc">
+    <div class="zone">
+      <h2 class="colonne">Trois gestes, et c'est tout.</h2>
+
       <div class="gestes">
 
         <div class="geste">
-          <h3>1. Vous parlez.</h3>
-          <p>« J'ai reçu douze jus de fruits. »</p>
-          <p>Aucune formule à retenir, aucun code article à taper. Vous parlez comme vous parleriez à quelqu'un.</p>
-          <figure id="capture-parler">
-            <img class="capture-image" src="media/geste-1-parler.png" width="780" height="1688" style="--cap-w:390px;--cap-h:520px" loading="lazy" decoding="async" alt="Écran de saisie de Stovo avec l'invite « Écris ce que tu as fait, par exemple : j'ai reçu 10 pâtes », un champ de texte avec un bouton Envoyer, et un gros bouton microphone rond en bas de l'écran.">
-            <figcaption>Vous parlez</figcaption>
+          <div class="geste__tete">
+            <span class="tube" style="--tw:38px;--th:60px;--tfs:34px" aria-hidden="true">
+              <span class="tube__pile"><span class="chiffre" data-on>1</span></span>
+              <span class="tube__maille maille"></span>
+              <span class="tube__verre"></span>
+              <span class="tube__base"></span>
+            </span>
+            <h3>Vous parlez.</h3>
+          </div>
+          <div class="geste__texte">
+            <p>« J'ai reçu douze jus de fruits. »</p>
+            <p>Aucune formule à retenir, aucun code article à taper. Vous parlez comme vous parleriez à quelqu'un.</p>
+          </div>
+          <figure class="ecran" id="capture-parler">
+            <span class="ecran__chassis">
+              <span class="vis vis--hg"></span><span class="vis vis--hd"></span>
+              <span class="vis vis--bg"></span><span class="vis vis--bd"></span>
+              <span class="ecran__vitre">
+                <img class="ecran__image" src="media/geste-1-parler.png" width="780" height="1688" style="--cap-w:300px;--cap-h:520px" loading="lazy" decoding="async" alt="Écran de saisie de Stovo avec l'invite « Écris ce que tu as fait, par exemple : j'ai reçu 10 pâtes », un champ de texte avec un bouton Envoyer, et un gros bouton microphone rond en bas de l'écran.">
+              </span>
+            </span>
+            <figcaption class="ecran__legende">
+              <span class="plaque">Vous parlez</span>
+            </figcaption>
           </figure>
         </div>
 
         <div class="geste">
-          <h3>2. Stovo propose, vous validez.</h3>
-          <p>L'application vous montre ce qu'elle a compris, et attend. Rien ne s'enregistre tant que vous n'avez pas dit oui. Elle a mal compris ? Vous corrigez avant, pas après.</p>
-          <figure id="capture-valider">
-            <img class="capture-image" src="media/geste-2-valider.png" width="736" height="386" style="--cap-w:368px" loading="lazy" decoding="async" alt="Bulle de confirmation de Stovo, avec le texte « J'ai compris : entree de 12 Jus de fruits. C'est bon ? Reponds oui pour valider, non pour annuler. », et deux boutons en dessous, Oui et Non.">
-            <figcaption>Vous validez</figcaption>
+          <div class="geste__tete">
+            <span class="tube" style="--tw:38px;--th:60px;--tfs:34px" aria-hidden="true">
+              <span class="tube__pile"><span class="chiffre" data-on>2</span></span>
+              <span class="tube__maille maille"></span>
+              <span class="tube__verre"></span>
+              <span class="tube__base"></span>
+            </span>
+            <h3>Stovo propose, vous validez.</h3>
+          </div>
+          <div class="geste__texte">
+            <p>L'application vous montre ce qu'elle a compris, et attend. Rien ne s'enregistre tant que vous n'avez pas dit oui. Elle a mal compris ? Vous corrigez avant, pas après.</p>
+          </div>
+          <figure class="ecran" id="capture-valider">
+            <span class="ecran__chassis">
+              <span class="vis vis--hg"></span><span class="vis vis--hd"></span>
+              <span class="vis vis--bg"></span><span class="vis vis--bd"></span>
+              <span class="ecran__vitre">
+                <img class="ecran__image" src="media/geste-2-valider.png" width="736" height="386" style="--cap-w:330px" loading="lazy" decoding="async" alt="Bulle de confirmation de Stovo, avec le texte « J'ai compris : entree de 12 Jus de fruits. C'est bon ? Reponds oui pour valider, non pour annuler. », et deux boutons en dessous, Oui et Non.">
+              </span>
+            </span>
+            <figcaption class="ecran__legende">
+              <span class="plaque">Vous validez</span>
+            </figcaption>
           </figure>
         </div>
 
         <div class="geste">
-          <h3>3. Vous consultez quand vous voulez.</h3>
-          <p>Ce qu'il vous reste, ce qui descend trop vite, ce qu'il faut commander.</p>
-          <figure id="capture-consulter">
-            <img class="capture-image" src="media/geste-3-consulter.png" width="756" height="1504" style="--cap-w:378px;--cap-h:520px" loading="lazy" decoding="async" alt="Écran Pilotage de Stovo : bandeau vert foncé avec le nom Stovo et « Pilotez votre stock en un coup d'œil », la carte « Cet après-midi » annonçant 2 produits à commander et 1 en rupture imminente, puis quatre tuiles de synthèse, à commander 2, rupture imminente 1, produits suivis 13, activité 7 jours 9.">
-            <figcaption>Vous consultez</figcaption>
+          <div class="geste__tete">
+            <span class="tube" style="--tw:38px;--th:60px;--tfs:34px" aria-hidden="true">
+              <span class="tube__pile"><span class="chiffre" data-on>3</span></span>
+              <span class="tube__maille maille"></span>
+              <span class="tube__verre"></span>
+              <span class="tube__base"></span>
+            </span>
+            <h3>Vous consultez quand vous voulez.</h3>
+          </div>
+          <div class="geste__texte">
+            <p>Ce qu'il vous reste, ce qui descend trop vite, ce qu'il faut commander.</p>
+          </div>
+          <figure class="ecran" id="capture-consulter">
+            <span class="ecran__chassis">
+              <span class="vis vis--hg"></span><span class="vis vis--hd"></span>
+              <span class="vis vis--bg"></span><span class="vis vis--bd"></span>
+              <span class="ecran__vitre">
+                <img class="ecran__image" src="media/geste-3-consulter.png" width="756" height="1504" style="--cap-w:300px;--cap-h:520px" loading="lazy" decoding="async" alt="Écran Pilotage de Stovo : bandeau vert foncé avec le nom Stovo et « Pilotez votre stock en un coup d'œil », la carte « Cet après-midi » annonçant 2 produits à commander et 1 en rupture imminente, puis quatre tuiles de synthèse, à commander 2, rupture imminente 1, produits suivis 13, activité 7 jours 9.">
+              </span>
+            </span>
+            <figcaption class="ecran__legende">
+              <span class="plaque">Vous consultez</span>
+            </figcaption>
           </figure>
         </div>
 
@@ -351,41 +1202,292 @@
     </div>
   </section>
 
-  <!-- 5. Ce que Stovo ne fait pas : dire non pour rendre credible ce qui reste -->
-  <section id="ce-que-stovo-ne-fait-pas" class="section section--sombre">
-    <div class="conteneur">
-      <h2>Stovo tient votre stock. C'est tout, et c'est voulu.</h2>
-      <p>Pas de caisse, pas de paiement, pas de ticket.</p>
-      <p>Pas de facturation, pas de comptabilité.</p>
-      <p>Pas de planning, pas de gestion du personnel.</p>
-      <p>Chaque fonction en plus est une fonction à apprendre. Si vous cherchez un logiciel qui fait tout, ce n'est pas ici, et vous venez de gagner cinq minutes.</p>
+  <!-- ============ 5. CE QUE STOVO NE FAIT PAS ============ -->
+  <section id="ce-que-stovo-ne-fait-pas" class="section section--morte">
+    <div class="zone">
+      <h2 class="colonne">Stovo tient votre stock. C'est tout, et c'est voulu.</h2>
+
+      <div class="refus">
+        <div class="refus__ligne">
+          <span class="refus__voyants" aria-hidden="true">
+            <span class="voyant"></span><span class="voyant"></span><span class="voyant"></span>
+          </span>
+          <p>Pas de caisse, pas de paiement, pas de ticket.</p>
+        </div>
+        <div class="refus__ligne">
+          <span class="refus__voyants" aria-hidden="true">
+            <span class="voyant"></span><span class="voyant"></span>
+          </span>
+          <p>Pas de facturation, pas de comptabilité.</p>
+        </div>
+        <div class="refus__ligne">
+          <span class="refus__voyants" aria-hidden="true">
+            <span class="voyant"></span><span class="voyant"></span>
+          </span>
+          <p>Pas de planning, pas de gestion du personnel.</p>
+        </div>
+      </div>
+
+      <p class="conclusion">Chaque fonction en plus est une fonction à apprendre. Si vous cherchez un logiciel qui fait tout, ce n'est pas ici, et <span class="accent">vous venez de gagner cinq minutes.</span></p>
     </div>
   </section>
 
-  <!-- 6. Où en est le projet : l'honnêteté du stade remplace la preuve sociale -->
+  <!-- ============ 6. OU EN EST LE PROJET ============ -->
   <section id="etat-du-projet" class="section">
-    <div class="conteneur">
-      <h2>Stovo est en construction, et je préfère vous le dire.</h2>
-      <p>Je m'appelle Corentin. Je viens de la logistique, où j'ai passé des années à organiser des stocks et à faire tourner des équipes. Je fabrique Stovo en m'en servant tous les jours.</p>
-      <p>Ce que ça veut dire pour vous, concrètement : je n'ai pas encore de témoignage à vous montrer, ni de tarif à vous annoncer. Ce que je cherche, ce sont des commerçants prêts à l'essayer pour de vrai et à me dire ce qui coince.</p>
-      <p>Si c'est vous, écrivez-moi.</p>
+    <div class="zone">
+      <div class="constructeur panneau">
+        <span class="vis vis--hg"></span><span class="vis vis--hd"></span>
+        <span class="vis vis--bg"></span><span class="vis vis--bd"></span>
+
+        <span class="constructeur__filet" aria-hidden="true"></span>
+        <h2>Stovo est en construction, et je préfère vous le dire.</h2>
+        <p>Je m'appelle Corentin. Je viens de la logistique, où j'ai passé des années à organiser des stocks et à faire tourner des équipes. Je fabrique Stovo en m'en servant tous les jours.</p>
+        <p>Ce que ça veut dire pour vous, concrètement : je n'ai pas encore de témoignage à vous montrer, ni de tarif à vous annoncer. Ce que je cherche, ce sont des commerçants prêts à l'essayer pour de vrai et à me dire ce qui coince.</p>
+        <p><span class="accent">Si c'est vous, écrivez-moi.</span></p>
+      </div>
     </div>
   </section>
 
-  <!-- 7. Contact : le seul appel à l'action de la page -->
-  <section id="contact" class="section section--accent">
-    <div class="conteneur">
+  <!-- ============ 7. CONTACT ============ -->
+  <section id="contact" class="section contact">
+    <div class="zone">
       <h2>Une question, une remarque, l'envie d'essayer ?</h2>
-      <a class="lien-contact" id="contact-adresse" href="mailto:bonjour.stovo@outlook.com">bonjour.stovo@outlook.com</a>
+      <div class="contact__action">
+        <a class="bouton bouton--fort" id="contact-adresse" href="mailto:bonjour.stovo@outlook.com">
+          Écrire à Corentin
+          <svg class="bouton__fleche" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+            <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+      <p class="contact__adresse">bonjour.stovo@outlook.com</p>
     </div>
   </section>
 
 </main>
 
 <footer class="pied">
-  <div class="conteneur" style="padding:0;">
-    <a class="lien-app" href="app/">Déjà utilisateur ? Ouvrir l'application</a>
+  <div class="zone pied__interieur">
+    <a class="bouton bouton--calme" href="app/">Déjà utilisateur ? Ouvrir l'application</a>
+    <p class="pied__mention">Stovo, fabriqué à Rennes.</p>
   </div>
 </footer>
+
+<script>
+/* ==================================================================
+   LE COMPTEUR DU PREMIER ECRAN
+
+   Un seul moment anime sur toute la page, et il raconte le mecanisme
+   du produit plutot que de decorer : on parle, l'appareil PROPOSE en
+   demi-intensite, on valide, la valeur se stabilise en pleine lueur.
+
+   Le repli sans JavaScript est l'etat final (024, valide) : la page
+   reste juste et lisible si le script ne s'execute pas.
+   ================================================================== */
+(function(){
+  'use strict';
+
+  var banc     = document.getElementById('banc');
+  var dictee   = document.getElementById('dictee');
+  var texte    = document.getElementById('dictee-texte');
+  var etat     = document.getElementById('etat');
+  var etatMot  = document.getElementById('etat-mot');
+  var voyant   = document.getElementById('voyant');
+  if(!banc) return;
+
+  var PHRASE  = "J'ai reçu douze jus de fruits.";
+  var REPOS   = '012';
+  var APRES   = '024';
+
+  /* --- Construction des trois tubes ---
+     Chaque tube contient les dix chiffres, comme le vrai objet.
+     On repart d'un conteneur vide : le HTML contient deja les trois tubes
+     ecrits en dur (le repli sans JavaScript), on les remplace ici par des
+     tubes que le script pilote. */
+  banc.innerHTML = '';
+  var tubes = [];
+  for(var t = 0; t < 3; t++){
+    var tube = document.createElement('span');
+    tube.className = 'tube';
+
+    var pile = document.createElement('span');
+    pile.className = 'tube__pile';
+    for(var d = 0; d <= 9; d++){
+      var c = document.createElement('span');
+      c.className = 'chiffre';
+      c.textContent = String(d);
+      pile.appendChild(c);
+    }
+    tube.appendChild(pile);
+
+    var maille = document.createElement('span');
+    maille.className = 'tube__maille maille';
+    tube.appendChild(maille);
+
+    var verre = document.createElement('span');
+    verre.className = 'tube__verre';
+    tube.appendChild(verre);
+
+    var base = document.createElement('span');
+    base.className = 'tube__base';
+    tube.appendChild(base);
+
+    banc.appendChild(tube);
+    tubes.push({ el: tube, chiffres: pile.children });
+  }
+
+  /* La taille des tubes suit la largeur disponible, sans jamais
+     depasser la colonne : c'est mesure, pas suppose. */
+  function dimensionner(){
+    var dispo = banc.parentElement.clientWidth - 8;
+    var largeur = Math.max(58, Math.min(104, Math.floor((dispo - 20) / 3)));
+    tubes.forEach(function(o){
+      o.el.style.setProperty('--tw', largeur + 'px');
+      o.el.style.setProperty('--th', Math.round(largeur * 1.55) + 'px');
+      o.el.style.setProperty('--tfs', Math.round(largeur * 1.04) + 'px');
+    });
+  }
+  dimensionner();
+  var minuteurTaille;
+  window.addEventListener('resize', function(){
+    clearTimeout(minuteurTaille);
+    minuteurTaille = setTimeout(dimensionner, 120);
+  });
+
+  function afficher(valeur, propose){
+    for(var i = 0; i < 3; i++){
+      var actif = parseInt(valeur.charAt(i), 10);
+      var ch = tubes[i].chiffres;
+      for(var d = 0; d <= 9; d++){
+        if(d === actif){ ch[d].setAttribute('data-on',''); }
+        else { ch[d].removeAttribute('data-on'); }
+      }
+      if(propose){ tubes[i].el.classList.add('tube--propose'); }
+      else { tubes[i].el.classList.remove('tube--propose'); }
+    }
+    /* L'appareil est sous tension en permanence : sa lueur eclaire la
+       tole en continu, elle ne s'allume pas a chaque mesure. */
+    banc.setAttribute('data-allume','');
+  }
+
+  var trace = document.getElementById('trace');
+  function poserTrace(visible){
+    if(!trace) return;
+    if(visible){ trace.removeAttribute('data-vide'); }
+    else { trace.setAttribute('data-vide',''); }
+  }
+
+  function poserEtat(cle, mot){
+    etat.setAttribute('data-etat', cle);
+    voyant.setAttribute('data-etat', cle);
+    etatMot.textContent = mot;
+  }
+
+  var doux = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* Sans animation demandee : l'etat final, tout de suite, sans boucle. */
+  if(doux.matches){
+    afficher(APRES, false);
+    texte.textContent = PHRASE;
+    poserEtat('valide', 'Validé');
+    poserTrace(true);
+    return;
+  }
+
+  var minuteurs = [];
+  function plusTard(fn, ms){ minuteurs.push(setTimeout(fn, ms)); }
+  function toutAnnuler(){ minuteurs.forEach(clearTimeout); minuteurs = []; }
+
+  /* L'appareil joue sa mesure deux fois, puis se STABILISE sur l'etat
+     final. Deux raisons, egalement serieuses :
+     - WCAG 2.2.2 demande un moyen d'arreter tout mouvement automatique de
+       plus de 5 secondes ; une boucle sans fin n'en offre aucun.
+     - pendant les 20 secondes ou l'on tend l'ecran a quelqu'un, une boucle
+       infinie a une chance sur huit d'etre surprise a l'etat "Pret / 012 /
+       champ vide", c'est-a-dire le moment le moins parlant de tous.
+     Un vrai instrument affiche sa derniere mesure, il ne se rembobine pas. */
+  var TOURS_MAX = 2;
+  var tour = 0;
+
+  function cycle(){
+    toutAnnuler();
+
+    /* 1. Repos */
+    afficher(REPOS, false);
+    texte.textContent = '';
+    dictee.removeAttribute('data-actif');
+    poserEtat('repos', 'Prêt');
+    poserTrace(false);
+
+    /* 2. Ecoute : la phrase s'ecrit */
+    plusTard(function(){
+      dictee.setAttribute('data-actif','');
+      poserEtat('ecoute', 'Écoute');
+      var i = 0;
+      (function frappe(){
+        if(i > PHRASE.length) return;
+        texte.textContent = PHRASE.slice(0, i);
+        i++;
+        plusTard(frappe, 42);
+      })();
+    }, 900);
+
+    /* 3. Proposition : la valeur apparait, mais ne brule qu'a demi */
+    plusTard(function(){
+      dictee.removeAttribute('data-actif');
+      afficher(APRES, true);
+      poserEtat('propose', 'Proposition');
+    }, 900 + PHRASE.length * 42 + 550);
+
+    /* 4. Validation : la valeur se stabilise */
+    plusTard(function(){
+      afficher(APRES, false);
+      poserEtat('valide', 'Validé');
+      poserTrace(true);
+      tour++;
+    }, 900 + PHRASE.length * 42 + 550 + 1500);
+
+    /* 5. Reprise, tant que le nombre de tours n'est pas atteint. Au-dela,
+       l'appareil reste sur sa derniere mesure. */
+    plusTard(function(){
+      if(tour < TOURS_MAX){ cycle(); }
+    }, 900 + PHRASE.length * 42 + 550 + 1500 + 4200);
+  }
+
+  /* On ne fait tourner l'appareil que lorsqu'il est reellement a
+     l'ecran : rien ne s'anime dans un onglet qu'on ne regarde pas. */
+  /* Etat de depart : la derniere mesure, comme le repli statique du HTML.
+     Ainsi rien ne clignote avant que l'appareil ne se mette en marche, et
+     une capture prise a n'importe quel instant reste parlante. */
+  function poserEtatFinal(){
+    afficher(APRES, false);
+    texte.textContent = PHRASE;
+    poserEtat('valide', 'Validé');
+    poserTrace(true);
+  }
+  poserEtatFinal();
+
+  var enMarche = false;
+  if('IntersectionObserver' in window){
+    var guetteur = new IntersectionObserver(function(entrees){
+      entrees.forEach(function(e){
+        if(e.isIntersecting && !enMarche && tour < TOURS_MAX){
+          enMarche = true;
+          cycle();
+        } else if(!e.isIntersecting && enMarche){
+          enMarche = false;
+          toutAnnuler();
+          /* on quitte l'ecran en cours de mesure : l'appareil se remet sur
+             sa derniere valeur plutot que de rester fige a mi-parcours. */
+          poserEtatFinal();
+        }
+      });
+    }, { threshold: 0.25 });
+    guetteur.observe(banc);
+  } else {
+    cycle();
+  }
+})();
+</script>
 </body>
 </html>
