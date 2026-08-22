@@ -282,10 +282,14 @@
     color:var(--gris);
     max-width:32ch;
   }
+  /* Visible a toutes les largeurs (avant : display:none sous 960px, ce
+     qui cachait la ligne sur l'appareil de reference telephone). Sur
+     telephone, .accroche__action est un flex wrap : la ligne passe donc
+     naturellement sous le bouton des que la largeur manque. */
   .accroche__minutage{
     font-size:15px;
     color:var(--gris);
-    display:none;
+    display:inline;
   }
 
   @media (min-width:960px){
@@ -298,7 +302,6 @@
     .accroche__texte{grid-column:1; grid-row:1; align-self:end;}
     .accroche__action{grid-column:1; grid-row:2; align-self:start; margin-top:8px;}
     .compteur{grid-column:2; grid-row:1 / span 2; align-self:center;}
-    .accroche__minutage{display:inline;}
   }
 
   /* ---------- Le compteur ---------- */
@@ -467,7 +470,10 @@
   .geste__citation{font-size:19px; font-weight:600; color:var(--encre) !important;}
   .geste__ecran{
     margin-top:20px;
-    padding:14px;
+    /* Bas legerement plus genereux que les trois autres cotes : la
+       legende ajoutee sous l'image respire mieux avant le bord de la
+       carte. */
+    padding:14px 14px 18px;
   }
   /* width:100% + height:auto, jamais width/height:auto+max-width en
      variables : avec les attributs HTML width et height poses sur
@@ -482,6 +488,12 @@
     width:100%;
     height:auto;
     border-radius:10px;
+  }
+  .geste__legende{
+    margin-top:12px;
+    font-size:15px;
+    color:var(--gris);
+    text-align:left;
   }
 
   @media (min-width:960px){
@@ -516,6 +528,59 @@
 
   @media (min-width:960px){
     .refus{grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:64px; align-items:start;}
+  }
+
+  /* ================================================================
+     5bis. LES QUESTIONS QU'ON ME POSE (FAQ)
+     Une seule colonne centree, meme largeur que la section "Ou en est
+     Stovo" (760px). Details/summary natifs : fermes au chargement,
+     aucun JavaScript.
+     ================================================================ */
+  .faq{
+    max-width:760px;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  .faq__liste{
+    display:flex;
+    flex-direction:column;
+  }
+  .faq__item{
+    border-bottom:1px solid var(--filet);
+  }
+  .faq__item:last-child{border-bottom:none;}
+  .faq__question{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    min-height:44px;
+    padding:14px 0;
+    font-weight:700;
+    font-size:17px;
+    color:var(--encre);
+    cursor:pointer;
+    list-style:none;
+  }
+  .faq__question::-webkit-details-marker{display:none;}
+  .faq__question:focus-visible{
+    outline:3px solid var(--valide);
+    outline-offset:3px;
+  }
+  .faq__chevron{
+    flex:0 0 auto;
+    color:var(--gris-clair);
+    transition:transform .2s ease;
+  }
+  .faq__item[open] .faq__chevron{transform:rotate(180deg);}
+  .faq__reponse{
+    max-width:var(--mesure);
+    padding:0 0 20px;
+    font-size:17px;
+    line-height:1.6;
+    color:var(--gris);
   }
 
   /* ================================================================
@@ -556,6 +621,7 @@
     gap:24px;
   }
   .contact h2{max-width:22ch;}
+  .contact__intro{color:var(--gris); max-width:48ch;}
   .contact__email{font-size:16px; color:var(--gris);}
 
   /* ================================================================
@@ -640,7 +706,7 @@
 
       <div class="accroche__texte">
         <h1>Tenez votre stock à la voix.</h1>
-        <p class="accroche__soustitre">Plus vite qu'avec un cahier ou un tableur. Sans formation.</p>
+        <p class="accroche__soustitre">Pour les commerces qui tiennent leur stock sur un cahier ou dans un tableur. Vous dites ce qui bouge, Stovo tient le compte.</p>
       </div>
 
       <div class="accroche__action">
@@ -650,7 +716,7 @@
             <path d="M8 2v11M4 9l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </a>
-        <span class="accroche__minutage">Deux minutes de lecture.</span>
+        <span class="accroche__minutage">Sur votre téléphone, dans le navigateur. Rien à installer.</span>
       </div>
 
       <!--
@@ -694,6 +760,7 @@
             Validé
           </span>
           <span class="compteur__promesse">Rien ne s'écrit sans votre oui.</span>
+          <span class="compteur__promesse">Exemple de démonstration.</span>
         </div>
       </div>
 
@@ -728,6 +795,7 @@
   <section id="comment-ca-marche" class="section">
     <div class="zone">
       <h2 class="colonne">Trois gestes, et c'est tout.</h2>
+      <p class="conclusion">Stovo se contente de ce que vous pouvez faire debout, une main prise. Parler.</p>
 
       <div class="gestes">
 
@@ -742,6 +810,7 @@
           </div>
           <figure class="geste__ecran carte">
             <img class="geste__image" src="media/geste-1-parler.png" width="780" height="1688" loading="lazy" decoding="async" alt="Écran de saisie de Stovo avec l'invite « Écris ce que tu as fait, par exemple : j'ai reçu 10 pâtes », un champ de texte avec un bouton Envoyer, et un gros bouton microphone rond en bas de l'écran.">
+            <figcaption class="geste__legende">L'écran de saisie. Le gros bouton rond, c'est le micro.</figcaption>
           </figure>
         </article>
 
@@ -755,6 +824,7 @@
           </div>
           <figure class="geste__ecran carte">
             <img class="geste__image" src="media/geste-2-valider.png" width="736" height="386" loading="lazy" decoding="async" alt="Bulle de confirmation de Stovo, avec le texte « J'ai compris : entrée de 12 Jus de fruits. C'est bon ? Réponds oui pour valider, non pour annuler. », et deux boutons en dessous, Oui et Non.">
+            <figcaption class="geste__legende">Ce que Stovo a compris, avant d'écrire quoi que ce soit.</figcaption>
           </figure>
         </article>
 
@@ -764,10 +834,11 @@
             <h3>Vous consultez quand vous voulez.</h3>
           </div>
           <div class="geste__texte">
-            <p>Ce qu'il vous reste, ce qui descend trop vite, ce qu'il faut commander.</p>
+            <p>Le matin, vous voyez ce qui va manquer et ce qu'il faut commander aujourd'hui. Vous commandez ce qui part, pas ce qui dort.</p>
           </div>
           <figure class="geste__ecran carte">
             <img class="geste__image" src="media/geste-3-consulter.png" width="756" height="1504" loading="lazy" decoding="async" alt="Écran Pilotage de Stovo : bandeau vert foncé avec le nom Stovo et « Pilotez votre stock en un coup d'œil », la carte « Cet après-midi » annonçant 2 produits à commander et 1 en rupture imminente, puis quatre tuiles de synthèse, à commander 2, rupture imminente 1, produits suivis 13, activité 7 jours 9.">
+            <figcaption class="geste__legende">L'écran du matin. Deux produits à commander, un en rupture imminente.</figcaption>
           </figure>
         </article>
 
@@ -808,6 +879,77 @@
     </div>
   </section>
 
+  <!-- ============ LES QUESTIONS QU'ON ME POSE (FAQ) ============ -->
+  <section id="questions" class="section">
+    <div class="zone">
+      <div class="faq">
+        <h2>Les questions qu'on me pose.</h2>
+
+        <div class="faq__liste">
+          <details class="faq__item">
+            <summary class="faq__question">
+              <span>Et si Stovo comprend mal ce que je dis ?</span>
+              <svg class="faq__chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+                <path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </summary>
+            <p class="faq__reponse">Il vous montre ce qu'il a compris et il attend. Tant que vous n'avez pas dit oui, rien n'est écrit. S'il s'est trompé, vous corrigez avant, pas après.</p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__question">
+              <span>Je n'ai jamais utilisé de logiciel de stock.</span>
+              <svg class="faq__chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+                <path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </summary>
+            <p class="faq__reponse">C'est exactement pour vous. Il n'y a rien à préparer avant de commencer : pas d'unités à créer, pas de catégories à inventer, pas de bon de livraison à ouvrir pour bouger une quantité. Vous parlez, et le stock bouge.</p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__question">
+              <span>Ça marche debout, dans le bruit, avec une seule main ?</span>
+              <svg class="faq__chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+                <path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </summary>
+            <p class="faq__reponse">C'est la situation pour laquelle Stovo est fait : la réserve, un carton dans l'autre main, un client qui vous interrompt. Ce qui ne tient pas là ne tient nulle part.</p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__question">
+              <span>Il faut installer quelque chose ?</span>
+              <svg class="faq__chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+                <path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </summary>
+            <p class="faq__reponse">Non. Stovo s'ouvre dans le navigateur de votre téléphone, comme un site. Vous pouvez le poser sur votre écran d'accueil si vous préférez.</p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__question">
+              <span>Où sont mes données ?</span>
+              <svg class="faq__chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+                <path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </summary>
+            <p class="faq__reponse">Sur des serveurs situés en France. Elles sont à vous, et vous pouvez les récupérer quand vous voulez.</p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__question">
+              <span>Combien ça coûte ?</span>
+              <svg class="faq__chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+                <path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </summary>
+            <p class="faq__reponse">Rien aujourd'hui, et il n'y a pas encore de tarif. Je préfère vous le dire plutôt que d'afficher un prix que je changerais dans six mois.</p>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ 6. OU EN EST LE PROJET ============ -->
   <section id="etat-du-projet" class="section">
     <div class="zone">
@@ -832,6 +974,7 @@
             <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </a>
+        <p class="contact__intro">C'est moi qui vous réponds, et je réponds à tout le monde. On regarde votre stock ensemble, un quart d'heure suffit pour savoir si Stovo vous sert à quelque chose.</p>
         <p class="contact__email">bonjour.stovo@outlook.com</p>
       </div>
     </div>
