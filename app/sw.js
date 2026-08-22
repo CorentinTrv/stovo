@@ -97,7 +97,18 @@
 // positif : l'emoji n'est pas colore par `color`, et c'etait l'etat
 // desactive, jamais vu). styles.css seul modifie. Pas de nouveau fichier a
 // precacher.
-const CACHE_NAME = 'stovo-app-v24';
+// v25 (chantier C2 "les exports", lot C2-3, 22/08/2026) : bloc replie
+// "Exporter mes donnees" en bas du tableau de bord, deux fichiers CSV
+// (etat de stock + journal des mouvements) fabriques ENTIEREMENT au front,
+// zero appel a pwa-api, zero ecriture. NOUVEAU fichier export.js (module pur,
+// deja teste 81/81 aux lots C2-1/C2-2) ajoute au precache ; index.html,
+// dashboard.js, styles.css modifies.
+// Complement C2-5 (22/08/2026, meme v25 non deployee) : l'onglet Aide
+// documente le bloc d'export. Le contenu de aide.js est scinde en deux :
+// aide-contenu.js (donnees pures, NOUVEAU fichier ajoute au precache) et
+// aide.js (rendu + glu DOM, modifie). Pas de bump : un seul lot C2 n'a pas
+// encore ete deploye, donc une seule version suffit pour tout le chantier.
+const CACHE_NAME = 'stovo-app-v25';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -112,6 +123,7 @@ const FICHIERS_COQUILLE = [
   './pertes.js',
   './stock.js',
   './aide.js',
+  './aide-contenu.js',
   './supabase.js',
   './auth.js',
   './parler.js',
@@ -119,6 +131,7 @@ const FICHIERS_COQUILLE = [
   './inventaire.js',
   './sortie.js',
   './photo.js',
+  './export.js',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',

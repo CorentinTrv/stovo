@@ -46,6 +46,16 @@ import {
 // formateurs injectés), sur le même modèle que pilotage.js : aucune donnée
 // nouvelle à lire, il calcule sur les mvts déjà chargés par charger().
 import { calculerDemarque, rendreDemarque } from './pertes.js';
+// Chantier C2 « les exports » (lot C2-3, 22/08/2026) : les deux fichiers
+// CSV téléchargeables (état de stock + journal des mouvements), voir
+// majExport() plus bas. Module PUR et déjà testé (81/81, lots C2-1/C2-2) :
+// aucune donnée nouvelle à lire au chargement de l'écran, la lecture réelle
+// (lireToutesLesPages) n'est déclenchée QU'AU CLIC sur un des deux boutons.
+// retenirProduitsExport/retenirMouvementsExport (extraites d'export.js le
+// 22/08/2026, revue du lot C2-3) : memes filtres de perimetre que ceux
+// utilises en interne par construireCsvStock/construireCsvMouvements, une
+// seule definition partagee des deux cotes (voir majExport plus bas).
+import { construireCsvStock, construireCsvMouvements, nomFichierExport, lireToutesLesPages, retenirProduitsExport, retenirMouvementsExport, MENTION_LEGALE } from './export.js';
 
 // KPI "Activité (7 jours)" (libellé écrit en dur dans index.html, l.138) :
 // constante LOCALE, INDÉPENDANTE de FENETRE_JOURS (module partagé pilotage.js).
@@ -405,6 +415,134 @@ function majPertes(mvts, produits, maintenantMs) {
   el.innerHTML = rendreDemarque(resultat, { fmtEuro, fmtNombre });
 }
 
+// =========================================================================
+// Chantier C2 « les exports » (lot C2-3, 22/08/2026)
+// =========================================================================
+// Deux fichiers CSV téléchargeables, câblés UNE SEULE FOIS par
+// demarrerDashboard() (comme le bouton "Copier la liste" de l'écran du
+// matin) : PAS par charger(), la lecture réelle ne doit jamais se déclencher
+// au chargement de l'écran, seulement au clic (plan §4 lot C2-3). Zéro
+// écriture : ce chantier ne fait que des SELECT (plan §5).
+
+// Affiche/efface le message d'état sous les deux boutons, même patron que
+// zoneEtat dans parler.js (hidden + textContent, pas d'affichage vide).
+function afficherEtatExport(texte, estErreur) {
+  const el = $('export-etat');
+  if (!el) return;
+  el.classList.toggle('est-erreur', !!estErreur);
+  if (!texte) { el.hidden = true; el.textContent = ''; return; }
+  el.hidden = false;
+  el.textContent = texte;
+}
+
+// Déclenche le téléchargement d'un CSV déjà construit. Le BOM UTF-8 est posé
+// ICI, jamais dans les chaînes rendues par export.js (lot C2-1, plan §4) :
+// sans lui Excel massacre les accents. Blob/URL.createObjectURL/<a download>
+// sont natifs, aucune dépendance ajoutée (plan §3.4).
+function telechargerCsv(nomFichier, contenu) {
+  const blob = new Blob(['\uFEFF' + contenu], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomFichier;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Révocation DIFFÉRÉE (relecture du 22/08/2026) : sur Safari/iOS (la cible
+  // PWA de Stovo), un revokeObjectURL() synchrone juste après le clic peut
+  // couper le flux avant que le navigateur ait fini d'ouvrir le
+  // téléchargement, qui échoue alors en silence pendant que l'écran affiche
+  // déjà "exporté". Un délai laisse le temps au navigateur de démarrer la
+  // lecture du blob avant qu'on ne le libère.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Accord singulier/pluriel simple (même convention que pluriel() de
+// pertes.js/export.js : 0 et 1 sont singuliers, 2+ sont pluriels).
+const accordExport = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''} exporté${n > 1 ? 's' : ''}`;
+
+// Lit une table Supabase en entier, sans troncature silencieuse (le plafond
+// PostgREST de 1000 lignes par requête, plan §3.4), via la fonction pure
+// lireToutesLesPages (lot C2-2, déjà testée). `construireRequete(de, a)`
+// exécute la vraie requête sur la tranche et lève une erreur explicite si
+// Supabase en renvoie une, pour que rien ne soit jamais avalé en silence.
+function lireTable(construireRequete) {
+  return lireToutesLesPages(async (de, a) => {
+    const { data, error } = await construireRequete(de, a);
+    if (error) throw new Error(error.message);
+    return data;
+  });
+}
+
+// Orchestre un export de bout en bout : désactive les deux boutons (un
+// export en cours et un second déclenché en parallèle liraient une table en
+// double, sans bénéfice), lit toutes les lignes, construit le CSV (module
+// pur export.js), déclenche le téléchargement, puis annonce le nombre de
+// lignes réellement écrites. Aucun fichier partiel : le téléchargement n'a
+// lieu qu'une fois le CSV entièrement construit, jamais avant.
+async function lancerExport(type, boutons) {
+  boutons.forEach((b) => { if (b) b.disabled = true; });
+  afficherEtatExport('Préparation du fichier…', false);
+  try {
+    const maintenant = Date.now();
+    let contenu, compte;
+    if (type === 'stock') {
+      const produits = await lireTable((de, a) => supabase
+        .from('produits')
+        .select('nom, unite, stock_actuel, seuil_alerte, delai_repro_jours, prix_achat, cree_le, actif')
+        // Départage de pagination (relecture du 22/08/2026) : `nom` seul
+        // n'est pas une clé stable (deux produits peuvent porter le même
+        // nom, ou être ex æquo selon le tri de la base), donc à la frontière
+        // entre deux pages `.range()` des lignes pourraient être dupliquées
+        // ou sautées. `id` (colonne réellement lue par charger() plus bas,
+        // voir son `.select('id, nom, ...')`) est unique et sert de
+        // départage déterministe.
+        .order('nom')
+        .order('id', { ascending: true })
+        .range(de, a));
+      contenu = construireCsvStock({ produits, maintenant });
+      compte = accordExport(retenirProduitsExport(produits).length, 'produit');
+    } else {
+      const mouvements = await lireTable((de, a) => supabase
+        .from('mouvements')
+        .select('cree_le, type, quantite, source, motif, produit_id, produits ( nom, unite, prix_achat )')
+        // Départage de pagination (relecture du 22/08/2026) : plusieurs
+        // mouvements d'une même réception validée sont insérés dans la même
+        // transaction, donc avec le même `cree_le` (au `now()` près). Sans
+        // clé de départage, des lignes ex æquo pourraient être dupliquées ou
+        // sautées à la frontière entre deux `.range()`, et l'export annoncé
+        // complet ne le serait pas. `id` (colonne réellement lue par
+        // charger() plus bas, voir son `.select('id, produit_id, ...')`)
+        // est unique et sert de départage déterministe.
+        .order('cree_le', { ascending: true })
+        .order('id', { ascending: true })
+        .range(de, a));
+      contenu = construireCsvMouvements({ mouvements, maintenant });
+      compte = accordExport(retenirMouvementsExport(mouvements).length, 'mouvement');
+    }
+    telechargerCsv(nomFichierExport(type, maintenant), contenu);
+    afficherEtatExport(compte + '.', false);
+  } catch (e) {
+    afficherEtatExport(`Échec de l'export : ${e.message}`, true);
+  } finally {
+    boutons.forEach((b) => { if (b) b.disabled = false; });
+  }
+}
+
+// Câblage des deux boutons + pose de la mention légale (constante importée
+// de export.js, jamais recopiée à la main : elle ne peut donc jamais dériver
+// entre le fichier téléchargé et ce qui s'affiche à l'écran, C1 §3.2).
+// Appelée UNE SEULE FOIS par demarrerDashboard(), jamais par charger().
+function majExport() {
+  const mention = $('export-mention');
+  if (mention) mention.textContent = MENTION_LEGALE + '.';
+  const btnStock = $('export-stock-btn');
+  const btnMouvements = $('export-mouvements-btn');
+  const boutons = [btnStock, btnMouvements];
+  if (btnStock) btnStock.addEventListener('click', () => lancerExport('stock', boutons));
+  if (btnMouvements) btnMouvements.addEventListener('click', () => lancerExport('mouvements', boutons));
+}
+
 async function charger() {
   // 1. Produits
   const { data: produits, error: errP } = await supabase
@@ -658,6 +796,12 @@ export function demarrerDashboard() {
   if (pertesDetails) {
     pertesDetails.addEventListener('toggle', () => { invGroupesOuverts.pertes = pertesDetails.open; });
   }
+  // Chantier C2 (lot C2-3) : câblage des deux boutons d'export. Comme
+  // #pertes-groupe ci-dessus, #export-groupe vit hors de #inv-grid, n'est
+  // jamais recréé par charger() et n'a donc pas besoin d'être suivi dans
+  // invGroupesOuverts : son état ouvert/fermé survit tout seul au
+  // rafraîchissement toutes les 30 s.
+  majExport();
   setInterval(charger, 30000);
 }
 

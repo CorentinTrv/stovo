@@ -216,6 +216,27 @@
         </table>
       </div>
 
+      <!-- Export des données (chantier C2 « les exports », lot C2-3,
+           22/08/2026) : <details> replié par défaut, même motif que
+           « Ce que tu as jeté » (C1) juste au-dessus et l'inventaire par
+           états (brique 2) : un geste saisonnier (quelques fois par an) ne
+           doit rien coûter aux 364 autres jours. Les deux fichiers CSV sont
+           fabriqués ENTIÈREMENT côté navigateur (module pur app/export.js,
+           lots C2-1/C2-2, déjà testé) : zéro écriture, zéro appel à
+           pwa-api. Câblé par dashboard.js (majExport). -->
+      <details class="inv-groupe" id="export-groupe" data-groupe="export">
+        <summary class="inv-sommaire"><span aria-hidden="true">🗂️</span> Exporter mes données</summary>
+        <div class="export-contenu">
+          <p class="export-intro">Deux fichiers CSV à ouvrir dans Excel ou à transmettre à ton comptable.</p>
+          <div class="export-actions">
+            <button class="btn-export" id="export-stock-btn" type="button">État de mon stock (.csv)</button>
+            <button class="btn-export" id="export-mouvements-btn" type="button">Journal de mes mouvements (.csv)</button>
+          </div>
+          <p class="export-etat" id="export-etat" aria-live="polite" hidden></p>
+          <p class="export-mention" id="export-mention"></p>
+        </div>
+      </details>
+
       <footer>
         Stovo · version démonstration · données hébergées en Europe (Paris) · mise à jour automatique toutes les 30 s
       </footer>

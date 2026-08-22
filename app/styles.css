@@ -921,6 +921,39 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .pertes-note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
 .pertes-methode { font-size: 11.5px; color: var(--muted); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
 
+/* ---------- Chantier C2 « les exports » (lot C2-3, 22/08/2026) ----------
+   Même famille que #pertes-groupe juste au-dessus : un <details
+   class="inv-groupe"> qui vit hors de #inv-grid/.inv-groupes, donc la même
+   marge propre est nécessaire (sinon collé au tableau des mouvements et au
+   pied de page). Le chevron et le style du sommaire sont déjà hérités de
+   .inv-groupe/.inv-sommaire, rien à refaire ici. */
+#export-groupe { margin: 18px 0 6px; }
+.export-contenu { padding-top: 4px; }
+.export-intro { font-size: 13.5px; color: var(--muted); margin: 4px 0 12px; }
+.export-actions { display: flex; flex-direction: column; gap: 10px; }
+
+/* Même famille visuelle que .btn-reception-demarrer (teal discret, pas un
+   bouton primaire plein) : un export est un geste rare, pas l'action
+   principale de l'écran. Hauteur mini 44 px (cible tactile, règle A1-A4). */
+.btn-export {
+  font-family: inherit; font-size: 14.5px; font-weight: 700;
+  min-height: 44px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--ok-bg); color: var(--brand-dark); cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.btn-export:hover { background: #ccfbf1; border-color: var(--brand-light); }
+.btn-export:active { transform: translateY(1px); }
+.btn-export:disabled { opacity: .6; cursor: wait; }
+
+/* Message d'état sous les boutons (aria-live="polite" dans index.html) :
+   "Préparation du fichier…", puis le compte de lignes, ou une erreur. */
+.export-etat { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+.export-etat.est-erreur { color: var(--danger); font-weight: 600; }
+
+/* Mention légale répétée à l'écran (règle C1 : la méthode s'affiche avec le
+   chiffre), même style que .pertes-methode juste au-dessus. */
+.export-mention { font-size: 11.5px; color: var(--muted); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+
 /* =====================================================================
    Accessibilité (lot A1, audit Impeccable du 31/07/2026).
    ===================================================================== */
