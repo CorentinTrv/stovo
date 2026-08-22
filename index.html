@@ -96,6 +96,10 @@
      change (compteur, trace, numeros de constat). */
   .num{font-variant-numeric:tabular-nums;}
 
+  /* Premiers <button> de la page (la demo jouable du compteur) :
+     reinitialisation minimale, le reste vient des classes de la carte. */
+  button{font-family:inherit; cursor:pointer;}
+
   /* ---------- Gabarit ---------- */
   .zone{
     max-width:1440px;
@@ -324,7 +328,7 @@
     text-transform:uppercase;
     color:var(--gris);
   }
-  .compteur__trace{font-size:14px; font-weight:600; color:var(--gris);}
+  .compteur__trace{font-size:14px; font-weight:600; color:var(--gris); white-space:nowrap;}
 
   .compteur__valeur{
     display:flex;
@@ -404,7 +408,63 @@
     font-size:14px;
     border-radius:999px;
   }
-  .compteur__promesse{font-size:14px; color:var(--gris);}
+  /* Toujours seule sur sa ligne, sous la pastille ou les boutons Oui/Non
+     (planches demo-jouable, section 2.6 de la consigne) : flex-basis:100%
+     l'empeche de se ranger a cote d'eux quand la largeur le permettrait. */
+  .compteur__promesse{font-size:14px; color:var(--gris); flex-basis:100%;}
+
+  /* ---------- Le choix (demo jouable, NOUVEAU) ----------
+     Cache par defaut dans le HTML : sans JavaScript, personne ne peut
+     choisir de phrase, la carte reste celle d'aujourd'hui. C'est le
+     script qui revele ce bloc au demarrage. */
+  .compteur__choix{display:flex; flex-direction:column; gap:10px;}
+  .compteur__choix-intro{font-size:14px; color:var(--gris);}
+  .compteur__phrases{display:flex; flex-direction:column; gap:8px;}
+  .compteur__phrase{
+    display:flex;
+    align-items:center;
+    min-height:44px;
+    padding:10px 16px;
+    font-size:15px;
+    font-weight:600;
+    color:var(--encre);
+    background:var(--carte);
+    border:1.5px solid var(--filet);
+    border-radius:14px;
+    text-align:left;
+  }
+  /* La phrase en train d'etre dite : creme + bordure encre. Elle reste
+     ainsi pendant l'ecriture et l'attente de reponse, jusqu'a ce qu'un
+     Oui, un Non ou une question soit resolu (section 3 de la consigne). */
+  .compteur__phrase[aria-pressed="true"]{background:var(--creme); border-color:var(--encre);}
+  .compteur__phrase:disabled{opacity:.55; cursor:default;}
+
+  /* Le corps de la dictee (guillemets + texte + curseur) : encre des
+     qu'une phrase se dit, gris chaud au repos (--repos), seul usage de
+     --gris-clair comme texte courant tolere par la regle 3 de DESIGN.md,
+     parce qu'il n'y a alors aucun mot, juste le decor des guillemets. */
+  .compteur__dictee-corps{color:var(--encre);}
+  .compteur__dictee-corps--repos{color:var(--gris-clair);}
+  .compteur__dictee-corps--repos .compteur__curseur{opacity:1;}
+
+  /* Oui / Non : le gabarit .bouton existant, avec le padding propre a
+     la carte (12px/22px plutot que 14px/24px ailleurs sur la page). */
+  .compteur__validation .bouton{padding:12px 22px;}
+  .compteur__non{
+    color:var(--encre);
+    background:var(--carte);
+    border:1.5px solid var(--filet);
+    font-size:17px;
+  }
+
+  /* Pastilles a contour (refus, question) : meme gabarit que la
+     pastille Validee, sans le fond teal, refuser n'est pas une erreur. */
+  .compteur__pastille--contour{
+    background:var(--carte);
+    color:var(--encre);
+    border:1.5px solid var(--filet);
+    padding:7px 14px;
+  }
 
   /* ================================================================
      2. LE PROBLEME
@@ -665,7 +725,7 @@
   /* ================================================================
      ACCESSIBILITE
      ================================================================ */
-  a:focus-visible{
+  a:focus-visible, .compteur button:focus-visible{
     outline:3px solid var(--valide);
     outline-offset:3px;
   }
@@ -745,20 +805,41 @@
         Repli sans JavaScript : la carte est ecrite EN DUR a son etat
         final (24, validee). Si le script echoue, le premier ecran
         montre quand meme un compteur juste, la phrase dictee et la
-        pastille validee.
+        pastille validee (jamais cachee dans le HTML, seul le bloc
+        "choix" ci-dessous l'est : sans script, rien n'est jouable).
+
+        Demo jouable (M2, 2026-08-22) : le bloc "choix" laisse le
+        visiteur dire une des trois phrases a la place de Stovo. Voir
+        le script en bas de page pour le detail des etats.
       -->
       <div class="compteur carte carte--chaude" id="compteur">
         <div class="compteur__tete">
-          <span class="compteur__label">Jus de fruits &middot; en stock</span>
+          <span class="compteur__label" id="produit-label">Jus de fruits &middot; en stock</span>
           <span class="compteur__trace num" id="trace">012 &rarr; 024</span>
         </div>
 
         <div class="compteur__valeur">
           <span class="compteur__cible num" id="valeur">24</span>
-          <span class="compteur__unite">bouteilles</span>
+          <span class="compteur__unite" id="produit-unite">bouteilles</span>
         </div>
 
         <div class="compteur__separateur" aria-hidden="true"></div>
+
+        <!--
+          Le choix, NOUVEAU (demo jouable, M2). Cache dans le HTML :
+          sans JavaScript, personne ne peut choisir une phrase, la carte
+          reste celle d'aujourd'hui (24, validee, "Exemple de
+          demonstration."). C'est le script qui revele ce bloc et
+          masque cette mention au demarrage.
+        -->
+        <div class="compteur__choix" id="choix" hidden>
+          <p class="compteur__choix-intro">Choisissez une phrase, comme si vous la disiez. Rien n'est enregistré.</p>
+          <div class="compteur__phrases">
+            <button type="button" class="compteur__phrase" id="phrase-0" aria-pressed="false">&laquo;&nbsp;J'ai reçu douze jus de fruits.&nbsp;&raquo;</button>
+            <button type="button" class="compteur__phrase" id="phrase-1" aria-pressed="false">&laquo;&nbsp;J'ai cassé deux bouteilles.&nbsp;&raquo;</button>
+            <button type="button" class="compteur__phrase" id="phrase-2" aria-pressed="false">&laquo;&nbsp;Il me reste combien de pâtes ?&nbsp;&raquo;</button>
+          </div>
+        </div>
 
         <p class="compteur__dictee" id="dictee">
           <span class="compteur__micro-rond" aria-hidden="true">
@@ -767,18 +848,37 @@
               <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
             </svg>
           </span>
-          <span>&laquo;&nbsp;<span id="dictee-texte">J'ai reçu douze jus de fruits.</span><span class="compteur__dictee-fin">&nbsp;&raquo;<span class="compteur__curseur"></span></span></span>
+          <span class="compteur__dictee-corps" id="dictee-corps">&laquo;&nbsp;<span id="dictee-texte">J'ai reçu douze jus de fruits.</span><span class="compteur__dictee-fin">&nbsp;&raquo;<span class="compteur__curseur"></span></span></span>
         </p>
 
-        <div class="compteur__validation">
-          <span class="compteur__pastille" id="pastille-validee" hidden>
+        <div class="compteur__validation" id="reponse" aria-live="polite">
+          <button type="button" class="bouton bouton--flamme" id="btn-oui" hidden>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+              <path d="M3 8.5l3.2 3L13 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Oui
+          </button>
+          <button type="button" class="bouton compteur__non" id="btn-non" hidden>Non, je corrige</button>
+          <span class="compteur__pastille" id="pastille-validee">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
               <path d="M3 8.5l3.2 3L13 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             Validé
           </span>
-          <span class="compteur__promesse">Rien ne s'écrit sans votre oui.</span>
-          <span class="compteur__promesse">Exemple de démonstration.</span>
+          <span class="compteur__pastille compteur__pastille--contour" id="pastille-refusee" hidden>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+              <path d="M6.5 4.5L3 8l3.5 3.5M3 8h7a3 3 0 0 1 0 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Rien n'a été écrit
+          </span>
+          <span class="compteur__pastille compteur__pastille--contour" id="pastille-question" hidden>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+              <path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            </svg>
+            Stovo répond
+          </span>
+          <span class="compteur__promesse" id="promesse">Rien ne s'écrit sans votre oui.</span>
+          <span class="compteur__promesse" id="mention-demo">Exemple de démonstration.</span>
         </div>
       </div>
 
@@ -1021,132 +1121,383 @@
 
 <script>
 /* ==================================================================
-   LE COMPTEUR DU PREMIER ECRAN
+   LE COMPTEUR DU PREMIER ECRAN : LA DEMO JOUABLE (M2, 2026-08-22)
 
-   Un seul moment anime sur toute la page, transpose de la vitrine
-   precedente : on parle, la carte PROPOSE en gris chaud, on valide,
-   la valeur se stabilise en encre et la pastille Validee apparait.
+   Le visiteur choisit une des trois phrases (comme s'il la disait),
+   la carte l'ecrit lettre par lettre, puis reagit exactement comme
+   l'application : une proposition en gris chaud suivie d'un Oui/Non
+   pour un mouvement de stock, ou une reponse directe pour une
+   question. Rien n'est jamais ecrit "pour de vrai", c'est une demo.
 
-   Le repli sans JavaScript est l'etat final (24, valide) : la carte
-   reste juste et lisible si le script ne s'execute pas.
+   Un seul geste anime se joue tout seul a l'arrivee sur l'ecran, puis
+   la carte attend le visiteur (WCAG 2.2.2 : pas de mouvement
+   automatique sans fin). Un clic sur une phrase, a tout moment,
+   annule ce tour et joue la phrase choisie : le visiteur gagne
+   toujours.
+
+   Le repli sans JavaScript est ecrit en dur dans le HTML : la carte
+   affiche son etat final (24, validee), et le bloc "choix" reste
+   cache, personne ne peut y jouer sans script.
    ================================================================== */
 (function(){
   'use strict';
 
   var compteur    = document.getElementById('compteur');
-  var dictee      = document.getElementById('dictee');
-  var texteDictee = document.getElementById('dictee-texte');
+  var label       = document.getElementById('produit-label');
+  var unite       = document.getElementById('produit-unite');
+  var trace       = document.getElementById('trace');
   var valeur      = document.getElementById('valeur');
-  var pastille    = document.getElementById('pastille-validee');
+  var dictee      = document.getElementById('dictee');
+  var dicteeCorps = document.getElementById('dictee-corps');
+  var texteDictee = document.getElementById('dictee-texte');
+  var choix       = document.getElementById('choix');
+  var mentionDemo = document.getElementById('mention-demo');
+  var promesse    = document.getElementById('promesse');
+  var btnOui      = document.getElementById('btn-oui');
+  var btnNon      = document.getElementById('btn-non');
+  var pastilleValidee  = document.getElementById('pastille-validee');
+  var pastilleRefusee  = document.getElementById('pastille-refusee');
+  var pastilleQuestion = document.getElementById('pastille-question');
+  var phraseBoutons    = document.querySelectorAll('.compteur__phrase');
   if(!compteur) return;
 
-  var PHRASE = "J'ai reçu douze jus de fruits.";
-  var REPOS  = '12';
-  var APRES  = '24';
+  /* ---------- Les trois phrases jouables (section 3 de la consigne) ---------- */
+  var PRODUIT_JUS   = { label: "Jus de fruits · en stock", unite: 'bouteilles' };
+  var PRODUIT_PATES = { label: "Pâtes · en stock", unite: 'paquets' };
+
+  var PHRASES = [
+    {
+      texte: "J'ai reçu douze jus de fruits.",
+      type: 'mouvement',
+      produit: PRODUIT_JUS,
+      effet: function(j){ return j + 12; }
+    },
+    {
+      texte: "J'ai cassé deux bouteilles.",
+      type: 'mouvement',
+      produit: PRODUIT_JUS,
+      effet: function(j){ return Math.max(0, j - 2); }
+    },
+    {
+      texte: 'Il me reste combien de pâtes ?',
+      type: 'question',
+      produit: PRODUIT_PATES,
+      valeur: 8
+    }
+  ];
+
+  var TEXTE_PROMESSE = "Rien ne s'écrit sans votre oui.";
+  var TEXTE_CORRIGER = 'Vous corrigez, puis vous le redites.';
+  var TEXTE_REPONDU  = "Rien à valider, le stock n'a pas bougé.";
+
+  /* Trois chiffres, comme la trace d'aujourd'hui ("012 → 024"). */
+  function pad3(n){
+    var s = String(n);
+    while(s.length < 3){ s = '0' + s; }
+    return s;
+  }
 
   function afficherValeur(v, propose){
     valeur.textContent = v;
     valeur.classList.toggle('compteur__cible--propose', !!propose);
   }
 
-  function afficherPastille(visible){
-    pastille.hidden = !visible;
-  }
-
-  var doux = window.matchMedia('(prefers-reduced-motion: reduce)');
-
-  /* Sans animation demandee : l'etat final, tout de suite, sans boucle. */
-  if(doux.matches){
-    afficherValeur(APRES, false);
-    texteDictee.textContent = PHRASE;
-    afficherPastille(true);
-    return;
-  }
-
   var minuteurs = [];
   function plusTard(fn, ms){ minuteurs.push(setTimeout(fn, ms)); }
   function toutAnnuler(){ minuteurs.forEach(clearTimeout); minuteurs = []; }
 
-  /* La carte joue sa mesure deux fois, puis se STABILISE sur l'etat
-     final. WCAG 2.2.2 demande un moyen d'arreter tout mouvement
-     automatique de plus de 5 secondes ; une boucle sans fin n'en offre
-     aucun. Un vrai compteur affiche sa derniere mesure, il ne se
-     rembobine pas. */
-  var TOURS_MAX = 2;
-  var tour = 0;
+  /* ---------- Les boutons phrase : lequel se dit, lesquels attendent ---------- */
+  function marquerPhraseActive(index){
+    phraseBoutons.forEach(function(bouton, i){
+      bouton.setAttribute('aria-pressed', i === index ? 'true' : 'false');
+    });
+  }
+  function neutraliserPhrases(){
+    phraseBoutons.forEach(function(bouton){ bouton.setAttribute('aria-pressed', 'false'); });
+  }
+  function basculerDesactivation(desactiver){
+    phraseBoutons.forEach(function(bouton){ bouton.disabled = desactiver; });
+  }
 
-  function cycle(){
+  /* ---------- La zone reponse (aria-live) : un seul etat a la fois ---------- */
+  var reponseActuelle = 'promesse';
+  function masquerReponses(){
+    btnOui.hidden = true;
+    btnNon.hidden = true;
+    pastilleValidee.hidden = true;
+    pastilleRefusee.hidden = true;
+    pastilleQuestion.hidden = true;
+  }
+  function afficherReponsePromesseSeule(){
+    masquerReponses();
+    promesse.hidden = false;
+    promesse.textContent = TEXTE_PROMESSE;
+    reponseActuelle = 'promesse';
+  }
+  function afficherReponseProposition(){
+    masquerReponses();
+    btnOui.hidden = false;
+    btnNon.hidden = false;
+    promesse.hidden = false;
+    promesse.textContent = TEXTE_PROMESSE;
+    reponseActuelle = 'proposition';
+  }
+  function afficherReponseValidee(){
+    masquerReponses();
+    pastilleValidee.hidden = false;
+    promesse.hidden = false;
+    promesse.textContent = TEXTE_PROMESSE;
+    neutraliserPhrases();
+    reponseActuelle = 'validee';
+  }
+  function afficherReponseRefusee(){
+    masquerReponses();
+    pastilleRefusee.hidden = false;
+    promesse.hidden = false;
+    promesse.textContent = TEXTE_CORRIGER;
+    neutraliserPhrases();
+    reponseActuelle = 'refusee';
+  }
+  function afficherReponseQuestion(){
+    masquerReponses();
+    pastilleQuestion.hidden = false;
+    promesse.hidden = false;
+    promesse.textContent = TEXTE_REPONDU;
+    neutraliserPhrases();
+    reponseActuelle = 'question';
+  }
+
+  /* ---------- Le stock demontre : les jus de fruits, en bouteilles ----------
+     La valeur gravee est toujours celle que la carte affiche en encre : au
+     chargement, c'est 24 (l'etat "validee" du repli, un vrai etat gravE,
+     pas un decor). cycleAuto() rembobine jus a 12 pour rejouer l'histoire
+     12 -> 24 devant le visiteur ; si on quitte l'ecran avant que cette
+     rejoue n'aboutisse, on restaure 24, jamais 12. */
+  var jus = 24;
+  var propositionCourante = null; /* {ancien, nouveau}, en attente d'un Oui/Non */
+  var enJeu    = false;           /* un jeu (auto ou clic) a des minuteurs en cours */
+  var tourJoue = false;           /* le tour automatique a deja ete tente, une fois */
+  var dernierGrave = null;        /* le dernier ecran RESOLU (jamais une proposition) */
+
+  function graverEtatActuel(){
+    dernierGrave = {
+      label: label.textContent,
+      unite: unite.textContent,
+      valeur: valeur.textContent,
+      trace: trace.textContent,
+      dicteeTexte: texteDictee.textContent,
+      reponse: reponseActuelle,
+      jus: jus
+    };
+  }
+
+  function restaurerDernierGrave(){
+    if(!dernierGrave){ return; }
+    jus = dernierGrave.jus;
+    label.textContent = dernierGrave.label;
+    unite.textContent = dernierGrave.unite;
+    afficherValeur(dernierGrave.valeur, false);
+    trace.textContent = dernierGrave.trace;
+    texteDictee.textContent = dernierGrave.dicteeTexte;
+    dictee.removeAttribute('data-actif');
+    dicteeCorps.classList.remove('compteur__dictee-corps--repos');
+    basculerDesactivation(false);
+    if(dernierGrave.reponse === 'validee'){ afficherReponseValidee(); }
+    else if(dernierGrave.reponse === 'refusee'){ afficherReponseRefusee(); }
+    else if(dernierGrave.reponse === 'question'){ afficherReponseQuestion(); }
+    else { neutraliserPhrases(); afficherReponsePromesseSeule(); }
+  }
+
+  /* L'etat de depart : exactement le repli statique du HTML (24, validee,
+     phrase 1 dictee). Rien ne clignote avant que la carte ne se mette en
+     marche, et une capture prise a tout instant reste juste (section 4.1).
+     La trace montre l'histoire (12 -> 24) mais jus vaut deja 24 : c'est un
+     etat gravE, pas un simple decor. */
+  function poserEtatIdle(){
+    label.textContent = PRODUIT_JUS.label;
+    unite.textContent = PRODUIT_JUS.unite;
+    trace.textContent = pad3(jus - 12) + ' → ' + pad3(jus);
+    afficherValeur(jus, false);
+    texteDictee.textContent = PHRASES[0].texte;
+    dictee.removeAttribute('data-actif');
+    dicteeCorps.classList.remove('compteur__dictee-corps--repos');
+    afficherReponseValidee();
+    graverEtatActuel();
+  }
+
+  var doux = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* ---------- Resoudre une phrase, une fois qu'elle est ecrite ---------- */
+  function resoudre(phrase, options){
+    if(phrase.type === 'question'){
+      label.textContent = phrase.produit.label;
+      unite.textContent = phrase.produit.unite;
+      trace.textContent = pad3(phrase.valeur);
+      afficherValeur(phrase.valeur, false);
+      afficherReponseQuestion();
+      graverEtatActuel();
+      enJeu = false;
+      return;
+    }
+
+    var ancien  = jus;
+    var nouveau = phrase.effet(jus);
+    propositionCourante = { ancien: ancien, nouveau: nouveau };
+    label.textContent = phrase.produit.label;
+    unite.textContent = phrase.produit.unite;
+    trace.textContent = pad3(ancien) + ' → ' + pad3(nouveau);
+    afficherValeur(nouveau, true);
+    afficherReponseProposition();
+
+    /* Le tour automatique se valide lui-meme 1500 ms plus tard
+       (section 4.2) ; un clic du visiteur attend son Oui ou son Non. */
+    if(options && options.auto){
+      plusTard(function(){ valider(); }, 1500);
+    } else {
+      enJeu = false;
+    }
+  }
+
+  /* ---------- Jouer une phrase : au clic, ou dans le tour automatique ---------- */
+  function jouerPhrase(index, options){
+    options = options || {};
     toutAnnuler();
+    enJeu = true;
+    propositionCourante = null;
 
-    /* 1. Repos */
-    afficherValeur(REPOS, false);
+    var phrase = PHRASES[index];
+    marquerPhraseActive(index);
+    afficherReponsePromesseSeule();
+    dicteeCorps.classList.remove('compteur__dictee-corps--repos');
+
+    /* Avant meme que la phrase ne s'ecrive, la tete de la carte bascule
+       deja sur le bon produit et sa valeur courante (planche EtatDictee) :
+       seuls la fleche de la trace et le gris de la valeur proposee
+       arrivent apres, une fois la phrase resolue. */
+    label.textContent = phrase.produit.label;
+    unite.textContent = phrase.produit.unite;
+    if(phrase.type === 'question'){
+      trace.textContent = pad3(phrase.valeur);
+      afficherValeur(phrase.valeur, false);
+    } else {
+      trace.textContent = pad3(jus);
+      afficherValeur(jus, false);
+    }
+
+    /* Mouvement reduit : le resultat tout de suite, sans lettre par
+       lettre (section 4.6). */
+    if(doux.matches){
+      dictee.removeAttribute('data-actif');
+      texteDictee.textContent = phrase.texte;
+      resoudre(phrase, options);
+      return;
+    }
+
+    /* Pendant l'ecriture, les trois phrases sont desactivees : on
+       n'empile pas deux dictees (section 4.4). */
+    basculerDesactivation(true);
+    dictee.setAttribute('data-actif', '');
+    texteDictee.textContent = '';
+    var i = 0;
+    (function frappe(){
+      if(i > phrase.texte.length){
+        dictee.removeAttribute('data-actif');
+        basculerDesactivation(false);
+        resoudre(phrase, options);
+        return;
+      }
+      texteDictee.textContent = phrase.texte.slice(0, i);
+      i++;
+      plusTard(frappe, 42);
+    })();
+  }
+
+  function valider(){
+    toutAnnuler();
+    if(propositionCourante){ jus = propositionCourante.nouveau; }
+    afficherValeur(jus, false);
+    afficherReponseValidee();
+    graverEtatActuel();
+    propositionCourante = null;
+    enJeu = false;
+  }
+
+  function refuser(){
+    toutAnnuler();
+    if(propositionCourante){
+      afficherValeur(propositionCourante.ancien, false);
+      trace.textContent = pad3(propositionCourante.ancien);
+    }
+    afficherReponseRefusee();
+    graverEtatActuel();
+    propositionCourante = null;
+    enJeu = false;
+  }
+
+  /* ---------- Le tour automatique : phrase 1, une seule fois ----------
+     jus vaut deja 24 (etat gravE de depart) : on le rembobine a 12 pour
+     rejouer l'histoire devant le visiteur, exactement comme au tout
+     premier jour. Si la carte quitte l'ecran avant que jouerPhrase(0)
+     n'ait valide, restaurerDernierGrave() remet jus a 24. */
+  function cycleAuto(){
+    toutAnnuler();
+    jus = 12;
+    label.textContent = PRODUIT_JUS.label;
+    unite.textContent = PRODUIT_JUS.unite;
+    trace.textContent = pad3(jus);
+    afficherValeur(jus, false);
     texteDictee.textContent = '';
     dictee.removeAttribute('data-actif');
-    afficherPastille(false);
+    dicteeCorps.classList.add('compteur__dictee-corps--repos');
+    afficherReponsePromesseSeule();
 
-    /* 2. Ecoute : la phrase s'ecrit */
     plusTard(function(){
-      dictee.setAttribute('data-actif','');
-      var i = 0;
-      (function frappe(){
-        if(i > PHRASE.length) return;
-        texteDictee.textContent = PHRASE.slice(0, i);
-        i++;
-        plusTard(frappe, 42);
-      })();
+      jouerPhrase(0, { auto: true });
     }, 900);
-
-    /* 3. Proposition : la valeur apparait en gris chaud, pas encore validee */
-    plusTard(function(){
-      dictee.removeAttribute('data-actif');
-      afficherValeur(APRES, true);
-    }, 900 + PHRASE.length * 42 + 550);
-
-    /* 4. Validation : la valeur se stabilise en encre, la pastille arrive */
-    plusTard(function(){
-      afficherValeur(APRES, false);
-      afficherPastille(true);
-      tour++;
-    }, 900 + PHRASE.length * 42 + 550 + 1500);
-
-    /* 5. Reprise, tant que le nombre de tours n'est pas atteint. Au-dela,
-       la carte reste sur sa derniere mesure. */
-    plusTard(function(){
-      if(tour < TOURS_MAX){ cycle(); }
-    }, 900 + PHRASE.length * 42 + 550 + 1500 + 4200);
   }
 
-  /* Etat de depart : la derniere mesure, comme le repli statique du HTML.
-     Ainsi rien ne clignote avant que la carte ne se mette en marche, et
-     une capture prise a n'importe quel instant reste parlante. */
-  function poserEtatFinal(){
-    afficherValeur(APRES, false);
-    texteDictee.textContent = PHRASE;
-    afficherPastille(true);
-  }
-  poserEtatFinal();
+  /* ---------- Les gestes du visiteur ---------- */
+  phraseBoutons.forEach(function(bouton, index){
+    bouton.addEventListener('click', function(){
+      tourJoue = true; /* un choix manuel remplace le tour, qui ne se relance plus */
+      jouerPhrase(index, { auto: false });
+    });
+  });
+  btnOui.addEventListener('click', valider);
+  btnNon.addEventListener('click', refuser);
 
-  /* On ne fait tourner la carte que lorsqu'elle est reellement a
-     l'ecran : rien ne s'anime dans un onglet qu'on ne regarde pas. */
-  var enMarche = false;
+  /* ---------- Demarrage : la carte se revele, jouable, des le script ---------- */
+  poserEtatIdle();
+  choix.hidden = false;
+  mentionDemo.hidden = true;
+
+  /* Mouvement reduit : tout est deja jouable au clic, aucun tour
+     automatique (section 4.6). */
+  if(doux.matches){ return; }
+
+  /* Le tour ne se joue que si la carte est reellement a l'ecran, et une
+     seule fois (WCAG 2.2.2). Le quitter en cours de route annule les
+     minuteurs et repose le dernier etat gravE, jamais une proposition
+     en gris (section 4.5). */
   if('IntersectionObserver' in window){
     var guetteur = new IntersectionObserver(function(entrees){
       entrees.forEach(function(e){
-        if(e.isIntersecting && !enMarche && tour < TOURS_MAX){
-          enMarche = true;
-          cycle();
-        } else if(!e.isIntersecting && enMarche){
-          enMarche = false;
+        if(e.isIntersecting && !tourJoue && !enJeu){
+          tourJoue = true;
+          enJeu = true;
+          cycleAuto();
+        } else if(!e.isIntersecting && enJeu){
+          enJeu = false;
           toutAnnuler();
-          /* on quitte l'ecran en cours de mesure : la carte se remet sur
-             sa derniere valeur plutot que de rester figee a mi-parcours. */
-          poserEtatFinal();
+          restaurerDernierGrave();
         }
       });
     }, { threshold: 0.25 });
     guetteur.observe(compteur);
   } else {
-    cycle();
+    tourJoue = true;
+    enJeu = true;
+    cycleAuto();
   }
 })();
 </script>
