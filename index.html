@@ -500,6 +500,24 @@
     .gestes{grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; align-items:start;}
   }
 
+  /* Le geste zero (import d'un tableur) : un callout hors serie apres
+     les trois gestes, pas un quatrieme geste (pas de pastille
+     numerotee). Reutilise .geste__texte/.geste__ecran/.geste__image/
+     .geste__legende definis ci-dessus. Sur bureau, texte a gauche et
+     capture a droite, bornee en largeur pour ne jamais s'etirer sur
+     toute la zone comme le ferait une grande capture plein cadre. */
+  .geste-zero{margin-top:48px;}
+
+  @media (min-width:960px){
+    .geste-zero{
+      display:grid;
+      grid-template-columns:1fr minmax(0,460px);
+      gap:32px;
+      align-items:center;
+    }
+    .geste-zero .geste__ecran{margin-top:0;}
+  }
+
   /* ================================================================
      5. CE QUE STOVO NE FAIT PAS
      ================================================================ */
@@ -843,6 +861,18 @@
         </article>
 
       </div>
+
+      <div class="geste-zero">
+        <div class="geste__texte">
+          <h3>Et vos produits, vous les rentrez comment ?</h3>
+          <p>Vous avez déjà une liste dans un tableur ? Envoyez-la telle quelle. Stovo lit vos colonnes, il ne vous demande pas de les remettre dans son ordre à lui.</p>
+        </div>
+        <figure class="geste__ecran carte">
+          <img class="geste__image" src="media/geste-0-importer.png" width="736" height="374" loading="lazy" decoding="async" alt="Bulle de confirmation de Stovo : « J'ai lu 8 produits dans ton fichier. Je les crée dans ton catalogue ? Réponds oui pour valider, non pour annuler. », avec deux boutons en dessous, Oui et Non.">
+          <figcaption class="geste__legende">Huit lignes d'un tableur envoyées telles quelles. Stovo les a lues, et attend votre oui.</figcaption>
+        </figure>
+      </div>
+
     </div>
   </section>
 
