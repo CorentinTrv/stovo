@@ -211,7 +211,7 @@ export const CONTENU = [
         icone: 'renommer',
         titre: 'Renommer un produit',
         quoi: 'Corriger un nom mal orthographié, ou lui donner son vrai nom commercial.',
-        exemples: ['renomme les pâtes en macaroni', 'renomme le jus en jus d\'orange'],
+        exemples: ['renomme le produit coca en coca 50 cl', 'renomme les pâtes en macaroni', 'renomme le jus en jus d\'orange'],
         note: 'La structure est imposée : <b>renomme X en Y</b>. Le mot « en » est le séparateur, sans lui Stovo ne devine pas. À ne pas confondre avec le surnom : renommer change le vrai nom, un surnom en ajoute un deuxième.',
       },
       {

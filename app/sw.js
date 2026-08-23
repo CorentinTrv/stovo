@@ -137,7 +137,15 @@
 // -- NOUVEAU fichier parler_logique.js (extrait de parler.js sans
 // changement de comportement, teste par parler_logique_test.js, relu par
 // Codex) ajoute au precache, il manquait a la liste depuis son extraction.
-const CACHE_NAME = 'stovo-app-v28';
+// v29 (lots D15 et saisie multiligne, 23/08/2026) : D15 (commit a50107b,
+// non accompagne d'un bump a l'epoque) -- aide-contenu.js (nouvel exemple
+// « renomme le produit coca en coca 50 cl »). Saisie multiligne -- le champ
+// de l'ecran "Parler" devient un textarea a hauteur automatique (2 a 5
+// lignes) au lieu d'un input qui faisait defiler le texte hors du cadre ;
+// Entree envoie toujours, Maj+Entree insere une ligne (toucheEnvoie,
+// parler_logique.js). index.html, styles.css, parler.js, parler_logique.js,
+// aide.js, dashboard.js modifies. Aucun nouveau fichier a precacher.
+const CACHE_NAME = 'stovo-app-v29';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,

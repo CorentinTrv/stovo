@@ -405,15 +405,26 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .btn-choix-aucun:hover { background: var(--fond-chaud); }
 .btn-choix-aucun:disabled { opacity: .6; }
 
-/* Champ texte + bouton Envoyer, sur une ligne. */
-.parler-form { display: flex; gap: 10px; }
-.parler-form input {
-  flex: 1; min-width: 0; font-family: inherit; font-size: 15px; padding: 11px 13px;
+/* Champ texte (lot saisie multiligne, 23/08/2026) : un <textarea> qui montre
+   toute la phrase, au lieu d'un <input> qui la fait defiler hors du cadre.
+   Bouton Envoyer cale en bas (align-items: flex-end) pour rester sur la
+   ligne de base de la derniere ligne du texte. */
+.parler-form { display: flex; align-items: flex-end; gap: 10px; }
+.parler-form textarea {
+  display: block; flex: 1; min-width: 0; font-family: inherit; font-size: 15px;
+  line-height: 1.4; padding: 11px 13px; resize: none; overflow-y: auto;
+  /* 2 lignes au repos, 5 lignes maximum : au-dela, defilement interne.
+     ajusterHauteurChamp() (parler.js) fait foi partout (Safari iOS ne gere
+     pas encore field-sizing), field-sizing est une amelioration progressive
+     pour les navigateurs qui le supportent deja (Chrome). */
+  min-height: calc(2 * 1.4em + 22px + 2px);
+  max-height: calc(5 * 1.4em + 22px + 2px);
+  field-sizing: content;
   border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text);
   transition: border-color .15s;
 }
-.parler-form input:focus { border-color: var(--text); }
-.parler-form input:disabled { opacity: .7; }
+.parler-form textarea:focus { border-color: var(--text); }
+.parler-form textarea:disabled { opacity: .7; }
 /* Bouton à contour (action secondaire, audit --brand §2bis) : Envoyer n'est
    plus la seule action de l'écran depuis le micro et les modes réception/
    sortie/inventaire, il redevient un bouton comme les autres. */
@@ -1181,7 +1192,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 
 /* A2-7 : le fichier ne posait aucun style de focus clavier, et trois champs
    supprimaient activement l'anneau du navigateur (`outline: none`, retire
-   ci-dessus sur .parler-form input, #form-login input, .stock-recherche).
+   ci-dessus sur .parler-form textarea, #form-login input, .stock-recherche).
    Cette regle unique le remplace pour TOUT element focusable au clavier,
    sans reintroduire d'anneau au clic souris (`:focus-visible` ne se
    declenche pas dans ce cas dans les navigateurs modernes). */

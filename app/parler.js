@@ -56,6 +56,7 @@ import {
   normaliserChoix,
   texteErreurMicro,
   texteRefusVerrou,
+  toucheEnvoie,
 } from './parler_logique.js';
 
 const zoneReponse = document.getElementById('parler-reponse');
@@ -342,6 +343,43 @@ async function appelerPwaApi(corps, controlesADesactiver) {
   }
 }
 
+// --- Saisie multiligne (lot du 23/08/2026) ---
+// Le champ de Parler est un <textarea> (index.html) : il montre toute la
+// phrase au lieu de la faire défiler hors du cadre. Mais Entrée doit ENVOYER
+// comme avant (toucheEnvoie, parler_logique.js) : sur iPhone, la touche
+// « retour » du clavier est le seul bouton d'envoi possible. On intercepte le
+// keydown AVANT que le navigateur insère le saut de ligne, puis on relance la
+// soumission par requestSubmit() (et non submit()) pour repasser par
+// l'écouteur `submit` existant et sa validation (texte vide notamment).
+champTexte.addEventListener('keydown', (evenement) => {
+  if (!toucheEnvoie(evenement)) return;
+  evenement.preventDefault();
+  formParler.requestSubmit();
+});
+
+// Fait grandir le cadre avec le texte : 2 lignes au repos, 5 au maximum, le
+// CSS (min-height/max-height) plafonne au-delà avec un défilement interne.
+// Appelée à chaque frappe (événement `input`) et chaque fois que le champ est
+// rempli ou vidé depuis l'extérieur (micro, Aide, bandeau de pilotage,
+// soumission du formulaire), pour que le cadre suive toujours ce qu'il
+// affiche réellement, y compris quand il retombe à 2 lignes après l'envoi.
+//
+// Correctif après relecture du Jarvis (23/08/2026) : styles.css pose
+// `box-sizing: border-box` sur tout (règle `*`, l.61), donc la hauteur posée
+// via `style.height` inclut la bordure. Mais `scrollHeight` ne mesure QUE le
+// contenu + le padding, jamais la bordure. Sans correction, le cadre était
+// posé 2 px trop bas (1 px de bordure haut + 1 px bas manquants) : le
+// contenu débordait légèrement, avec un ascenseur interne parfois visible
+// pour rien. `offsetHeight - clientHeight` donne exactement cet écart
+// (bordure haut + bas ; lu juste après avoir remis `height: auto`, donc sur
+// la hauteur naturelle du contenu, avant de reposer une valeur en pixels).
+function ajusterHauteurChamp() {
+  champTexte.style.height = 'auto';
+  const bordures = champTexte.offsetHeight - champTexte.clientHeight;
+  champTexte.style.height = (champTexte.scrollHeight + bordures) + 'px';
+}
+champTexte.addEventListener('input', ajusterHauteurChamp);
+
 // --- Déclaration (formulaire texte) ---
 // Le formulaire est PARTAGÉ entre la saisie normale et le mode réception (N1) :
 // en réception, « Envoyer » devient « Ajouter » et la phrase part vers
@@ -376,6 +414,12 @@ formParler.addEventListener('submit', async (evenement) => {
       btnEnvoyer.textContent = 'Ajout…';
       await modeReception.ajouterLigne(texte);
       btnEnvoyer.textContent = 'Ajouter';
+      // reception.js vide lui-même le champ (elements.champ.value = '') si
+      // l'ajout a abouti : reception.js/sortie.js sont hors du périmètre de
+      // ce lot, donc l'ajustement de hauteur se fait ici, après coup, plutôt
+      // que dans ces fichiers. Idempotent : recalcule sur la valeur actuelle,
+      // qu'elle ait été vidée ou non.
+      ajusterHauteurChamp();
       return;
 
     // Lot CM-C (25/07/2026) : en inventaire guidé, la phrase est le CHIFFRE
@@ -385,12 +429,16 @@ formParler.addEventListener('submit', async (evenement) => {
       await modeInventaire.compter(texte);
       btnEnvoyer.textContent = 'Compter';
       champTexte.value = '';
+      ajusterHauteurChamp();
       return;
 
     case 'sortie':
       btnEnvoyer.textContent = 'Ajout…';
       await modeSortie.ajouterLigne(texte);
       btnEnvoyer.textContent = 'Ajouter';
+      // Même remarque que la réception ci-dessus : sortie.js vide le champ
+      // lui-même, l'ajustement se fait ici.
+      ajusterHauteurChamp();
       return;
 
     default:
@@ -401,6 +449,7 @@ formParler.addEventListener('submit', async (evenement) => {
   await appelerPwaApi(corpsDeclaration(texte), [btnEnvoyer, champTexte]);
   btnEnvoyer.textContent = 'Envoyer';
   champTexte.value = '';
+  ajusterHauteurChamp();
 });
 
 // --- Confirmation Oui / Non ---
@@ -681,6 +730,7 @@ function creerReconnaissance() {
       transcript += evenement.results[i][0].transcript;
     }
     champTexte.value = transcript;
+    ajusterHauteurChamp();
   };
 
   reconnaissance.onerror = (evenement) => {

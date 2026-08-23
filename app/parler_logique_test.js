@@ -25,6 +25,7 @@ import {
   normaliserChoix,
   texteErreurMicro,
   texteRefusVerrou,
+  toucheEnvoie,
 } from "./parler_logique.js";
 
 // ---------------------------------------------------------------------------
@@ -298,6 +299,32 @@ Deno.test("choisirBranche : verrou pris par un mode dont l'etat REEL n'est pas e
   // modeReception.estEnReception() est encore faux. La phrase doit repartir
   // en saisie normale, jamais dans un tampon de session pas encore ouvert.
   assertEquals(choisirBranche("reception", { reception: false, inventaire: false, sortie: false }), "normal");
+});
+
+// ---------------------------------------------------------------------------
+// toucheEnvoie (lot saisie multiligne, 23/08/2026)
+// ---------------------------------------------------------------------------
+
+Deno.test("toucheEnvoie : Entree seule envoie", () => {
+  assertEquals(toucheEnvoie({ key: "Enter", shiftKey: false, isComposing: false }), true);
+});
+
+Deno.test("toucheEnvoie : Maj+Entree n'envoie pas (insere une ligne)", () => {
+  assertEquals(toucheEnvoie({ key: "Enter", shiftKey: true, isComposing: false }), false);
+});
+
+Deno.test("toucheEnvoie : Entree en composition n'envoie pas (clavier japonais, dictee en cours)", () => {
+  assertEquals(toucheEnvoie({ key: "Enter", shiftKey: false, isComposing: true }), false);
+});
+
+Deno.test("toucheEnvoie : une autre touche n'envoie jamais", () => {
+  assertEquals(toucheEnvoie({ key: "a", shiftKey: false, isComposing: false }), false);
+  assertEquals(toucheEnvoie({ key: "Escape", shiftKey: false, isComposing: false }), false);
+});
+
+Deno.test("toucheEnvoie : Ctrl+Entree ou Cmd+Entree envoie (pas de cas particulier, la spec ne le demande pas)", () => {
+  assertEquals(toucheEnvoie({ key: "Enter", shiftKey: false, isComposing: false, ctrlKey: true }), true);
+  assertEquals(toucheEnvoie({ key: "Enter", shiftKey: false, isComposing: false, metaKey: true }), true);
 });
 
 // ---------------------------------------------------------------------------

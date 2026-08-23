@@ -142,6 +142,11 @@ if (zone) {
     const champ = $('champ-parler');
     if (champ) {
       champ.value = phrase;
+      // Lot saisie multiligne (23/08/2026) : le champ est un textarea a
+      // hauteur automatique gere par parler.js. On ne connait pas sa
+      // fonction d'ajustement ici, mais l'evenement 'input' (avec bubbles,
+      // comme une vraie frappe) la declenche a notre place.
+      champ.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     // app.js ecoute cet evenement et fait la bascule d'onglet (on evite

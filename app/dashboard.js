@@ -256,7 +256,12 @@ function majBandeauPilotage(produits, gesteVivant, derniereSortieLe) {
   if (btn && premierProduit) {
     btn.addEventListener('click', () => {
       const champ = $('champ-parler');
-      if (champ) champ.value = `j'ai vendu 3 ${premierProduit.nom}`;
+      if (champ) {
+        champ.value = `j'ai vendu 3 ${premierProduit.nom}`;
+        // Lot saisie multiligne (23/08/2026) : voir le meme commentaire dans
+        // aide.js, meme raison.
+        champ.dispatchEvent(new Event('input', { bubbles: true }));
+      }
       document.dispatchEvent(new CustomEvent('stovo:onglet', { detail: { onglet: 'parler' } }));
       if (champ && typeof champ.focus === 'function') champ.focus();
     });

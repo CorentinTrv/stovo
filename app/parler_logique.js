@@ -194,6 +194,17 @@ export function choisirBranche(modeCourant, etats) {
 }
 
 // ---------------------------------------------------------------------------
+// Lot saisie multiligne (23/08/2026) : le champ de Parler est un textarea,
+// mais Entree doit ENVOYER comme avant (sur iOS, la touche « retour » est le
+// seul bouton d'envoi au clavier). Maj+Entree insere une ligne, et une
+// composition en cours (clavier japonais, dictee en cours d'edition) n'envoie
+// jamais : la touche valide la composition, pas la phrase.
+// ---------------------------------------------------------------------------
+export function toucheEnvoie(touche) {
+  return touche.key === 'Enter' && !touche.shiftKey && !touche.isComposing;
+}
+
+// ---------------------------------------------------------------------------
 // Construction des corps JSON envoyes a pwa-api (kinds mono-coup).
 // ---------------------------------------------------------------------------
 export function corpsDeclaration(texte) {
