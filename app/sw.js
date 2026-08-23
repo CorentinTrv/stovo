@@ -119,7 +119,15 @@
 // passe du teal a l'encre (--text), regle "un role, une couleur". Aucun
 // nouveau fichier a precacher, pas de bump : le meme lot v26 n'a pas encore
 // ete deploye.
-const CACHE_NAME = 'stovo-app-v26';
+// v27 (lot "l'app rejoint le monde clair, suite", 23/08/2026) : Parler,
+// Stock, Aide, la connexion et les icones PWA rejoignent le monde clair
+// (bouton Oui/Non repris de la demo jouable de la vitrine, micro et boutons
+// de Parler en flamme/contour, connexion sur creme sans degrade, icones PWA
+// #FA5D00). NOUVEAU fichier icones.js (registre des icones SVG en trait,
+// utilise par aide.js et dashboard.js) ajoute au precache ; index.html,
+// styles.css, aide.js, aide-contenu.js, dashboard.js, parler.js et les
+// icones PNG/SVG de app/icons/ modifies.
+const CACHE_NAME = 'stovo-app-v27';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -135,6 +143,7 @@ const FICHIERS_COQUILLE = [
   './stock.js',
   './aide.js',
   './aide-contenu.js',
+  './icones.js',
   './supabase.js',
   './auth.js',
   './parler.js',

@@ -75,20 +75,16 @@ body {
 /* ---------- En-tête ----------
    Monde clair (23/08/2026) : plus de bande teal, le header prend le fond de
    page. Le logotype "Stovo" en flamme fait office de marque (plus de boîte
-   .logo ni de sous-titre dans le header, retirés de index.html) ; la regle
-   .logo ci-dessous reste utilisee par l'ecran de connexion (.login-brand
-   .logo la re-precise), hors perimetre de ce lot. */
+   .logo ni de sous-titre dans le header, retirés de index.html). La classe
+   .logo elle-même a disparu au lot "monde clair, suite" (23/08/2026) : son
+   dernier usage (.login-brand .logo, l'écran de connexion) a été retiré en
+   même temps que le pictogramme "S" (DESIGN.md, écran de connexion). */
 header {
   background: var(--bg);
   padding: 18px 0 6px;
 }
 .header-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
 .brand { display: flex; align-items: center; gap: 13px; }
-.logo {
-  width: 46px; height: 46px; border-radius: 13px;
-  background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.25);
-  display: grid; place-items: center; font-size: 24px; font-weight: 700;
-}
 .brand h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; line-height: 44px; color: var(--flamme); }
 .brand p { font-size: 13.5px; opacity: .88; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
@@ -223,6 +219,10 @@ tbody tr:hover { background: var(--fond-chaud); }
 .pill.entree { color: var(--brand-dark); }
 .pill.sortie { color: var(--text); } /* une sortie n'est pas une alerte, le signe moins suffit */
 .src { font-size: 12px; color: var(--muted); }
+/* Icone SVG en trait devant "vocal"/"manuel" (lot "monde clair, suite",
+   23/08/2026), remplace les emoji 🎙️/⌨️ (dashboard.js, colonne Source). */
+.src-ligne { display: inline-flex; align-items: center; gap: 5px; }
+.src-ligne svg { width: 13px; height: 13px; flex: 0 0 auto; display: block; }
 /* étiquette des mouvements de régularisation (motif), pour les distinguer d'une vente */
 .tag-motif { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--fond-chaud); border: 1px solid var(--border); padding: 1px 8px; border-radius: 999px; margin-left: 7px; vertical-align: middle; }
 .tag-auto { font-size: 10.5px; font-weight: 700; color: var(--brand-dark); background: var(--ok-bg); border: 1px solid var(--brand-light); padding: 0 7px; border-radius: 999px; vertical-align: middle; cursor: help; }
@@ -267,12 +267,16 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 /* A-6 (audit accessibilité 31/07) : sur grand écran, 340px bride tout le
    panneau de réception/sortie et l'inventaire (noms de produits tronqués). */
 @media (min-width: 700px) { .parler-centre { max-width: 640px; } }
+/* Repos (disabled) : décor seulement (icône --muted-light, §1 de DESIGN.md).
+   L'icône SVG (index.html) remplace l'emoji 🎙️ ; sa taille est fixée par
+   .btn-micro svg ci-dessous, indépendamment du reste du bouton. */
 .btn-micro {
   width: 90px; height: 90px; border-radius: 999px;
-  background: #e2e8f0; border: 2px solid var(--border); color: var(--muted-light);
-  font-size: 36px; display: grid; place-items: center; margin: 24px auto 8px;
+  background: var(--card); border: 2px solid var(--border); color: var(--muted-light);
+  display: grid; place-items: center; margin: 24px auto 8px;
   cursor: not-allowed;
 }
+.btn-micro svg { width: 36px; height: 36px; display: block; }
 .parler-texte { color: var(--muted); font-size: 12.5px; }
 
 /* =====================================================================
@@ -281,22 +285,24 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    est disabled : progressive enhancement, additif seulement).
    ===================================================================== */
 
+/* Actif : disque flamme (audit --brand §2bis, monde clair 23/08/2026) —
+   c'est l'action de l'écran, au même titre que .matin-copier ou
+   .btn-reception-primaire. */
 .btn-micro:not(:disabled) {
-  /* Correctif contraste du 01/08 : bordure --brand-light mesurée à 1,15:1
-     contre --bg, le bouton actif était quasi invisible (WCAG 1.4.11 exige
-     3:1 pour un composant d'interface). --brand-dark donne ~5:1. */
-  background: var(--ok-bg); border-color: var(--brand-dark); color: var(--brand-dark);
+  background: var(--flamme); border-color: var(--flamme); color: #fff;
+  box-shadow: 0 1px 4px rgba(250,93,0,.25);
   cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s;
 }
+.btn-micro:not(:disabled):hover { background: var(--flamme-sombre); border-color: var(--flamme-sombre); }
 .btn-micro:not(:disabled):active { transform: translateY(1px); }
 
 /* État "en écoute" : pulsation discrète pour montrer que le micro capte.
-   Correctif contraste du 01/08 : --danger-border mesurée à 1,32:1 contre
-   --bg rendait l'état "j'enregistre" moins visible que le repos (5:1) —
-   inversion contre-intuitive. --danger-text donne ~5,9:1, au moins aussi
-   visible que le repos. Fond et pulsation inchangés. */
+   Correctif contraste du 01/08 : --danger-text donne ~5,9:1, au moins aussi
+   visible que le repos. Fond et pulsation inchangés par ce lot : c'est un
+   ÉTAT (pas une action), il ne suit pas le passage à la flamme ci-dessus. */
 .btn-micro.ecoute {
   background: var(--danger-bg); border-color: var(--danger-text); color: var(--danger-text);
+  box-shadow: none;
   animation: pulse-micro 1.4s ease-in-out infinite;
 }
 @keyframes pulse-micro {
@@ -319,34 +325,44 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   font-size: 15px; color: var(--text); text-align: left; line-height: 1.45;
 }
 
-/* Boutons Oui/Non : cachés par défaut (attribut hidden posé/retiré par parler.js). */
+/* Boutons Oui/Non (monde clair, 23/08/2026) : le couple flamme/contour de la
+   démo jouable de la vitrine (index.html racine, section du compteur). Oui
+   = bouton flamme avec coche SVG (c'est le "Oui" de tout Stovo) ; Non =
+   bouton à contour, texte seul (refuser n'est pas une erreur, plus de rouge). */
 .parler-confirmation { display: flex; gap: 12px; margin-bottom: 16px; }
 .btn-confirmation {
-  flex: 1; font-family: inherit; font-size: 15px; font-weight: 700;
-  padding: 12px 16px; border-radius: 10px; cursor: pointer;
-  transition: opacity .15s, transform .1s;
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: inherit; font-size: 19px; font-weight: 700; white-space: nowrap;
+  min-height: 46px; padding: 0 16px; border-radius: 14px; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
 }
+.btn-confirmation svg { flex: 0 0 auto; }
 .btn-confirmation:active { transform: translateY(1px); }
 .btn-confirmation:disabled { opacity: .6; cursor: wait; }
-.btn-oui { background: var(--ok-bg); border: 1px solid var(--brand-light); color: var(--brand-dark); }
-.btn-non { background: var(--danger-bg); border: 1px solid var(--danger-border); color: var(--danger-text); }
+.btn-oui { background: var(--flamme); border: none; color: #fff; box-shadow: 0 1px 4px rgba(250,93,0,.25); }
+.btn-oui:hover { background: var(--flamme-sombre); }
+.btn-non { background: var(--card); border: 1.5px solid var(--border); color: var(--text); font-size: 17px; }
+.btn-non:hover { background: var(--fond-chaud); }
 
 /* Champ texte + bouton Envoyer, sur une ligne. */
 .parler-form { display: flex; gap: 10px; }
 .parler-form input {
   flex: 1; min-width: 0; font-family: inherit; font-size: 15px; padding: 11px 13px;
-  border: 1px solid var(--border); border-radius: 10px; background: #fff; color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text);
   transition: border-color .15s;
 }
-.parler-form input:focus { border-color: var(--brand); }
+.parler-form input:focus { border-color: var(--text); }
 .parler-form input:disabled { opacity: .7; }
+/* Bouton à contour (action secondaire, audit --brand §2bis) : Envoyer n'est
+   plus la seule action de l'écran depuis le micro et les modes réception/
+   sortie/inventaire, il redevient un bouton comme les autres. */
 .btn-envoyer {
   font-family: inherit; font-size: 15px; font-weight: 700; white-space: nowrap;
-  padding: 11px 18px; border: none; border-radius: 10px;
-  background: var(--brand-dark); color: #fff; cursor: pointer;
+  min-height: 44px; padding: 0 18px; border: 1.5px solid var(--border); border-radius: 14px;
+  background: var(--card); color: var(--text); cursor: pointer;
   transition: background .15s, transform .1s;
 }
-.btn-envoyer:hover { background: var(--brand-darker); }
+.btn-envoyer:hover { background: var(--fond-chaud); }
 .btn-envoyer:active { transform: translateY(1px); }
 .btn-envoyer:disabled { opacity: .7; cursor: wait; }
 
@@ -355,13 +371,15 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    de déclaration, sobre (l'action principale reste "Envoyer").
    ===================================================================== */
 .btn-import {
-  display: block; width: 100%; margin-top: 12px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 12px; min-height: 44px;
   font-family: inherit; font-size: 14px; font-weight: 600;
-  padding: 11px 16px; border: 1px dashed var(--border); border-radius: 10px;
-  background: #fff; color: var(--muted); cursor: pointer;
+  padding: 11px 16px; border: 1px dashed var(--border); border-radius: 14px;
+  background: var(--card); color: var(--muted); cursor: pointer;
   transition: background .15s, border-color .15s, transform .1s;
 }
-.btn-import:hover { background: var(--ok-bg); border-color: var(--brand-light); color: var(--brand-dark); }
+.btn-import svg { flex: 0 0 auto; }
+.btn-import:hover { background: var(--fond-chaud); border-color: var(--border); color: var(--text); }
 .btn-import:active { transform: translateY(1px); }
 .btn-import:disabled { opacity: .7; cursor: wait; }
 
@@ -372,23 +390,26 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    remplir la même liste, pas un geste concurrent.
    ===================================================================== */
 .btn-photo-bl {
-  display: block; width: 100%; margin-top: 12px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 12px; min-height: 44px;
   font-family: inherit; font-size: 14px; font-weight: 600;
-  padding: 11px 16px; border: 1px dashed var(--border); border-radius: 10px;
-  background: #fff; color: var(--muted); cursor: pointer;
+  padding: 11px 16px; border: 1px dashed var(--border); border-radius: 14px;
+  background: var(--card); color: var(--muted); cursor: pointer;
   transition: background .15s, border-color .15s, transform .1s;
 }
-.btn-photo-bl:hover { background: var(--ok-bg); border-color: var(--brand-light); color: var(--brand-dark); }
+.btn-photo-bl svg { flex: 0 0 auto; }
+.btn-photo-bl:hover { background: var(--fond-chaud); border-color: var(--border); color: var(--text); }
 .btn-photo-bl:active { transform: translateY(1px); }
 .btn-photo-bl:disabled { opacity: .7; cursor: wait; }
 
 /* Journal de lecture de la photo : le libellé du papier en face du produit
    retenu. Volontairement discret mais lisible : c'est un outil de contrôle,
-   pas une décoration. */
+   pas une décoration. Monde clair (23/08/2026) : la bande teal à gauche
+   disparaît, fond --bg (plus de #fafafa). */
 .reception-lecture {
   margin-top: 12px; padding: 10px 12px;
-  border: 1px solid var(--border); border-left: 3px solid var(--brand);
-  border-radius: 8px; background: #fafafa;
+  border: 1px solid var(--border);
+  border-radius: 8px; background: var(--bg);
 }
 .lecture-titre {
   margin: 0 0 8px; font-size: 12px; font-weight: 700;
@@ -401,7 +422,10 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .lecture-item:last-child { margin-bottom: 0; }
 .lecture-source { color: var(--muted); word-break: break-word; }
 .lecture-fleche { color: var(--muted); }
-.lecture-cible { font-weight: 700; color: var(--brand-dark); }
+/* La cible est une VALEUR (le nom + la quantité retenus), pas un état :
+   passe en encre (audit --brand §2bis), comme .ri-qte/.reception-total
+   ci-dessous. */
+.lecture-cible { font-weight: 700; color: var(--text); }
 
 /* =====================================================================
    Mode réception multi-produits (N1, lots FR-4 + FR-5) — écran de
@@ -409,15 +433,20 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    bannière de reprise. Reprend les tokens existants (--brand, --border…).
    ===================================================================== */
 
-/* Bouton d'entrée en réception (secondaire, comme l'import mais plein). */
+/* Bouton d'entrée en réception : à contour (audit --brand §2bis, monde
+   clair 23/08/2026), icône SVG (carton/cercle-moins/liste cochée selon le
+   mode, index.html) devant le libellé. Survol --fond-chaud, plus de
+   #ccfbf1. */
 .btn-reception-demarrer {
-  display: block; width: 100%; margin-top: 12px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 12px; min-height: 44px;
   font-family: inherit; font-size: 14.5px; font-weight: 700;
-  padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px;
-  background: var(--ok-bg); color: var(--brand-dark); cursor: pointer;
+  padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 14px;
+  background: var(--card); color: var(--text); cursor: pointer;
   transition: background .15s, border-color .15s, transform .1s;
 }
-.btn-reception-demarrer:hover { background: #ccfbf1; border-color: var(--brand-light); }
+.btn-reception-demarrer svg { flex: 0 0 auto; }
+.btn-reception-demarrer:hover { background: var(--fond-chaud); }
 .btn-reception-demarrer:active { transform: translateY(1px); }
 
 /* Panneau de la réception en cours (la liste vivante). */
@@ -427,7 +456,8 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 }
 .reception-entete { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .reception-titre { font-size: 16px; font-weight: 700; color: var(--text); }
-.reception-total { font-size: 13px; font-weight: 700; color: var(--brand-dark); white-space: nowrap; }
+/* Un compteur de lignes est une VALEUR, pas un état (audit --brand §2bis). */
+.reception-total { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; }
 
 .reception-liste { display: flex; flex-direction: column; gap: 6px; }
 .reception-vide { color: var(--muted); font-size: 13.5px; padding: 8px 2px; }
@@ -435,11 +465,11 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 /* Une ligne : nom à gauche, quantité, croix de suppression à droite. */
 .reception-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 9px 11px; border: 1px solid var(--border); border-radius: 10px; background: #fff;
+  padding: 9px 11px; border: 1px solid var(--border); border-radius: 10px; background: var(--card);
 }
 .ri-nom { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 600; color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ri-qte { font-size: 14.5px; font-weight: 700; color: var(--brand-dark); white-space: nowrap; }
+.ri-qte { font-size: 14.5px; font-weight: 700; color: var(--text); white-space: nowrap; }
 .ri-retirer {
   position: relative;
   flex: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
@@ -463,7 +493,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .reception-item.fusionnee { animation: flash-fusion 1s ease-out 1; }
 @keyframes flash-fusion {
   0% { background: var(--ok-bg); border-color: var(--brand-light); }
-  100% { background: #fff; border-color: var(--border); }
+  100% { background: var(--card); border-color: var(--border); }
 }
 
 /* Lot S-5 (chantier mode sortie) : ligne dont la sortie dictée dépasse le
@@ -479,22 +509,26 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   font-size: 13px; line-height: 1.4;
 }
 
-/* Actions de clôture : Valider (plein) + Abandonner (discret). */
+/* Actions de clôture : Valider (bouton flamme, c'est le "Oui" du mode) +
+   Abandonner (contour, survol rouge gardé : abandonner une saisie est
+   destructif, audit --brand §2bis). */
 .reception-actions { display: flex; gap: 12px; margin-top: 14px; }
 .btn-reception-primaire {
-  flex: 1; font-family: inherit; font-size: 15px; font-weight: 700; white-space: nowrap;
-  padding: 12px 16px; border: none; border-radius: 10px;
-  background: var(--brand-dark); color: #fff; cursor: pointer;
+  flex: 1; display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit; font-size: 19px; font-weight: 700; white-space: nowrap;
+  min-height: 46px; padding: 0 16px; border: none; border-radius: 14px;
+  background: var(--flamme); color: #fff; cursor: pointer;
+  box-shadow: 0 1px 4px rgba(250,93,0,.25);
   transition: background .15s, transform .1s, opacity .15s;
 }
-.btn-reception-primaire:hover { background: var(--brand-darker); }
+.btn-reception-primaire:hover { background: var(--flamme-sombre); }
 .btn-reception-primaire:active { transform: translateY(1px); }
 .btn-reception-primaire:disabled { opacity: .5; cursor: not-allowed; }
 .btn-reception-secondaire {
-  font-family: inherit; font-size: 14px; font-weight: 600;
-  padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px;
-  background: #fff; color: var(--muted); cursor: pointer;
-  transition: background .15s, color .15s, transform .1s;
+  font-family: inherit; font-size: 14px; font-weight: 600; min-height: 44px;
+  padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 14px;
+  background: var(--card); color: var(--muted); cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s, transform .1s;
 }
 .btn-reception-secondaire:hover { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text); }
 .btn-reception-secondaire:active { transform: translateY(1px); }
@@ -554,42 +588,51 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    apres login et le dashboard s'empilait en dessous (il fallait defiler). */
 [hidden] { display: none !important; }
 
-/* Écran de connexion : centré, sobre, plein écran. */
+/* Écran de connexion (monde clair, 23/08/2026) : centré, sobre, plein écran
+   sur --bg (le dégradé teal disparaît). Référence : maquettes/compte-et-
+   reglages/apercu-Connexion.png (DESIGN.md, "L'app"). */
 .ecran-login {
   min-height: 100vh; min-height: 100dvh;
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px; background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px; background: var(--bg);
+}
+/* Le mot Stovo, logotype flamme, posé AU-DESSUS de la carte (pas de
+   pictogramme) : même gabarit que .brand h1 de l'en-tête et .logo de la
+   vitrine (DM Sans 700, 22px, -.02em). */
+.login-logo {
+  font-size: 22px; font-weight: 700; letter-spacing: -.02em; line-height: 44px;
+  color: var(--flamme); margin-bottom: 4px;
 }
 .login-carte {
   width: 100%; max-width: 380px;
-  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm);
   padding: 32px 28px;
 }
-.login-brand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 6px; }
-.login-brand .logo {
-  width: 44px; height: 44px; border-radius: 13px;
-  background: var(--ok-bg); border: 1px solid var(--brand-light); color: var(--brand-dark);
-  display: grid; place-items: center; font-size: 22px; font-weight: 700;
-}
-.login-brand h1 { font-size: 24px; font-weight: 700; letter-spacing: -.5px; color: var(--text); }
-.login-soustitre { text-align: center; font-size: 13.5px; color: var(--muted); margin-bottom: 26px; }
+/* Titre et sous-titre alignés à gauche comme la carte (maquettes/compte-et-
+   reglages/apercu-Connexion.png), à l'inverse de l'ancien centrage teal. */
+.login-carte h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; color: var(--text); }
+.login-soustitre { font-size: 15px; color: var(--muted); margin: 6px 0 26px; }
 
 #form-login { display: flex; flex-direction: column; gap: 6px; }
-#form-login label { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: 10px; }
+#form-login label { font-size: 13.5px; font-weight: 600; color: var(--muted); margin-top: 10px; }
 #form-login input {
   font-family: inherit; font-size: 15px; padding: 11px 13px;
-  border: 1px solid var(--border); border-radius: 10px; background: #fff; color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text);
   transition: border-color .15s;
 }
-#form-login input:focus { border-color: var(--brand); }
+#form-login input:focus { border-color: var(--text); }
 
+/* Bouton flamme, pleine largeur : c'est le "Oui" de cet écran (audit --brand,
+   §2bis, comme .matin-copier et .btn-reception-primaire). */
 .btn-login {
-  margin-top: 20px; font-family: inherit; font-size: 15px; font-weight: 700;
-  padding: 12px 16px; border: none; border-radius: 10px;
-  background: var(--brand-dark); color: #fff; cursor: pointer;
+  margin-top: 20px; width: 100%;
+  font-family: inherit; font-size: 19px; font-weight: 700;
+  min-height: 46px; padding: 0 16px; border: none; border-radius: 14px;
+  background: var(--flamme); color: #fff; cursor: pointer;
+  box-shadow: 0 1px 4px rgba(250,93,0,.25);
   transition: background .15s, transform .1s;
 }
-.btn-login:hover { background: var(--brand-darker); }
+.btn-login:hover { background: var(--flamme-sombre); }
 .btn-login:active { transform: translateY(1px); }
 .btn-login:disabled { opacity: .7; cursor: wait; }
 
@@ -760,7 +803,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   box-shadow: var(--shadow-sm);
   margin-bottom: 14px;
 }
-.stock-recherche:focus { border-color: var(--brand); }
+.stock-recherche:focus { border-color: var(--text); }
 .stock-liste {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow-sm);
@@ -798,7 +841,12 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   padding: 15px 16px; font-weight: 700; font-size: 15.5px;
 }
 .aide-sommaire::-webkit-details-marker { display: none; }
-.aide-icone { font-size: 19px; line-height: 1; }
+/* Icone SVG en trait (lot "monde clair, suite", 23/08/2026) : remplace
+   l'emoji. Decorative (aria-hidden dans aide.js), couleur --muted-light
+   comme .aide-geste-icone ci-dessous (regle 3 de DESIGN.md : le titre en
+   gras a cote porte deja le sens, l'icone n'est qu'un repere visuel). */
+.aide-icone { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; color: var(--muted-light); }
+.aide-icone svg { width: 22px; height: 22px; display: block; }
 /* Chevron a droite, tourne quand la section est ouverte. */
 .aide-titre { flex: 1; }
 .aide-sommaire::after {
@@ -813,7 +861,10 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .aide-texte b { font-weight: 700; }
 
 .aide-defs { margin: 12px 0; }
-.aide-defs dt { font-weight: 700; font-size: 13.5px; margin-top: 12px; }
+/* display:flex ajoutee (lot "monde clair, suite") : seules les 4 defs de
+   "Comprendre Stovo" portent une icone (aide.js), les autres <dt> n'ont
+   simplement rien a aligner et le flex ne change rien pour eux. */
+.aide-defs dt { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 13.5px; margin-top: 12px; }
 .aide-defs dt:first-child { margin-top: 0; }
 .aide-defs dd { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin: 2px 0 0; }
 
@@ -827,22 +878,31 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   padding: 16px 0 4px;
 }
 .aide-geste:first-of-type { border-top: none; }
-.aide-geste-titre { font-size: 14.5px; font-weight: 700; margin-bottom: 5px; }
+.aide-geste-titre { display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 700; margin-bottom: 5px; }
 .aide-geste-quoi { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+/* Icone decorative devant le titre d'un geste ou d'une astuce (couleur
+   --muted-light, regle 3 de DESIGN.md : le titre en gras a cote porte deja
+   le sens). Reutilisee aussi devant les 4 defs "Comprendre Stovo" (aide.js),
+   d'ou une classe generique plutot que ".aide-geste-titre .icone". */
+.aide-geste-icone { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; color: var(--muted-light); }
+.aide-geste-icone svg { width: 20px; height: 20px; display: block; }
 
 .aide-exemples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 9px; }
 /* L'exemple est un BOUTON : le taper recopie la phrase dans l'ecran Parler
-   (aide.js), il doit donc se voir comme cliquable. */
+   (aide.js), il doit donc se voir comme cliquable. Reprise du 23/08/2026
+   (audit --brand §2bis) : bouton a contour, sur le modele des trois phrases
+   proposees de la demo jouable de la vitrine (.compteur__phrase) — plus de
+   teal, l'italique et les guillemets restent. */
 .aide-exemple {
   font-family: inherit; font-size: 13px; font-style: italic;
-  color: var(--brand-dark); background: var(--ok-bg);
-  border: 1px solid var(--border); border-radius: 999px;
-  padding: 12px 16px; cursor: pointer; text-align: left;
+  color: var(--text); background: var(--card);
+  border: 1.5px solid var(--border); border-radius: 14px;
+  min-height: 44px; padding: 12px 16px; cursor: pointer; text-align: left;
   transition: background .15s, border-color .15s;
 }
 .aide-exemple::before { content: '« '; font-style: normal; }
 .aide-exemple::after { content: ' »'; font-style: normal; }
-.aide-exemple:hover { border-color: var(--brand); }
+.aide-exemple:hover { background: var(--fond-chaud); border-color: var(--text); }
 .aide-exemple:active { transform: translateY(1px); }
 
 .aide-note {
@@ -855,7 +915,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   background: var(--bg); border-radius: 12px;
   padding: 13px 14px; margin-bottom: 11px;
 }
-.aide-astuce-titre { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.aide-astuce-titre { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
 .aide-astuce .aide-texte { margin: 4px 0 0; font-size: 13.5px; }
 
 /* ===================== Inventaire complet guidé (CM-C, 25/07/2026) =====================

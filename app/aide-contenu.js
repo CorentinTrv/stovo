@@ -48,6 +48,14 @@
 // le convertisseur directement). Astuce reecrite pour dire vrai. Un test
 // balaie desormais tout CONTENU pour interdire "seul mode" / "Seul le mode"
 // n'importe ou (gestes, astuces, defs), pas seulement sur la reception.
+//
+// LOT "app rejoint le monde clair, suite" (23/08/2026) : les 28 emoji de ce
+// fichier sont remplaces par des CLES du registre app/icones.js (icones SVG
+// en trait, meme esprit que les icones de la nav). `icone` passe d'un emoji
+// litteral a une cle ('boussole', 'entree'...) ; chaque `titre`/`terme` perd
+// son emoji de tete (le texte ne change pas au-dela de ce retrait). Les
+// blocs `astuce` n'ont PAS de cle par bloc : aide.js pose l'icone 'ampoule'
+// pour tous, en dur (voir aide.js). Aucun texte de fond ne change.
 
 // ====================================================================
 // LE CONTENU
@@ -66,7 +74,7 @@ export const CONTENU = [
   // ---------------- 1. COMPRENDRE ----------------
   {
     id: 'comprendre',
-    icone: '🧭',
+    icone: 'boussole',
     titre: 'Comprendre Stovo',
     ouvertParDefaut: true,
     blocs: [
@@ -81,10 +89,10 @@ export const CONTENU = [
       {
         type: 'defs',
         items: [
-          { terme: '📊 Pilotage', texte: 'Ce qu\'il faut faire aujourd\'hui : le bandeau « Ce matin », les indicateurs, ce qui est à commander, l\'inventaire complet et les derniers mouvements.' },
-          { terme: '📦 Stock', texte: 'Trouver un produit. La liste complète avec une recherche à la frappe. Tape sur une ligne pour voir le détail (prix, valeur, autonomie).' },
-          { terme: '🎙️ Parler', texte: 'Agir. Le micro, le clavier, le mode réception, le mode sortie, la photo du bon de livraison, le parcours d\'inventaire et l\'import de catalogue. C\'est le seul écran qui écrit en base.' },
-          { terme: '💡 Aide', texte: 'Cette page.' },
+          { icone: 'pilotage', terme: 'Pilotage', texte: 'Ce qu\'il faut faire aujourd\'hui : le bandeau « Ce matin », les indicateurs, ce qui est à commander, l\'inventaire complet et les derniers mouvements.' },
+          { icone: 'stock', terme: 'Stock', texte: 'Trouver un produit. La liste complète avec une recherche à la frappe. Tape sur une ligne pour voir le détail (prix, valeur, autonomie).' },
+          { icone: 'parler', terme: 'Parler', texte: 'Agir. Le micro, le clavier, le mode réception, le mode sortie, la photo du bon de livraison, le parcours d\'inventaire et l\'import de catalogue. C\'est le seul écran qui écrit en base.' },
+          { icone: 'aide', terme: 'Aide', texte: 'Cette page.' },
         ],
       },
       {
@@ -119,7 +127,7 @@ export const CONTENU = [
   // ---------------- 2. LES PHRASES ----------------
   {
     id: 'phrases',
-    icone: '🗣️',
+    icone: 'bulle',
     titre: 'Tout ce que tu peux dire',
     blocs: [
       {
@@ -128,119 +136,136 @@ export const CONTENU = [
       },
       {
         type: 'geste',
-        titre: '📥 Faire entrer du stock',
+        icone: 'entree',
+        titre: 'Faire entrer du stock',
         quoi: 'Une livraison, un achat, un réassort.',
         exemples: ["j'ai reçu 10 pâtes", "j'ai acheté 6 bières", "on a rentré 24 lait"],
         note: 'Verbes compris : reçu, acheté, livré, ajouté, rentré.',
       },
       {
         type: 'geste',
-        titre: '📤 Faire sortir du stock',
+        icone: 'sortie',
+        titre: 'Faire sortir du stock',
         quoi: 'Une vente, une consommation, une sortie vers la production.',
         exemples: ["j'ai vendu 3 pâtes", "on a consommé 5 lait", "j'ai sorti 2 riz"],
         note: 'Verbes compris : vendu, sorti, consommé, utilisé.',
       },
       {
         type: 'geste',
-        titre: '❓ Demander où tu en es',
+        icone: 'question',
+        titre: 'Demander où tu en es',
         quoi: 'Interroger le stock d\'un produit sans rien modifier.',
         exemples: ['combien il me reste de pâtes ?', 'quel est mon stock de riz ?', 'combien de bières ?'],
         note: 'Une question ne demande jamais de confirmation : elle n\'écrit rien.',
       },
       {
         type: 'geste',
-        titre: '🛒 Demander ce qu\'il faut commander',
+        icone: 'panier',
+        titre: 'Demander ce qu\'il faut commander',
         quoi: 'Ta liste de courses à la voix : Stovo te dit tout ce qui est passé sous son point de commande, sans que tu ailles regarder le tableau de bord.',
         exemples: ['qu\'est-ce que je dois commander ?', 'ma liste de courses', 'qu\'est-ce qui me manque ?'],
         note: 'Ne mets <b>aucun chiffre</b> dans cette phrase : un nombre fait comprendre à Stovo que tu veux modifier quelque chose, pas poser une question. Si aucun produit n\'a encore de consommation mesurable, Stovo ne répond plus « rien à commander » par confort : il te dit qu\'il n\'a pas assez de sorties déclarées et t\'invite à les dicter au fil de l\'eau.',
       },
       {
         type: 'geste',
-        titre: '🗑️ Déclarer une perte',
+        icone: 'corbeille',
+        titre: 'Déclarer une perte',
         quoi: 'De la casse, un produit périmé, un vol. C\'est une sortie, mais tracée avec sa raison, pour ne pas fausser ta consommation moyenne.',
         exemples: ["j'ai jeté 3 yaourts périmés", "j'ai cassé 2 bières", "on m'a volé 4 bières"],
         note: 'Dis toujours <b>la raison</b> (cassé, tombé, abîmé / périmé, DLC / volé, disparu). Sans raison identifiable, Stovo préfère demander plutôt que de deviner.',
       },
       {
         type: 'geste',
-        titre: '🔢 Recaler après comptage',
+        icone: 'recaler',
+        titre: 'Recaler après comptage',
         quoi: 'Tu comptes en rayon et tu annonces le vrai chiffre. Stovo calcule tout seul l\'écart avec ce qu\'il croyait, et écrit la correction.',
         exemples: ['en rayon il y a 8 lait', 'inventaire pâtes 12', 'il reste 5 riz'],
         note: 'Tu annonces ce que tu <b>as compté</b>, jamais l\'écart. Si le compte tombe juste, Stovo te le dit et n\'écrit rien.',
       },
       {
         type: 'geste',
-        titre: '↩️ Annuler ta dernière déclaration',
+        icone: 'annuler',
+        titre: 'Annuler ta dernière déclaration',
         quoi: 'Tu t\'es trompé de produit ou de quantité juste avant.',
         exemples: ['annule le dernier', 'je me suis trompé', 'oups'],
         note: 'Stovo n\'efface jamais rien : il écrit un mouvement <b>inverse</b> qui remet le stock à sa valeur d\'avant. L\'historique reste complet et honnête.',
       },
       {
         type: 'geste',
-        titre: '➕ Créer un produit',
+        icone: 'plus',
+        titre: 'Créer un produit',
         quoi: 'Ajouter une référence qui n\'existe pas encore au catalogue.',
         exemples: ['ajoute le produit beurre', 'crée le produit farine', 'nouveau produit sucre'],
         note: 'Le produit naît avec un stock à 0 et sans prix : tu poses ensuite la quantité et le prix à la voix. Il faut un marqueur explicite (« le produit », « nouveau produit », « référence le »), c\'est ce qui évite de confondre avec une entrée de stock.',
       },
       {
         type: 'geste',
-        titre: '✏️ Modifier un produit',
+        icone: 'crayon',
+        titre: 'Modifier un produit',
         quoi: 'Changer le prix d\'achat, le seuil d\'alerte, le délai de réappro, ou l\'unité.',
         exemples: ['le prix des pâtes c\'est 1,20', 'le seuil des bières c\'est 6', 'le délai de livraison du riz c\'est 3 jours', 'l\'unité des pâtes c\'est paquet'],
         note: 'La virgule française marche (1,20 = 1,20 €). Pour l\'unité, Stovo connaît les unités du commerce : kilo, kg, gramme, litre, centilitre, millilitre, pièce, unité, paquet, boîte, bouteille, carton, sachet, pack. Une unité fantaisiste, il préfère demander.',
       },
       {
         type: 'geste',
-        titre: '🔤 Renommer un produit',
+        icone: 'renommer',
+        titre: 'Renommer un produit',
         quoi: 'Corriger un nom mal orthographié, ou lui donner son vrai nom commercial.',
         exemples: ['renomme les pâtes en macaroni', 'renomme le jus en jus d\'orange'],
         note: 'La structure est imposée : <b>renomme X en Y</b>. Le mot « en » est le séparateur, sans lui Stovo ne devine pas. À ne pas confondre avec le surnom : renommer change le vrai nom, un surnom en ajoute un deuxième.',
       },
       {
         type: 'geste',
-        titre: '🚫 Retirer ou remettre un produit',
+        icone: 'interrupteur',
+        titre: 'Retirer ou remettre un produit',
         quoi: 'Sortir une référence que tu ne vends plus, sans perdre son historique.',
         exemples: ['désactive le produit sucre', 'supprime le beurre du catalogue', 'réactive le sucre'],
         note: 'Rien n\'est jamais effacé : le produit devient invisible dans le tableau de bord et la recherche, mais ses mouvements restent en base et il revient d\'un mot.',
       },
       {
         type: 'geste',
-        titre: '🏷️ Donner un surnom à un produit',
+        icone: 'etiquette',
+        titre: 'Donner un surnom à un produit',
         quoi: 'Quand la reconnaissance vocale écorche toujours le même mot, apprends-lui le mot que TU dis.',
         exemples: ['appelle les céréales serial', 'surnomme le café jus', 'oublie serial'],
         note: 'Un surnom = <b>un seul mot</b>, 3 lettres minimum, et il ne peut désigner qu\'un seul produit. Une fois posé, il est reconnu comme le vrai nom. « oublie X » le retire.',
       },
       {
         type: 'geste',
-        titre: '📋 Faire l\'inventaire de tout le magasin',
+        icone: 'inventaire',
+        titre: 'Faire l\'inventaire de tout le magasin',
         quoi: 'Le bouton « Faire mon inventaire » sur l\'écran Parler. Stovo te présente tes produits un par un : tu comptes, tu dictes juste le chiffre, il passe au suivant. À la fin, il te montre le récapitulatif des écarts et UNE seule validation recale tout.',
         exemples: [],
         note: 'Tu dis <b>le chiffre seul</b>, rien d\'autre. Tu peux passer un produit, t\'arrêter en cours de route, et cocher le <b>comptage à l\'aveugle</b> pour ne pas voir le stock théorique avant de compter (c\'est la bonne pratique : on compte ce qu\'on voit, pas ce qu\'on s\'attend à voir).',
       },
       {
         type: 'geste',
-        titre: '📦 Ranger toute une livraison d\'un coup',
+        icone: 'carton',
+        titre: 'Ranger toute une livraison d\'un coup',
         quoi: 'Le bouton « Démarrer une réception » sur l\'écran Parler. Tu dictes les produits un par un, tu vois la liste se remplir à l\'écran, et UNE seule validation écrit tout le lot.',
         exemples: ['12 pâtes', 'huit bières', 'vingt-cinq lait'],
         note: 'En réception, tu dis juste <b>la quantité et le produit</b>, sans verbe. Les nombres <b>en lettres</b> sont compris. Il n\'accepte que des entrées : pour une sortie, quitte la réception.',
       },
       {
         type: 'geste',
-        titre: '➖ Faire sortir toute une vente d\'un coup',
+        icone: 'moins-cercle',
+        titre: 'Faire sortir toute une vente d\'un coup',
         quoi: 'Le bouton « Démarrer une sortie » sur l\'écran Parler. Tu dictes les produits vendus un par un, tu vois la liste se remplir à l\'écran avec le signe moins devant chaque quantité, et UNE seule validation écrit tout le lot.',
         exemples: ['3 pâtes', "j'ai vendu 8 bières", 'huit lait'],
         note: 'En sortie, une phrase complète marche (« j\'ai vendu 3 pâtes ») tout comme la phrase nue (« 3 pâtes »). Les nombres <b>en lettres</b> sont compris. Rien n\'est écrit avant la validation finale, et tu peux reprendre une sortie laissée en cours. Pas de raison à donner dans ce mode : pour une casse ou une perte, utilise « j\'ai jeté », « j\'ai cassé »… en dehors de ce mode.',
       },
       {
         type: 'geste',
-        titre: '📷 Photographier le bon de livraison',
+        icone: 'appareil-photo',
+        titre: 'Photographier le bon de livraison',
         quoi: 'Dans une réception, le bouton « Photographier le bon de livraison » ouvre l\'appareil photo. Stovo lit les lignes du bon (quantité et libellé), reconnaît celles qui correspondent à ton catalogue, et les ajoute à la liste de la réception en cours.',
         exemples: [],
         note: 'Une photo n\'écrit <b>jamais</b> rien toute seule : les lignes lues rejoignent la liste, tout passe par la validation groupée de la réception, comme si tu les avais dictées. Vérifie ce que Stovo a lu dans le journal de lecture avant de valider. Prends la photo bien à plat, bien éclairée et nette, une page à la fois : une ligne mal lue ou un article que Stovo ne reconnaît pas dans ton catalogue est simplement signalé, jamais deviné.',
       },
       {
         type: 'geste',
-        titre: '📄 Importer un catalogue',
+        icone: 'document-fleche',
+        titre: 'Importer un catalogue',
         quoi: 'Le bouton « Importer un catalogue (.xlsx) » sur l\'écran Parler. Stovo lit ton fichier Excel, reconnaît tout seul tes colonnes (nom, stock, prix…) et te dit ce qu\'il a compris avant d\'écrire.',
         exemples: [],
         note: 'Réimporter le même fichier ne crée pas de doublon : les produits déjà connus sont ignorés. C\'est le moyen le plus rapide de démarrer avec beaucoup de références.',
@@ -251,7 +276,7 @@ export const CONTENU = [
   // ---------------- 3. ASTUCES ----------------
   {
     id: 'astuces',
-    icone: '💡',
+    icone: 'ampoule',
     titre: 'Astuces et pièges à connaître',
     blocs: [
       {
@@ -325,7 +350,7 @@ export const CONTENU = [
   // ---------------- 4. SORTIR MES DONNEES ----------------
   {
     id: 'export',
-    icone: '🧾',
+    icone: 'recu',
     titre: 'Sortir mes données',
     blocs: [
       {

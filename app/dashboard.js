@@ -56,6 +56,9 @@ import { calculerDemarque, rendreDemarque } from './pertes.js';
 // utilises en interne par construireCsvStock/construireCsvMouvements, une
 // seule definition partagee des deux cotes (voir majExport plus bas).
 import { construireCsvStock, construireCsvMouvements, nomFichierExport, lireToutesLesPages, retenirProduitsExport, retenirMouvementsExport, MENTION_LEGALE } from './export.js';
+// Icones SVG en trait de la colonne "Source" (lot "monde clair, suite",
+// 23/08/2026) : remplace les emoji 🎙️/⌨️ du tableau des mouvements.
+import { ICONES } from './icones.js';
 
 // KPI "Activité (7 jours)" (libellé écrit en dur dans index.html, l.138) :
 // constante LOCALE, INDÉPENDANTE de FENETRE_JOURS (module partagé pilotage.js).
@@ -733,7 +736,7 @@ async function charger() {
         <td>${fmtDate(m.cree_le)}</td>
         <td>${nom}</td>
         <td class="pill ${entree ? 'entree' : 'sortie'}">${entree ? '+' : '−'}${fmtNombre(m.quantite)} ${unite}${motifTag}</td>
-        <td class="src">${m.source === 'vocal' ? '🎙️ vocal' : '⌨️ manuel'}</td>
+        <td class="src"><span class="src-ligne">${m.source === 'vocal' ? ICONES.parler : ICONES.clavier}${m.source === 'vocal' ? 'vocal' : 'manuel'}</span></td>
       </tr>`;
     }).join('');
   }

@@ -47,6 +47,10 @@ const btnMicro = document.getElementById('btn-micro');
 const zoneEtat = document.getElementById('parler-etat');
 const champImport = document.getElementById('champ-import');
 const btnImport = document.getElementById('btn-import');
+// Le libellé de #btn-import vit dans un <span> depuis le lot "monde clair,
+// suite" (23/08/2026) : le bouton porte aussi une icône SVG (index.html), un
+// textContent posé sur le bouton ENTIER l'effacerait au premier import.
+const libelleImport = btnImport.querySelector('.btn-libelle');
 
 // --- Verrou de mode unique (lot S-0, 25/07/2026) ---
 // Stovo a plusieurs modes de session (réception N1, inventaire guidé CM-C, et
@@ -432,13 +436,13 @@ champImport.addEventListener('change', async () => {
 
   try {
     const contenuBase64 = await lireFichierEnBase64(fichier);
-    btnImport.textContent = 'Import en cours…';
+    libelleImport.textContent = 'Import en cours…';
     await appelerPwaApi({ kind: 'import', nomFichier: fichier.name, contenuBase64 }, [btnImport]);
   } catch (erreur) {
     console.error('Erreur lecture fichier import Stovo :', erreur);
     afficherReponse("Je n'ai pas pu lire ce fichier. Réessaie.", false);
   } finally {
-    btnImport.textContent = '📄 Importer un catalogue (.xlsx)';
+    libelleImport.textContent = 'Importer un catalogue (.xlsx)';
     // Réinitialise la valeur : sinon 'change' ne se redéclenche pas si l'utilisateur
     // choisit deux fois de suite le même fichier.
     champImport.value = '';

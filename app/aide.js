@@ -25,8 +25,17 @@
 // modifie : il lira simplement le champ au moment ou tu appuies sur Envoyer.
 
 import { CONTENU } from './aide-contenu.js';
+import { ICONES } from './icones.js';
 
 const $ = (id) => document.getElementById(id);
+
+// Rend l'icône d'une clé du registre, ou rien du tout si la clé est absente
+// (une entrée sans icône ne doit jamais planter le rendu, voir §checklist
+// "fail fast et contextualisé" : ici l'absence d'icône n'est pas une erreur
+// bloquante, juste une carte un peu plus nue).
+function rendreIcone(cle) {
+  return ICONES[cle] || '';
+}
 
 // Echappement HTML : le contenu est ecrit par nous (pas de donnee utilisateur
 // ici), mais on echappe quand meme, par principe et parce que les exemples
@@ -63,23 +72,29 @@ export function rendreBloc(bloc) {
       return `<ul class="aide-puces">${bloc.items.map((i) => `<li>${i}</li>`).join('')}</ul>`;
 
     case 'defs':
+      // Seules les 4 defs de "Comprendre Stovo" portent une icone (icone
+      // 'pilotage'/'stock'/'parler'/'aide') : les autres blocs defs (les
+      // pastilles de couleur, "Il te reste...") n'en ont pas, `d.icone` y
+      // est alors undefined et rendreIcone renvoie une chaine vide.
       return `<dl class="aide-defs">${bloc.items.map((d) =>
-        `<dt>${d.terme}</dt><dd>${d.texte}</dd>`
+        `<dt>${d.icone ? `<span class="aide-geste-icone" aria-hidden="true">${rendreIcone(d.icone)}</span>` : ''}${d.terme}</dt><dd>${d.texte}</dd>`
       ).join('')}</dl>`;
 
     case 'geste':
       return `
         <div class="aide-geste">
-          <h3 class="aide-geste-titre">${bloc.titre}</h3>
+          <h3 class="aide-geste-titre"><span class="aide-geste-icone" aria-hidden="true">${rendreIcone(bloc.icone)}</span>${bloc.titre}</h3>
           <p class="aide-geste-quoi">${bloc.quoi}</p>
           ${rendreExemples(bloc.exemples)}
           ${bloc.note ? `<p class="aide-note">${bloc.note}</p>` : ''}
         </div>`;
 
     case 'astuce':
+      // Icône 'ampoule' pour TOUS les blocs astuce, en dur (pas de clé par
+      // bloc dans aide-contenu.js, voir son commentaire de tête).
       return `
         <div class="aide-astuce">
-          <h3 class="aide-astuce-titre">${bloc.titre}</h3>
+          <h3 class="aide-astuce-titre"><span class="aide-geste-icone" aria-hidden="true">${rendreIcone('ampoule')}</span>${bloc.titre}</h3>
           <p class="aide-texte">${bloc.texte}</p>
         </div>`;
 
@@ -93,7 +108,7 @@ export function rendreSection(section) {
   return `
     <details class="aide-section" data-id="${echapper(section.id)}"${section.ouvertParDefaut ? ' open' : ''}>
       <summary class="aide-sommaire">
-        <span class="aide-icone" aria-hidden="true">${section.icone}</span>
+        <span class="aide-icone" aria-hidden="true">${rendreIcone(section.icone)}</span>
         <span class="aide-titre">${echapper(section.titre)}</span>
       </summary>
       <div class="aide-contenu">${blocs}</div>
