@@ -7,41 +7,62 @@
   ecran "Parler", bascule d'onglets) sont regroupees a la fin, sous
   "Coquille PWA (lot 9a)", pour qu'on distingue clairement ce qui vient du
   dashboard de ce qui est nouveau.
+
+  Monde clair « établi » depuis le 23/08/2026, aligné sur la vitrine
+  (../DESIGN.md). Une retouche de jeton se fait aux deux endroits.
 */
 
-:root {
-  --brand: #0d9488;
-  --brand-dark: #0f766e;
-  --bg: #f1f5f9;
-  --card: #ffffff;
-  --border: #e6eaf0;
-  --text: #0f172a;
-  --muted: #64748b;
-  --muted-light: #94a3b8;
+/* DM Sans, variable, auto-hebergee (graisses 400 a 700), meme fichier que la
+   vitrine (fonts/dm-sans-latin.woff2, copie dans app/fonts/). Pas d'Instrument
+   Serif ici : le serif ne sert qu'au h1 de la vitrine, un h2 en serif dans
+   l'app serait un deuxieme monde (DESIGN.md). */
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('fonts/dm-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
-  --danger: #dc2626;
+:root {
+  --brand: #0F766E;
+  --brand-dark: #0F766E;
+  --bg: #FFF8F1;
+  --card: #FFFFFF;
+  --border: #E3D6C5;
+  --text: #1D1E1C;
+  --muted: #615F5C;
+  --muted-light: #8E8B87;
+
+  --danger: #DC2626;
   --danger-bg: #fef2f2;
   --danger-border: #fecaca;
-  --danger-text: #b91c1c;
-  --warn: #ea580c;
-  --warn-bg: #fff7ed;
-  --warn-border: #fed7aa;
-  --warn-text: #c2410c;
-  --ok: #0d9488;
-  --ok-bg: #f0fdfa;
-  --brand-light: #99f6e4;
-  --brand-darker: #115e59;
-  --muted-dark: #475569;
+  --danger-text: #B91C1C;
+  --warn: #A16207;
+  --warn-bg: #FEF9C3;
+  --warn-border: #FDE68A;
+  --warn-text: #A16207;
+  --ok: #0F766E;
+  --ok-bg: #F0FDFA;
+  --brand-light: #99F6E4;
+  --brand-darker: #115E59;
+  --muted-dark: #615F5C;
 
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, .04);
-  --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 10px 30px rgba(15, 23, 42, .05);
-  --radius: 16px;
+  --flamme: #FA5D00;
+  --flamme-sombre: #C94A00;
+  --fond-chaud: #FFF1E4;
+
+  --shadow-sm: 0 1px 2px rgba(29,30,28,.06);
+  --shadow: 0 1px 2px rgba(29,30,28,.06);
+  --shadow-chaude: rgba(250,166,0,.22) 6px 4px 24px, rgba(29,30,28,.05) 0 1px 2px;
+  --radius: 20px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
@@ -51,80 +72,93 @@ body {
 
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
 
-/* ---------- En-tête ---------- */
+/* ---------- En-tête ----------
+   Monde clair (23/08/2026) : plus de bande teal, le header prend le fond de
+   page. Le logotype "Stovo" en flamme fait office de marque (plus de boîte
+   .logo ni de sous-titre dans le header, retirés de index.html) ; la regle
+   .logo ci-dessous reste utilisee par l'ecran de connexion (.login-brand
+   .logo la re-precise), hors perimetre de ce lot. */
 header {
-  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-  color: #fff;
-  padding: 26px 0 70px;
+  background: var(--bg);
+  padding: 18px 0 6px;
 }
 .header-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
 .brand { display: flex; align-items: center; gap: 13px; }
 .logo {
   width: 46px; height: 46px; border-radius: 13px;
   background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.25);
-  display: grid; place-items: center; font-size: 24px; font-weight: 800;
+  display: grid; place-items: center; font-size: 24px; font-weight: 700;
 }
-.brand h1 { font-size: 25px; font-weight: 800; letter-spacing: -.5px; }
+.brand h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; line-height: 44px; color: var(--flamme); }
 .brand p { font-size: 13.5px; opacity: .88; }
-.header-actions { display: flex; align-items: center; gap: 14px; }
-.updated { font-size: 12.5px; opacity: .85; text-align: right; }
-.btn-refresh {
-  background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.3);
-  padding: 10px 15px; border-radius: 10px; font-size: 14px; font-weight: 600;
-  cursor: pointer; display: flex; align-items: center; gap: 7px; transition: background .15s, transform .1s;
-  min-height: 44px;
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.updated { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Deux boutons a contour (Rafraichir, Deconnexion) : meme gabarit, meme
+   comportement responsive. Mobile-first : icone seule (carre 44x44), le
+   libelle (span.btn-label.sr-only) redevient visible a partir de 560px,
+   l'aria-label reste pose dans les deux etats (nom accessible constant). */
+.btn-refresh, .btn-deconnexion {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 44px; height: 44px; padding: 0;
+  font-family: inherit; font-size: 14px; font-weight: 600; color: var(--text);
+  background: var(--card); border: 1.5px solid var(--border); border-radius: 14px;
+  cursor: pointer; transition: background .15s, transform .1s;
 }
-.btn-refresh:hover { background: rgba(255,255,255,.28); }
-.btn-refresh:active { transform: translateY(1px); }
+.btn-refresh svg, .btn-deconnexion svg { display: block; flex: 0 0 auto; }
+.btn-refresh:hover, .btn-deconnexion:hover { background: var(--fond-chaud); }
+.btn-refresh:active, .btn-deconnexion:active { transform: translateY(1px); }
+@media (min-width: 560px) {
+  .btn-refresh, .btn-deconnexion { width: auto; padding: 0 14px; justify-content: flex-start; }
+  .btn-refresh .btn-label, .btn-deconnexion .btn-label {
+    position: static; width: auto; height: auto; padding: 0; margin: 0;
+    overflow: visible; clip: auto; white-space: nowrap; border: 0;
+  }
+}
 
 /* ---------- KPI ---------- */
 .kpis {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
-  margin-top: -48px; margin-bottom: 8px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  margin-top: 16px; margin-bottom: 8px;
 }
 .kpi {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 18px 20px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  padding: 16px 18px; box-shadow: var(--shadow);
 }
-.kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--muted-light); }
-.kpi.danger::before { background: var(--danger); }
-.kpi.warn::before { background: var(--warn); }
-.kpi.suivi::before { background: var(--brand); }
-.kpi .k-label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
-.kpi .k-value { font-size: 32px; font-weight: 800; line-height: 1.1; margin-top: 6px; }
+.kpi .k-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.kpi .k-value { font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; margin-top: 6px; color: var(--text); }
 .kpi.danger .k-value { color: var(--danger); }
-.kpi.warn .k-value { color: var(--warn); }
-.kpi .k-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.kpi.warn .k-value { color: var(--warn); } /* --warn = --warn-text = #A16207 (4,9:1), reprise du 23/08 : l'ambre clair #CA8A04 essaye plus tot ne faisait que 2,9:1 */
+.kpi .k-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
 
 /* ---------- Bandeau valeur du stock (ROI) ---------- */
 .stock-value {
-  background: var(--card); border: 1px solid var(--brand-light); border-left: 4px solid var(--brand);
+  background: var(--card); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow);
-  padding: 16px 22px; margin: 16px 0 8px;
+  padding: 16px 20px; margin: 12px 0 0;
   display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px;
 }
-.stock-value .sv-label { font-size: 13px; color: var(--muted); font-weight: 600; }
-.stock-value .sv-note { color: var(--muted); font-weight: 500; }
-.stock-value .sv-amount { font-size: 30px; font-weight: 800; color: var(--brand-dark); line-height: 1.1; }
+.stock-value .sv-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.stock-value .sv-amount { font-size: 30px; font-weight: 700; color: var(--text); line-height: 1.1; font-variant-numeric: tabular-nums; }
 .stock-value .sv-sub { font-size: 12.5px; color: var(--muted); margin-left: auto; }
 @media (max-width: 560px) { .stock-value .sv-sub { margin-left: 0; flex-basis: 100%; } }
 
 /* ---------- Phrase de verdict (la réponse en un coup d'œil, avant tout scroll) ---------- */
-.verdict { font-size: 15.5px; font-weight: 700; margin: 14px 0 2px; padding: 12px 18px; border-radius: 12px; }
-.verdict.v-ok { color: var(--brand-dark); background: var(--ok-bg); border: 1px solid var(--brand-light); }
-.verdict.v-warn { color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); }
-.verdict.v-crit { color: var(--danger-text); background: var(--danger-bg); border: 1px solid var(--danger-border); }
+.verdict { font-size: 15.5px; font-weight: 700; margin: 16px 2px 0; }
+.verdict.v-ok { color: var(--brand-dark); }
+.verdict.v-warn { color: var(--warn-text); }
+.verdict.v-crit { color: var(--danger-text); }
 
 /* ---------- Titres de section ---------- */
-.section-title { font-size: 17px; font-weight: 700; margin: 30px 0 14px; display: flex; align-items: center; gap: 10px; }
+.section-title { font-size: 17px; font-weight: 700; letter-spacing: -.01em; margin: 30px 0 14px; display: flex; align-items: center; gap: 10px; }
 .section-title .count {
   font-size: 12.5px; font-weight: 600; color: var(--muted);
-  background: #fff; border: 1px solid var(--border); padding: 2px 10px; border-radius: 999px;
+  background: var(--card); border: 1px solid var(--border); padding: 2px 10px; border-radius: 999px;
 }
 
 /* ---------- Bloc réappro (priorité action) ---------- */
 .reorder {
-  background: var(--card); border: 1px solid var(--danger-border); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: var(--shadow); overflow: hidden;
 }
 .reorder-item {
@@ -136,44 +170,43 @@ header {
 .reorder-item .ri-name { font-weight: 700; font-size: 15px; }
 .reorder-item .ri-detail { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .reorder-item .ri-right { text-align: right; white-space: nowrap; }
-.reorder-item .ri-cover { font-size: 19px; font-weight: 800; }
+.reorder-item .ri-cover { font-size: 19px; font-weight: 700; }
 .reorder-item .ri-cover.c-crit { color: var(--danger); }
 .reorder-item .ri-cover.c-warn { color: var(--warn); }
-.reorder-item .ri-coverlabel { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
-.reorder-item .ri-qty { font-size: 22px; font-weight: 800; color: var(--danger); cursor: help; }
-.reorder-item .ri-warning { font-size: 12.5px; font-weight: 600; color: var(--danger); margin-top: 6px; }
+.reorder-item .ri-coverlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.reorder-item .ri-qty { font-size: 22px; font-weight: 700; color: var(--danger-text); font-variant-numeric: tabular-nums; cursor: help; }
+.reorder-item .ri-warning { font-size: 12.5px; font-weight: 600; color: var(--danger-text); margin-top: 6px; }
 
 /* ---------- Cartes produits ---------- */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 16px; }
 .card {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 18px; box-shadow: var(--shadow-sm); transition: box-shadow .15s, transform .1s;
+  padding: 18px; box-shadow: var(--shadow-sm);
 }
-.card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
 .card .c-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .card .c-name { font-size: 15px; font-weight: 700; }
 /* Héros de la carte : l'autonomie, l'info qui fait agir. Couleur selon l'urgence. */
-.card .c-hero { font-size: 20px; font-weight: 800; line-height: 1.15; margin: 13px 0 2px; color: var(--text); }
+.card .c-hero { font-size: 20px; font-weight: 700; line-height: 1.15; margin: 13px 0 2px; color: var(--text); }
 .card .c-hero.h-crit { color: var(--danger); }
-.card .c-hero.h-warn { color: var(--warn); }
+.card .c-hero.h-warn { color: var(--warn-text); }
 .card .c-hero.h-ok { color: var(--ok); }
 .card .c-hero.h-muted { color: var(--muted); font-weight: 700; font-size: 16px; }
 /* Stock brut, rétrogradé en information secondaire */
 .card .c-stockline { font-size: 13.5px; color: var(--muted); margin-bottom: 12px; }
-.card .c-stockline b { color: var(--text); font-size: 15px; font-weight: 800; }
+.card .c-stockline b { color: var(--text); font-size: 15px; font-weight: 700; }
 /* Détail (prix, valeur, conso, point de commande) : petit, gris, en pied de carte */
 .card .c-detail { font-size: 12px; color: var(--muted); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.7; }
 .card .c-detail b { color: var(--muted); font-weight: 700; }
 
 /* jauge de niveau : repère du seuil au milieu (50%) */
-.jauge { position: relative; height: 9px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
+.jauge { position: relative; height: 8px; background: var(--fond-chaud); border-radius: 999px; overflow: hidden; }
 .jauge-fill { height: 100%; border-radius: 999px; background: var(--brand); }
 .jauge-fill.is-low { background: var(--danger); }
-.jauge-seuil { position: absolute; top: -2px; bottom: -2px; width: 2px; background: rgba(15,23,42,.35); }
+.jauge-seuil { position: absolute; top: -2px; bottom: -2px; width: 2px; background: rgba(29,30,28,.35); }
 
 /* badges / pills */
-.badge { font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
-.badge.ok { color: var(--brand-dark); background: var(--ok-bg); border: 1px solid var(--brand-light); }
+.badge { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.badge.ok { color: var(--ok); background: var(--ok-bg); border: 1px solid var(--brand-light); }
 .badge.danger { color: var(--danger-text); background: var(--danger-bg); border: 1px solid var(--danger-border); }
 .badge.warn { color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); }
 
@@ -181,32 +214,34 @@ header {
 .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 12px 18px; font-size: 14px; }
-th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); background: #f8fafc; font-weight: 700; }
+th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--bg); font-weight: 700; }
+/* Colonne "Mouvement" (3e colonne) : alignee a droite, jamais de retour a la ligne. */
+th:nth-child(3), td:nth-child(3) { text-align: right; white-space: nowrap; }
 tbody tr { border-top: 1px solid var(--border); }
-tbody tr:hover { background: #fafbfc; }
+tbody tr:hover { background: var(--fond-chaud); }
 .pill { font-weight: 700; font-size: 13.5px; }
 .pill.entree { color: var(--brand-dark); }
-.pill.sortie { color: var(--warn-text); }
+.pill.sortie { color: var(--text); } /* une sortie n'est pas une alerte, le signe moins suffit */
 .src { font-size: 12px; color: var(--muted); }
 /* étiquette des mouvements de régularisation (motif), pour les distinguer d'une vente */
-.tag-motif { font-size: 11px; font-weight: 700; color: var(--muted-dark); background: #eef2f7; border: 1px solid var(--border); padding: 1px 8px; border-radius: 999px; margin-left: 7px; vertical-align: middle; }
+.tag-motif { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--fond-chaud); border: 1px solid var(--border); padding: 1px 8px; border-radius: 999px; margin-left: 7px; vertical-align: middle; }
 .tag-auto { font-size: 10.5px; font-weight: 700; color: var(--brand-dark); background: var(--ok-bg); border: 1px solid var(--brand-light); padding: 0 7px; border-radius: 999px; vertical-align: middle; cursor: help; }
-.tag-fixe { font-size: 10.5px; font-weight: 700; color: var(--muted-dark); background: #f1f5f9; border: 1px solid var(--border); padding: 0 7px; border-radius: 999px; vertical-align: middle; cursor: help; }
+.tag-fixe { font-size: 10.5px; font-weight: 700; color: var(--muted); background: var(--fond-chaud); border: 1px solid var(--border); padding: 0 7px; border-radius: 999px; vertical-align: middle; cursor: help; }
 
 /* ---------- États ---------- */
 .state { padding: 38px; text-align: center; color: var(--muted); }
 .state.error { color: var(--danger); }
 
-footer { margin-top: 36px; font-size: 12.5px; color: var(--muted); text-align: center; }
+footer { margin-top: 36px; font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.6; }
 
 /* ---------- Mobile ---------- */
-@media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) {
-  header { padding-bottom: 60px; }
-  .kpis { grid-template-columns: repeat(2, 1fr); margin-top: -42px; }
   .kpi .k-value { font-size: 26px; }
   .brand h1 { font-size: 21px; }
   th:nth-child(4), td:nth-child(4) { display: none; }
+  th, td { padding: 11px 12px; }
+  td:first-child { font-size: 13px; }
 }
 
 /* =====================================================================
@@ -391,7 +426,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   box-shadow: var(--shadow-sm); padding: 14px 16px; margin-bottom: 16px; text-align: left;
 }
 .reception-entete { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-.reception-titre { font-size: 16px; font-weight: 800; color: var(--text); }
+.reception-titre { font-size: 16px; font-weight: 700; color: var(--text); }
 .reception-total { font-size: 13px; font-weight: 700; color: var(--brand-dark); white-space: nowrap; }
 
 .reception-liste { display: flex; flex-direction: column; gap: 6px; }
@@ -404,7 +439,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 }
 .ri-nom { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 600; color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ri-qte { font-size: 14.5px; font-weight: 800; color: var(--brand-dark); white-space: nowrap; }
+.ri-qte { font-size: 14.5px; font-weight: 700; color: var(--brand-dark); white-space: nowrap; }
 .ri-retirer {
   position: relative;
   flex: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
@@ -481,38 +516,37 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .nav-bar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
   display: flex; justify-content: space-around;
-  background: #ffffff; border-top: 1px solid var(--border);
+  background: var(--card); border-top: 1px solid var(--border);
   padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
-  box-shadow: 0 -2px 10px rgba(15,23,42,.06);
+  box-shadow: 0 -2px 10px rgba(29,30,28,.05);
 }
 .nav-item {
   flex: 1; max-width: 130px; min-width: 0;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   background: none; border: none; padding: 8px 2px; border-radius: 12px;
   font-family: inherit; color: var(--muted); cursor: pointer;
-  transition: color .15s, background .15s;
+  transition: color .15s;
 }
-.nav-item .nav-icone { font-size: 20px; line-height: 1; }
+.nav-item .nav-icone { display: flex; align-items: center; justify-content: center; }
 .nav-item .nav-label {
   font-size: 11px; font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
-.nav-item.actif { color: var(--brand-dark); background: var(--ok-bg); }
+/* Reprise du 23/08 : la flamme reste sur l'icone (decorative, hors seuil de
+   contraste) ; le libelle actif passe en encre pour rester lisible (la
+   flamme sur blanc a 11px gras ne fait que ~3,17:1, sous le seuil AA). */
+.nav-item.actif .nav-icone { color: var(--flamme); }
+.nav-item.actif .nav-label { color: var(--text); font-weight: 700; }
 .nav-item:active { transform: translateY(1px); }
 
 /* =====================================================================
-   Connexion (lot 9b) — écran de login + bouton de déconnexion.
+   Connexion (lot 9b) — écran de login.
+   Le bouton de déconnexion (.btn-deconnexion) est stylé avec .btn-refresh
+   plus haut (section En-tête, monde clair) : une seule règle pour les deux
+   boutons à contour de l'en-tête, pas de redéfinition ici. L'écran de
+   connexion lui-même n'est pas repris dans ce lot (reste teal, voir
+   DESIGN.md "L'app").
    ===================================================================== */
-
-/* Bouton de déconnexion, discret dans le header (à côté de "Rafraîchir"). */
-.btn-deconnexion {
-  background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.3);
-  padding: 10px 13px; border-radius: 10px; font-size: 13px; font-weight: 600;
-  cursor: pointer; opacity: .8; transition: opacity .15s, background .15s;
-  min-height: 44px;
-}
-.btn-deconnexion:hover { opacity: 1; background: rgba(255,255,255,.14); }
-.btn-deconnexion:active { transform: translateY(1px); }
 
 /* Correctif d'affichage (11/07) : l'attribut `hidden` doit TOUJOURS
    l'emporter. Sans ce !important, la regle .ecran-login { display:flex }
@@ -535,9 +569,9 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .login-brand .logo {
   width: 44px; height: 44px; border-radius: 13px;
   background: var(--ok-bg); border: 1px solid var(--brand-light); color: var(--brand-dark);
-  display: grid; place-items: center; font-size: 22px; font-weight: 800;
+  display: grid; place-items: center; font-size: 22px; font-weight: 700;
 }
-.login-brand h1 { font-size: 24px; font-weight: 800; letter-spacing: -.5px; color: var(--text); }
+.login-brand h1 { font-size: 24px; font-weight: 700; letter-spacing: -.5px; color: var(--text); }
 .login-soustitre { text-align: center; font-size: 13.5px; color: var(--muted); margin-bottom: 26px; }
 
 #form-login { display: flex; flex-direction: column; gap: 6px; }
@@ -577,42 +611,57 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    remontent plus dans l'en-tete. Additif : aucune regle ci-dessus n'est
    modifiee.
    ===================================================================== */
+/* Reprise du 23/08/2026 : grille nommee pour placer "Copier la liste" en
+   haut a droite (bureau) / pleine largeur SOUS la liste (telephone), sans
+   changer l'ordre du DOM (accessibilite, voir index.html). */
 .matin {
   position: relative; z-index: 2;
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: var(--shadow); padding: 17px 19px; margin-top: -18px;
-  border-left: 4px solid var(--muted-light);
+  box-shadow: var(--shadow-chaude); padding: 18px 20px 8px; margin-top: 10px;
 }
-.matin.matin-ok { border-left-color: var(--ok); }
-.matin.matin-warn { border-left-color: var(--warn); }
-.matin.matin-crit { border-left-color: var(--danger); }
-/* Les KPI ne chevauchent plus l'en-tete : l'ecran du matin a pris cette place.
-   Selecteur adjacent (plus specifique que .kpis) pour annuler leur remontee
-   sans toucher la regle .kpis du dashboard. */
-.matin + .kpis { margin-top: 16px; }
+/* Plus de bande de couleur a gauche (monde clair, 23/08/2026) : l'etat se lit
+   dans la couleur de .matin-resume et son symbole (● ▲ ■), pas la bordure. */
 
-.matin-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* Wrapper qui porte la grille (voir le commentaire de index.html) : #matin
+   lui-meme reste un simple conteneur visuel, dashboard.js pose un
+   style.display inline dessus pour le montrer/le masquer sans jamais
+   toucher a sa mise en page interne. */
+.matin-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "head bouton" "resume resume" "liste liste";
+  column-gap: 12px;
+}
+
+.matin-head { grid-area: head; display: flex; align-items: center; }
 /* Correctif du 01/08/2026 (mesure Playwright) : "Ce matin" devient un <h2>
    (voir index.html) pour rendre a la section son titre de niveau. Le <h2>
    ne fait qu'envelopper le bouton, il ne doit imposer ni marge ni taille de
    police a lui : c'est toujours .matin-titre (le <span> a l'interieur) qui
    pilote l'apparence. */
 .matin-titre-h2 { margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; }
-.matin-titre { font-size: 17px; font-weight: 800; }
+.matin-titre { font-size: 18px; font-weight: 700; white-space: nowrap; }
+/* Bouton flamme : la seule action de l'ecran Pilotage (audit --brand, §2bis).
+   19px/46px, meme regime que les boutons flamme de la vitrine (DESIGN.md :
+   "texte large au sens WCAG, 3,2:1 suffit") : a 14px (premiere version du
+   23/08), le blanc sur --flamme ne faisait que 3,17:1, sous le seuil AA. */
 .matin-copier {
-  font-family: inherit; font-size: 12.5px; font-weight: 700; white-space: nowrap;
-  padding: 8px 13px; border-radius: 10px; border: 1px solid var(--brand-light);
-  background: var(--ok-bg); color: var(--brand-dark); cursor: pointer;
+  grid-area: bouton; align-self: start;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit; font-size: 19px; font-weight: 700; white-space: nowrap;
+  padding: 0 18px; border-radius: 14px; border: none;
+  background: var(--flamme); color: #fff; cursor: pointer;
+  box-shadow: 0 1px 4px rgba(250,93,0,.25);
   transition: background .15s, transform .1s;
-  min-height: 44px;
+  min-height: 46px;
 }
-.matin-copier:hover { background: #ccfbf1; }
+.matin-copier:hover { background: var(--flamme-sombre); }
 .matin-copier:active { transform: translateY(1px); }
 
-.matin-resume { font-size: 14.5px; font-weight: 600; margin-top: 5px; }
+.matin-resume { grid-area: resume; font-size: 14.5px; font-weight: 600; margin-top: 5px; }
 .matin.matin-ok .matin-resume { color: var(--brand-dark); }
 .matin.matin-warn .matin-resume { color: var(--warn-text); }
-.matin.matin-crit .matin-resume { color: var(--danger); }
+.matin.matin-crit .matin-resume { color: var(--danger-text); }
 
 /* Correctif du 01/08/2026 : #matin-liste devient une vraie <ul> (voir
    index.html) pour qu'un lecteur d'ecran annonce "liste de N elements" au
@@ -622,24 +671,23 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    robustesse si ce reset venait a changer. Le reste (grid-template-columns,
    grid-column, le bloc @media plus bas) n'est PAS touche : .matin-item
    garde exactement le meme rendu, seule sa balise change (div -> li). */
-.matin-liste { list-style: none; margin: 13px 0 0; padding: 0; }
+.matin-liste { grid-area: liste; list-style: none; margin: 13px 0 0; padding: 0; }
+/* Monde clair (23/08/2026) : la couverture (.mi-cov) passe sur sa propre
+   ligne A TOUTES LES LARGEURS (grid-column:1/-1 ci-dessous), comme sur la
+   planche bureau. La grille ne garde donc que 2 colonnes (nom, quantite) ;
+   l'ancienne 3e colonne "auto" ne servait qu'a l'etat replie mobile, deplace
+   ici a demeure. Le correctif du 01/08/2026 (nom qui se compresse, cf.
+   min-width:0 sur .mi-nom) reste inchange. */
 .matin-item {
-  display: grid; grid-template-columns: 1fr auto auto; gap: 4px 14px; align-items: baseline;
-  padding: 10px 0; border-top: 1px solid var(--border);
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; align-items: baseline;
+  padding: 11px 0; border-top: 1px solid var(--border);
 }
 .matin-item:first-child { border-top: none; }
-/* min-width:0 + overflow-wrap : la colonne du nom (1fr) est un grid item,
-   dont la largeur minimale par defaut vaut la largeur du mot le plus long
-   (min-content). Sans ce correctif, un nom tres long (ou un mot compose sans
-   espace) pourrait toujours forcer la page a s'elargir, meme sur grand
-   ecran. Avec, il se compresse et revient a la ligne au besoin (jamais
-   tronque). Correctif du 01/08/2026 (mesure Playwright), voir aussi le
-   bloc mobile de .matin-item ci-dessous. */
-.mi-nom { font-weight: 700; font-size: 14.5px; min-width: 0; overflow-wrap: break-word; }
-.mi-qte { font-weight: 800; font-size: 14.5px; color: var(--danger); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.mi-qte-label { font-weight: 600; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
-.mi-cov { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
-.mi-cov.urgent { color: var(--danger); font-weight: 700; }
+.mi-nom { font-weight: 700; font-size: 15px; color: var(--text); min-width: 0; overflow-wrap: break-word; }
+.mi-qte { font-weight: 700; font-size: 15px; color: var(--danger-text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mi-qte-label { font-weight: 600; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.mi-cov { font-size: 13px; color: var(--muted); white-space: normal; grid-column: 1 / -1; }
+.mi-cov.urgent { color: var(--danger-text); font-weight: 700; }
 
 /* Bandeau repliable : le chevron + le titre forment un bouton qui plie/deplie
    la liste. L'etat est memorise (localStorage) entre les sessions. */
@@ -661,48 +709,44 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    la compensation, le titre remontait a 18px du haut du bandeau contre 29px
    dans l'etat normal, et la zone cliquable empietait de 11px dans le padding
    de la carte. Sans elle, les deux etats sont alignes au pixel pres. */
-.matin-chevron { font-size: 12px; color: var(--muted); transition: transform .15s; }
+.matin-chevron { display: inline-flex; color: var(--muted); transition: transform .15s; }
+.matin-chevron svg { display: block; }
 .matin.replie .matin-chevron { transform: rotate(-90deg); }
 .matin.replie .matin-liste { display: none; }
+
+/* Sous 560px (reprise du 23/08/2026) : une seule colonne, le bouton "Copier
+   la liste" redescend sur sa propre ligne pleine largeur, sous la liste (on
+   lit, puis on copie). [hidden] reste "display:none !important" (regle
+   globale plus bas) : si rien n'est a commander, la ligne "bouton" ne
+   reserve aucun espace, la grille se referme normalement. */
+@media (max-width: 560px) {
+  .matin-corps { grid-template-columns: 1fr; grid-template-areas: "head" "resume" "liste" "bouton"; }
+  .matin-copier { width: 100%; justify-content: center; margin: 4px 0 10px; }
+}
 
 /* Inventaire regroupe par etat, en sections depliables (element <details>
    natif : accessible, pas de JS pour le pli lui-meme ; l'etat ouvert est juste
    memorise cote JS pour survivre au rafraichissement). */
 .inv-groupes { display: flex; flex-direction: column; gap: 12px; }
 .inv-sommaire {
-  cursor: pointer; list-style: none; user-select: none;
+  cursor: pointer; list-style: none; -webkit-user-select: none; user-select: none;
   display: flex; align-items: center; gap: 9px;
-  font-size: 15px; font-weight: 700; padding: 8px 2px;
+  font-size: 15px; font-weight: 700; padding: 8px 2px; min-height: 44px;
 }
 .inv-sommaire::-webkit-details-marker { display: none; }
+/* Chevron dessine en CSS (monde clair, 23/08/2026) : un carre de 8px, deux
+   bordures visibles, tourne a 45deg au repos (pointe a droite, comme ▸) puis
+   encore 90deg de plus une fois ouvert (pointe vers le bas, comme ▾). */
 .inv-sommaire::before {
-  content: '▸'; color: var(--muted); font-size: 12px; transition: transform .15s;
+  content: ''; width: 8px; height: 8px; flex: 0 0 auto;
+  border-right: 1.8px solid var(--muted); border-bottom: 1.8px solid var(--muted);
+  transform: rotate(-45deg); transition: transform .15s;
 }
-.inv-groupe[open] > .inv-sommaire::before { transform: rotate(90deg); }
+.inv-groupe[open] > .inv-sommaire::before { transform: rotate(45deg); }
 .inv-sym-commander { color: var(--danger); }
-.inv-sym-surveiller { color: var(--warn-text); }
+.inv-sym-surveiller { color: var(--warn); }
 .inv-sym-stock { color: var(--brand-dark); }
 .inv-groupe > .grid { margin-top: 12px; }
-
-@media (max-width: 560px) {
-  .matin { margin-top: -14px; }
-
-  /* Correctif du 01/08/2026 (defaut mesure a la loupe Playwright : le
-     document faisait 419-420px de large quel que soit l'ecran, a cause de
-     cette ligne). En dessous de 560px, la grille "1fr auto auto" imposait sa
-     largeur totale a TOUTE la page : ses deux colonnes "auto" (.mi-qte et
-     .mi-cov, juste en dessous) sont en white-space:nowrap, donc jamais
-     compressibles. La couverture (ex. "reste moins d'1 jour ⚠") passe donc
-     sur sa propre ligne, sous le nom + la quantite qui restent groupes (le
-     libelle "A COMMANDER :" reste visible devant la quantite, correctif du
-     18/07). Avec 3 enfants directs (.mi-nom, .mi-qte, .mi-cov, dans cet
-     ordre dans le DOM) et seulement 2 colonnes ici, l'auto-placement standard
-     met deja .mi-nom et .mi-qte sur la 1re ligne ; .mi-cov, en demandant
-     explicitement les 2 colonnes (grid-column), ne peut plus tenir sur cette
-     1re ligne (occupee) et redescend seul sur une 2e ligne pleine largeur. */
-  .matin-item { grid-template-columns: 1fr auto; }
-  .mi-cov { grid-column: 1 / -1; white-space: normal; }
-}
 
 /* ---------- Onglet « Stock » (QW-C, 18/07/2026) ----------
    Liste compacte (des lignes, pas des cartes) + recherche a la frappe.
@@ -725,7 +769,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .stock-ligne { border-top: 1px solid var(--border); }
 .stock-ligne:first-child { border-top: none; }
 .stock-sommaire {
-  cursor: pointer; list-style: none; user-select: none;
+  cursor: pointer; list-style: none; -webkit-user-select: none; user-select: none;
   display: grid; grid-template-columns: 1fr auto auto;
   gap: 12px; align-items: center; padding: 11px 2px;
 }
@@ -749,7 +793,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   margin-bottom: 12px; overflow: hidden;
 }
 .aide-sommaire {
-  cursor: pointer; list-style: none; user-select: none;
+  cursor: pointer; list-style: none; -webkit-user-select: none; user-select: none;
   display: flex; align-items: center; gap: 11px;
   padding: 15px 16px; font-weight: 700; font-size: 15.5px;
 }
@@ -864,14 +908,18 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 /* Lot P-3 (chantier PILOTAGE, 26/07/2026) : bandeau "pilotage en pause",
    affiche sous le verdict quand aucune sortie n'est declaree depuis
    GESTE_VIVANT_JOURS. Reutilise .card pour la boite (deja stylee). */
-.bandeau-pilotage { border-left: 4px solid var(--warn); margin: 10px 0 2px; }
-.bandeau-pilotage .bp-titre { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+.bandeau-pilotage { margin: 10px 0 2px; }
+.bandeau-pilotage .bp-titre { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
 .bandeau-pilotage .bp-texte { font-size: 13.5px; color: var(--muted); margin-bottom: 8px; line-height: 1.5; }
+/* Bouton a contour (action secondaire, audit --brand §2bis). */
 .bandeau-pilotage .bp-bouton {
-  font-family: inherit; font-size: 13px; font-weight: 700;
-  padding: 9px 16px; border-radius: 10px; border: 1px solid var(--brand-light);
-  background: var(--ok-bg); color: var(--brand-dark); cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 600; min-height: 44px;
+  padding: 0 16px; border-radius: 14px; border: 1.5px solid var(--border);
+  background: var(--card); color: var(--text); cursor: pointer;
+  transition: background .15s, transform .1s;
 }
+.bandeau-pilotage .bp-bouton:hover { background: var(--fond-chaud); }
+.bandeau-pilotage .bp-bouton:active { transform: translateY(1px); }
 
 /* Lot P-5 (chantier PILOTAGE, 26/07/2026) : phrase de synthese du stock
    dormant, sous le bloc "Valeur du stock". */
@@ -894,7 +942,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 #pertes-groupe { margin: 18px 0 6px; }
 .pertes-vide { padding: 10px 2px 4px; color: var(--muted); font-size: 14px; }
 
-.pertes-total { font-size: 26px; font-weight: 800; color: var(--brand-dark); margin: 10px 0 8px; line-height: 1.15; }
+.pertes-total { font-size: 26px; font-weight: 700; color: var(--text); margin: 10px 0 8px; line-height: 1.15; }
 .pertes-total .pertes-partiel { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 4px; }
 
 .pertes-motifs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
@@ -904,7 +952,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   padding: 5px 12px; border-radius: 999px;
 }
 .pertes-motif .pm-nom { text-transform: capitalize; }
-.pertes-motif .pm-montant { font-weight: 800; }
+.pertes-motif .pm-montant { font-weight: 700; }
 
 .pertes-liste { margin-top: 2px; }
 .pertes-ligne {
@@ -932,16 +980,16 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .export-intro { font-size: 13.5px; color: var(--muted); margin: 4px 0 12px; }
 .export-actions { display: flex; flex-direction: column; gap: 10px; }
 
-/* Même famille visuelle que .btn-reception-demarrer (teal discret, pas un
-   bouton primaire plein) : un export est un geste rare, pas l'action
-   principale de l'écran. Hauteur mini 44 px (cible tactile, règle A1-A4). */
+/* Bouton a contour (action secondaire, audit --brand §2bis, 23/08/2026) : un
+   export est un geste rare, pas l'action principale de l'écran. Hauteur mini
+   44 px (cible tactile, règle A1-A4). */
 .btn-export {
-  font-family: inherit; font-size: 14.5px; font-weight: 700;
-  min-height: 44px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px;
-  background: var(--ok-bg); color: var(--brand-dark); cursor: pointer;
+  font-family: inherit; font-size: 14.5px; font-weight: 600;
+  min-height: 44px; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 14px;
+  background: var(--card); color: var(--text); cursor: pointer;
   transition: background .15s, border-color .15s, transform .1s;
 }
-.btn-export:hover { background: #ccfbf1; border-color: var(--brand-light); }
+.btn-export:hover { background: var(--fond-chaud); }
 .btn-export:active { transform: translateY(1px); }
 .btn-export:disabled { opacity: .6; cursor: wait; }
 
@@ -1000,8 +1048,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   .aide-exemple:active,
   .nav-item:active,
   .btn-micro:not(:disabled):active,
-  .btn-deconnexion:active,
-  .card:hover {
+  .btn-deconnexion:active {
     transform: none;
   }
 }
@@ -1017,7 +1064,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    sans reintroduire d'anneau au clic souris (`:focus-visible` ne se
    declenche pas dans ce cas dans les navigateurs modernes). */
 :focus-visible {
-  outline: 2px solid var(--brand-dark);
+  outline: 2px solid var(--text);
   outline-offset: 2px;
 }
 

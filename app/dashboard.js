@@ -94,9 +94,9 @@ const urgence = (c) => (c === null ? 'ok' : c < 1.5 ? 'crit' : c < 3 ? 'warn' : 
 // toute heure, pas qu'au reveil, donc "Ce matin" affiche a 17h serait faux.
 const titreDuMoment = () => {
   const h = new Date().getHours();
-  if (h < 12) return '☀️ Ce matin';
-  if (h < 18) return '🕑 Cet après-midi';
-  return '🌙 Ce soir';
+  if (h < 12) return 'Ce matin';
+  if (h < 18) return 'Cet après-midi';
+  return 'Ce soir';
 };
 
 // Texte "liste de courses" prepare au dernier rendu du bandeau (voir
@@ -187,7 +187,7 @@ const ligneReappro = (p) => {
   const ruptureAvantLivraison = (autonomie !== null && autonomie < delai);
   const detail = `Stock : ${fmtNombre(p.stock_actuel)} ${p.unite}&nbsp;&nbsp;·&nbsp;&nbsp;Autonomie : ${txtCouverture(autonomie)}&nbsp;&nbsp;·&nbsp;&nbsp;Livraison : ${fmtNombre(delai)} j`;
   const alerteLivr = ruptureAvantLivraison
-    ? `<div class="ri-warning">⚠ Rupture probable avant la livraison</div>` : '';
+    ? `<div class="ri-warning">▲ Rupture probable avant la livraison</div>` : '';
   // Détail du calcul, visible au survol du chiffre
   const calcul = (p._qteCommander && p._consoJour > 0)
     ? `${p._consoJour.toFixed(1)} ${p.unite}/jour × (${fmtNombre(delai)} j livraison + ${COUVERTURE_CIBLE_JOURS} j d'avance) − ${fmtNombre(p.stock_actuel)} en stock`
@@ -388,7 +388,7 @@ function majEcranDuMatin(produits, aCommander, ruptureImminente) {
     return `<li class="matin-item">
         <span class="mi-nom">${echapperHtml(p.nom)}</span>
         <span class="mi-qte">${qteAffichee(p)}</span>
-        <span class="mi-cov${urgent ? ' urgent' : ''}">${covTxt}${urgent ? ' ⚠' : ''}</span>
+        <span class="mi-cov${urgent ? ' urgent' : ''}">${covTxt}${urgent ? ' ▲' : ''}</span>
       </li>`;
   }).join('');
   btnCopier.hidden = false;

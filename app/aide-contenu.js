@@ -27,6 +27,27 @@
 // données" de dashboard.js/index.html (lot C2-3, bouton "État de mon stock
 // (.csv)" et bouton "Journal de mes mouvements (.csv)") : si ces libelles
 // changent la-bas, cette section doit suivre a l'identique, sinon elle ment.
+//
+// LOT "app court" (23/08/2026) : deux gestes deja en prod depuis fin juillet
+// mais jamais decrits ici. Le mode sortie (bouton "Démarrer une sortie",
+// sortie.js, backend _shared/sortie.ts, lot S-5 du 27/07) et la photo du bon
+// de livraison (bouton "Photographier le bon de livraison", reception.js,
+// backend _shared/photo_bl.ts, lot P-3 du 25/07). Ajoute au passage : la note
+// du geste de reception qui disait "seul mode ou les nombres en lettres sont
+// compris" est fausse depuis le lot S-5 (sortie.ts appelle aussi
+// convertirNombresEnLettres), corrigee ici. La ligne "🎙️ Parler" de la
+// section "comprendre" mentionne desormais ces deux gestes.
+//
+// COMPLEMENT (23/08/2026, relecture Jarvis) : l'astuce "Dis les nombres en
+// chiffres, sauf en reception" mentait plus largement qu'un seul mot "seul
+// mode" corrige : les nombres en toutes lettres sont compris dans TOUS les
+// modes (reception, sortie, inventaire directement ; saisie normale via un
+// REPLI, cf coeur.ts:2957-2977, traiterDeclaration ne retente
+// convertirNombresEnLettres que si classerDeterministe a deja echoue sur la
+// phrase brute ; inventaire guide via lireComptage, coeur.ts:2655, qui recoit
+// le convertisseur directement). Astuce reecrite pour dire vrai. Un test
+// balaie desormais tout CONTENU pour interdire "seul mode" / "Seul le mode"
+// n'importe ou (gestes, astuces, defs), pas seulement sur la reception.
 
 // ====================================================================
 // LE CONTENU
@@ -62,7 +83,7 @@ export const CONTENU = [
         items: [
           { terme: '📊 Pilotage', texte: 'Ce qu\'il faut faire aujourd\'hui : le bandeau « Ce matin », les indicateurs, ce qui est à commander, l\'inventaire complet et les derniers mouvements.' },
           { terme: '📦 Stock', texte: 'Trouver un produit. La liste complète avec une recherche à la frappe. Tape sur une ligne pour voir le détail (prix, valeur, autonomie).' },
-          { terme: '🎙️ Parler', texte: 'Agir. Le micro, le clavier, le mode réception, le parcours d\'inventaire et l\'import de catalogue. C\'est le seul écran qui écrit en base.' },
+          { terme: '🎙️ Parler', texte: 'Agir. Le micro, le clavier, le mode réception, le mode sortie, la photo du bon de livraison, le parcours d\'inventaire et l\'import de catalogue. C\'est le seul écran qui écrit en base.' },
           { terme: '💡 Aide', texte: 'Cette page.' },
         ],
       },
@@ -201,7 +222,21 @@ export const CONTENU = [
         titre: '📦 Ranger toute une livraison d\'un coup',
         quoi: 'Le bouton « Démarrer une réception » sur l\'écran Parler. Tu dictes les produits un par un, tu vois la liste se remplir à l\'écran, et UNE seule validation écrit tout le lot.',
         exemples: ['12 pâtes', 'huit bières', 'vingt-cinq lait'],
-        note: 'En réception, tu dis juste <b>la quantité et le produit</b>, sans verbe. C\'est le seul mode où les nombres <b>en lettres</b> sont compris. Il n\'accepte que des entrées : pour une sortie, quitte la réception.',
+        note: 'En réception, tu dis juste <b>la quantité et le produit</b>, sans verbe. Les nombres <b>en lettres</b> sont compris. Il n\'accepte que des entrées : pour une sortie, quitte la réception.',
+      },
+      {
+        type: 'geste',
+        titre: '➖ Faire sortir toute une vente d\'un coup',
+        quoi: 'Le bouton « Démarrer une sortie » sur l\'écran Parler. Tu dictes les produits vendus un par un, tu vois la liste se remplir à l\'écran avec le signe moins devant chaque quantité, et UNE seule validation écrit tout le lot.',
+        exemples: ['3 pâtes', "j'ai vendu 8 bières", 'huit lait'],
+        note: 'En sortie, une phrase complète marche (« j\'ai vendu 3 pâtes ») tout comme la phrase nue (« 3 pâtes »). Les nombres <b>en lettres</b> sont compris. Rien n\'est écrit avant la validation finale, et tu peux reprendre une sortie laissée en cours. Pas de raison à donner dans ce mode : pour une casse ou une perte, utilise « j\'ai jeté », « j\'ai cassé »… en dehors de ce mode.',
+      },
+      {
+        type: 'geste',
+        titre: '📷 Photographier le bon de livraison',
+        quoi: 'Dans une réception, le bouton « Photographier le bon de livraison » ouvre l\'appareil photo. Stovo lit les lignes du bon (quantité et libellé), reconnaît celles qui correspondent à ton catalogue, et les ajoute à la liste de la réception en cours.',
+        exemples: [],
+        note: 'Une photo n\'écrit <b>jamais</b> rien toute seule : les lignes lues rejoignent la liste, tout passe par la validation groupée de la réception, comme si tu les avais dictées. Vérifie ce que Stovo a lu dans le journal de lecture avant de valider. Prends la photo bien à plat, bien éclairée et nette, une page à la fois : une ligne mal lue ou un article que Stovo ne reconnaît pas dans ton catalogue est simplement signalé, jamais deviné.',
       },
       {
         type: 'geste',
@@ -221,8 +256,8 @@ export const CONTENU = [
     blocs: [
       {
         type: 'astuce',
-        titre: 'Dis les nombres en chiffres, sauf en réception',
-        texte: 'En saisie normale, dis « <b>10</b> pâtes » : si la reconnaissance vocale écrit « dix » en toutes lettres, Stovo ne reconnaît pas la quantité. Seul le <b>mode réception</b> sait lire « huit » ou « vingt-cinq ». C\'est une limite connue, pas un bug : dans le doute, relis le champ avant d\'envoyer et corrige le mot en chiffre.',
+        titre: '« Huit » ou « 8 » : Stovo comprend les deux, partout',
+        texte: 'En réception, en sortie et dans le parcours d\'inventaire, un nombre écrit en toutes lettres par la reconnaissance vocale (« dix », « vingt-cinq ») est compris directement. En saisie normale, c\'est un <b>repli</b> : Stovo essaie d\'abord de comprendre la phrase telle quelle, et ne retente la conversion que si ça n\'a pas suffi. Cette nuance protège un produit dont le nom contient un mot-nombre (« quatre quarts », « cent pur jus ») : le nom déjà connu l\'emporte toujours avant qu\'une conversion soit tentée. Dans le doute, relis toujours le champ avant d\'envoyer.',
       },
       {
         type: 'astuce',

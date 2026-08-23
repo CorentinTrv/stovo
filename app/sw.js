@@ -108,7 +108,18 @@
 // aide-contenu.js (donnees pures, NOUVEAU fichier ajoute au precache) et
 // aide.js (rendu + glu DOM, modifie). Pas de bump : un seul lot C2 n'a pas
 // encore ete deploye, donc une seule version suffit pour tout le chantier.
-const CACHE_NAME = 'stovo-app-v25';
+// v26 (23/08/2026) : l'app rejoint le monde clair de la vitrine, coquille et
+// Pilotage. NOUVEAU fichier fonts/dm-sans-latin.woff2 au precache ;
+// index.html, styles.css, dashboard.js modifies.
+// Complement "app court" (23/08/2026, meme v26 non deployee) : l'onglet Aide
+// documente le mode sortie et la photo du bon de livraison (deja en prod
+// depuis fin juillet mais jamais decrits). aide-contenu.js modifie (deja au
+// precache depuis le complement C2-5). Safari iOS : -webkit-user-select
+// ajoute devant les 3 user-select existants de styles.css. .pertes-total
+// passe du teal a l'encre (--text), regle "un role, une couleur". Aucun
+// nouveau fichier a precacher, pas de bump : le meme lot v26 n'a pas encore
+// ete deploye.
+const CACHE_NAME = 'stovo-app-v26';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -132,6 +143,7 @@ const FICHIERS_COQUILLE = [
   './sortie.js',
   './photo.js',
   './export.js',
+  './fonts/dm-sans-latin.woff2',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',
