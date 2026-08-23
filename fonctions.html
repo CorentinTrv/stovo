@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#FFF8F1">
+<link rel="canonical" href="https://corentintrv.github.io/stovo/fonctions.html">
+<title>Tout ce que Stovo sait faire</title>
+<meta name="description" content="Toutes les fonctions de Stovo, l'application qui tient le stock d'un petit commerce à la voix, avec leur détail.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="Tout ce que Stovo sait faire">
+<meta property="og:description" content="Toutes les fonctions de Stovo, l'application qui tient le stock d'un petit commerce à la voix, avec leur détail.">
+<link rel="preload" href="fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  /* ================================================================
+     Copie des jetons et du gabarit de index.html au 22/08/2026 : une
+     retouche de jeton (couleur, typo, carte, bouton) se fait AUX DEUX
+     ENDROITS, il n'y a pas de feuille de style partagée (voir §2 de la
+     consigne : un CSS séparé ferait courir le risque de déshabiller
+     les deux pages d'un coup si GitHub Pages sert un fichier en 404).
+     Les règles reprises telles quelles ne sont pas commentées à
+     nouveau ici ; les règles propres à cette page sont réunies sous
+     "Propre à fonctions.html" en fin de bloc.
+     ================================================================ */
+
+  /* ================================================================
+     DM SANS, variable, auto-hebergee (graisses 400 a 700, opsz 9..40).
+     INSTRUMENT SERIF, auto-hebergee, regular 400 seulement (pas d'italique,
+     reservee au h1).
+     Servies depuis ce depot, jamais depuis un CDN tiers : pas de requete
+     sortante vers Google au chargement (RGPD), pas de dependance reseau
+     qui casserait la page si le CDN tombe.
+     Licences SIL Open Font License 1.1, redistribution autorisee.
+     ================================================================ */
+  @font-face{
+    font-family:'DM Sans';
+    font-style:normal;
+    font-weight:400 700;
+    font-display:swap;
+    src:url('fonts/dm-sans-latin.woff2') format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  @font-face{
+    font-family:'Instrument Serif';
+    font-style:normal;
+    font-weight:400;
+    font-display:swap;
+    src:url('fonts/instrument-serif-latin.woff2') format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+
+  /* ================================================================
+     FONDATIONS : l'etabli du matin, clair et chaud.
+     Modele choisi le 22/08/2026 (Getharvest, "Golden hour workbench"),
+     decision dans DESIGN.md. Un role, une couleur : la flamme --flamme
+     est reservee a l'ACTION (boutons, le mot Stovo, les pastilles 1-2-3,
+     l'icone micro), nulle part ailleurs.
+
+     Contrastes mesures et non estimes : --gris (6,4:1 sur blanc) porte
+     tout texte courant de moins de 24px. --gris-clair (3,4:1 sur blanc)
+     est reserve au DECOR et aux tres grands chiffres (>=24px), jamais a
+     un texte porteur en dessous de cette taille.
+     ================================================================ */
+  :root{
+    --creme:#FFF8F1;        /* fond de page */
+    --carte:#FFFFFF;        /* fond des cartes */
+    --filet:#E3D6C5;        /* bordure des cartes, diviseurs */
+    --encre:#1D1E1C;        /* texte principal, titres, valeur validee */
+    --gris:#615F5C;         /* texte secondaire ACCESSIBLE. 6,4:1 sur blanc */
+    --gris-clair:#8E8B87;   /* DECOR SEULEMENT : filets, icones, tres grands
+                                chiffres (>=24px). Jamais de texte porteur
+                                en dessous, il ne fait que 3,4:1 sur blanc */
+    --flamme:#FA5D00;       /* L'ACTION, uniquement : boutons, mot Stovo,
+                                pastilles 1-2-3, icone micro */
+    --flamme-sombre:#C94A00;/* survol de la flamme */
+    --valide:#0F766E;       /* teal Stovo (PRODUCT.md), validation. 5,5:1 en blanc */
+    --fond-contact:#FFF1E4; /* fond de la carte de contact */
+
+    /* Couleurs des pastilles de l'app (app/styles.css : --ok, --warn,
+       --danger), reprises telles quelles pour montrer le produit ; elles
+       n'appartiennent pas à la palette de la vitrine et ne servent nulle
+       part ailleurs sur la page */
+    --app-ok:#0d9488;
+    --app-warn:#ea580c;
+    --app-danger:#dc2626;
+
+    --mesure:66ch;
+    --entete-h:76px;        /* hauteur approx. du bandeau collant, pour le scroll-margin */
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%; text-size-adjust:100%; scroll-behavior:smooth;}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}}
+
+  body{
+    margin:0;
+    font-family:'DM Sans','Helvetica Neue',Arial,sans-serif;
+    font-size:17px;
+    line-height:1.6;
+    color:var(--encre);
+    background:var(--creme);
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,p,ul,li,figure,figcaption{margin:0;}
+  img{max-width:100%;}
+
+  /* Filet documente dans la memoire du projet : sans cette regle, un
+     display concurrent peut ecraser [hidden]. */
+  [hidden]{display:none !important;}
+
+  /* Chiffres alignes sur une meme largeur, utile partout ou une valeur
+     compte (sommaire, etiquettes numerotees). */
+  .num{font-variant-numeric:tabular-nums;}
+
+  /* ---------- Gabarit ---------- */
+  .zone{
+    max-width:1440px;
+    margin:0 auto;
+    /* Le fond de l'ecran passe de 20px (telephone) a 96px (bureau,
+       maquette 1440) : une seule regle fluide plutot qu'un saut brutal
+       a un point de rupture. */
+    padding:0 clamp(20px,6vw,96px);
+  }
+  .colonne{max-width:var(--mesure);}
+  .accent{color:var(--encre); font-weight:700;}
+
+  /* Le rythme vient d'un seul cote (le bas). Deux sections cote a cote
+     n'additionnent donc pas leurs marges : la place entre la fin de
+     l'une et le debut de l'autre reste 128px, jamais 256, quelle que
+     soit la largeur. Avant ce choix, un padding symetrique haut+bas se
+     doublait entre deux sections. */
+  .section{
+    position:relative;
+    padding:0 0 128px;
+    scroll-margin-top:var(--entete-h);
+  }
+
+  /* ---------- Typographie ---------- */
+  h1{
+    font-family:'Instrument Serif',Georgia,'Times New Roman',serif;
+    font-weight:400;
+    font-size:clamp(50px,8vw,84px);
+    line-height:1.0;
+    letter-spacing:-0.02em;
+    text-wrap:balance;
+  }
+  h2{
+    font-size:clamp(32px,4.2vw,44px);
+    line-height:1.12;
+    font-weight:700;
+    letter-spacing:-0.025em;
+    text-wrap:balance;
+  }
+  h3{
+    font-size:clamp(22px,2.6vw,26px);
+    line-height:1.25;
+    font-weight:700;
+    letter-spacing:-0.02em;
+  }
+  .section p + p{margin-top:16px;}
+
+  /* ---------- Cartes ---------- */
+  /* Ombre NEUTRE tres legere : une bordure suffit a detacher la carte
+     de la page, l'ombre n'ajoute qu'un souffle de profondeur. Cette
+     page n'a pas de carte a l'ombre chaude (--carte--chaude), reservee
+     au compteur de l'accueil. */
+  .carte{
+    background:var(--carte);
+    border:1px solid var(--filet);
+    border-radius:20px;
+    box-shadow:0 1px 2px rgba(29,30,28,.06);
+  }
+
+  /* ---------- Boutons ---------- */
+  .bouton{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    min-height:46px;
+    padding:14px 24px;
+    font-family:inherit;
+    font-size:19px;
+    font-weight:700;
+    text-decoration:none;
+    border-radius:16px;
+    white-space:nowrap;
+    transition:background .2s ease, border-color .2s ease, color .2s ease;
+  }
+  /* Le bouton plein : blanc sur flamme. A 19px gras, c'est du texte
+     large (seuil WCAG 18,66px gras), 3,17:1 suffit. Ne jamais descendre
+     en dessous de cette taille sur ce fond. */
+  .bouton--flamme{
+    color:#FFFFFF;
+    background:var(--flamme);
+    border:1px solid transparent;
+    box-shadow:0 1px 4px rgba(0,0,0,.2);
+  }
+  .bouton--flamme:hover{background:var(--flamme-sombre);}
+  /* Le bouton discret du bandeau : encre sur blanc, largement accessible. */
+  .bouton--contour{
+    min-height:40px;
+    padding:10px 18px;
+    font-size:15px;
+    color:var(--encre);
+    background:var(--carte);
+    border:1.5px solid var(--filet);
+  }
+  .bouton--contour:hover{border-color:var(--gris-clair);}
+  .bouton__fleche{width:18px; height:18px; flex:0 0 auto;}
+
+  .lien-discret{
+    font-size:15px;
+    font-weight:500;
+    color:var(--gris);
+    text-decoration:underline;
+  }
+  .lien-discret:hover{color:var(--encre);}
+
+  /* ================================================================
+     BANDEAU
+     ================================================================ */
+  .bandeau{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:var(--creme);
+    border-bottom:1px solid var(--filet);
+  }
+  .bandeau__interieur{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    min-height:var(--entete-h);
+    padding-top:12px;
+    padding-bottom:12px;
+  }
+  /* Le mot Stovo EST la marque : c'est l'un des quatre seuls usages
+     autorises de --flamme (DESIGN.md, decision du 22/08/2026), exempte
+     de la regle de contraste au meme titre qu'un logotype (WCAG 1.4.5).
+     Mesure : ~3,0:1 sur --creme, en dessous du seuil "texte", au-dessus
+     du plancher "composant d'interface" (3:1). */
+  .logo{
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:-0.02em;
+    color:var(--flamme);
+    text-decoration:none;
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+  }
+  .entete-actions{
+    display:flex;
+    align-items:center;
+    gap:20px;
+  }
+  /* Sur le telephone, le bandeau ne montre que le bouton "Ecrire" :
+     "Retour a l'accueil" et le lien vers l'app restent offerts, mais
+     ailleurs sur la page (accroche et pied), pour ne pas surcharger une
+     largeur de 390px. */
+  .entete-lien-app{display:none;}
+  @media (min-width:960px){.entete-lien-app{display:inline;}}
+
+  /* ================================================================
+     2. LE PROBLEME (reutilise sur cette page comme intro de famille)
+     ================================================================ */
+  .conclusion{
+    margin-top:28px;
+    font-size:17px;
+    line-height:1.65;
+    color:var(--gris);
+    max-width:var(--mesure);
+  }
+
+  /* ================================================================
+     5. CE QUE STOVO NE FAIT PAS (reutilise pour "Les limites")
+     ================================================================ */
+  .refus{
+    margin-top:0;
+    padding:clamp(32px,6vw,56px) clamp(24px,6vw,64px);
+    display:grid;
+    gap:32px;
+  }
+  .refus__liste{
+    display:flex;
+    flex-direction:column;
+  }
+  .refus__liste li{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px 0;
+    border-bottom:1px solid var(--filet);
+    font-size:19px;
+    list-style:none;
+  }
+  .refus__liste li:last-child{border-bottom:none;}
+  .refus__icone{flex:0 0 auto; color:var(--gris-clair);}
+  .refus .conclusion{margin-top:0;}
+
+  @media (min-width:960px){
+    .refus{grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:64px; align-items:start;}
+  }
+
+  /* ================================================================
+     7. CONTACT
+     ================================================================ */
+  .contact{
+    background:var(--fond-contact);
+    border-radius:24px;
+    padding:clamp(40px,8vw,72px) clamp(24px,8vw,64px);
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:24px;
+  }
+  .contact h2{max-width:22ch;}
+  .contact__intro{color:var(--gris); max-width:48ch;}
+  .contact__email{font-size:16px; color:var(--gris);}
+
+  /* ================================================================
+     PIED
+     ================================================================ */
+  .pied{
+    padding:32px 0 40px;
+    border-top:1px solid var(--filet);
+  }
+  .pied__interieur{
+    display:flex;
+    flex-direction:column-reverse;
+    align-items:center;
+    gap:16px;
+    text-align:center;
+  }
+  .pied__mention{font-size:14px; color:var(--gris);}
+
+  @media (min-width:640px){
+    .pied__interieur{flex-direction:row; justify-content:space-between; text-align:left;}
+  }
+
+  /* ================================================================
+     ACCESSIBILITE
+     ================================================================ */
+  a:focus-visible{
+    outline:3px solid var(--valide);
+    outline-offset:3px;
+  }
+  .saut{
+    position:absolute;
+    left:-9999px;
+    top:0;
+    z-index:100;
+    padding:12px 20px;
+    background:var(--encre);
+    color:var(--creme);
+    border:1px solid var(--valide);
+    border-radius:0 0 8px 0;
+  }
+  .saut:focus{left:0; top:0;}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{
+      animation-duration:.001ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:.001ms !important;
+    }
+  }
+
+  /* ================================================================
+     Propre à fonctions.html
+     ================================================================ */
+
+  /* ---------- Le lien "Retour à l'accueil", à trois endroits ----------
+     Dans le bandeau, réservé au bureau (le bandeau n'a pas la place en
+     dessous de 960px). Sous le h1, réservé au téléphone. Dans le pied,
+     réservé au bureau : sur téléphone il est déjà offert plus haut sur
+     la page, l'y répéter aurait surchargé le pied (voir la planche
+     Telephone.dc.html, qui ne montre que "Déjà utilisateur ?" en bas). */
+  .entete-lien-retour{display:none; align-items:center; min-height:40px;}
+  @media (min-width:960px){.entete-lien-retour{display:inline-flex;}}
+
+  .fonctions__retour-mobile{display:inline-flex; align-items:center; min-height:40px;}
+  @media (min-width:960px){.fonctions__retour-mobile{display:none;}}
+
+  /* Correction relecture 22/08 : align-items:center ajoute, sinon
+     "Retour à l'accueil" (min-height:40px) et "Déjà utilisateur ?"
+     (sans min-height) ne se retrouvaient pas sur la même ligne de
+     base au bureau. */
+  .pied__liens{display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  .pied__lien-retour{display:none; align-items:center; min-height:40px;}
+  @media (min-width:960px){.pied__lien-retour{display:inline-flex;}}
+
+  /* ---------- L'accroche de la page ---------- */
+  .fonctions__accroche{padding-top:clamp(28px,7vw,96px);}
+  /* Correction relecture 22/08 : le max-width:900px était pose sur la
+     .zone elle-meme (margin:0 auto), qui centrait donc tout le bloc
+     alors que le bandeau et les familles restent cales a gauche a
+     96px. La zone garde son role de gabarit (1440px + padding) ; le
+     borne 900px vit sur un bloc INTERIEUR, sans margin:auto. */
+  .fonctions__accroche-inner{
+    display:flex;
+    flex-direction:column;
+    gap:28px;
+    max-width:900px;
+  }
+  .fonctions__soustitre{
+    font-size:21px;
+    line-height:1.5;
+    color:var(--gris);
+    max-width:44ch;
+  }
+
+  /* ---------- Le sommaire : six pastilles vers les six familles ---------- */
+  .fonctions__sommaire{display:flex; flex-wrap:wrap; gap:10px;}
+  .fonctions__sommaire-lien{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:40px;
+    padding:8px 16px;
+    border:1.5px solid var(--filet);
+    border-radius:999px;
+    background:var(--carte);
+    font-size:15px;
+    font-weight:600;
+    color:var(--encre);
+    text-decoration:none;
+  }
+  .fonctions__sommaire-lien:hover{border-color:var(--gris-clair);}
+  .fonctions__sommaire-numero{color:var(--gris);}
+
+  /* ---------- Chaque famille ---------- */
+  .fonctions__famille{display:flex; flex-direction:column; gap:28px;}
+  .fonctions__famille-tete{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    max-width:var(--mesure);
+  }
+  /* La phrase d'intro reutilise .conclusion, sans sa marge haute : le
+     gap du parent fait deja la place, sinon l'ecart doublerait. */
+  .fonctions__famille-tete .conclusion{margin-top:0;}
+  /* Correction relecture 22/08 : le lien "C'est dit sur l'accueil."
+     (dans .conclusion, section Limites) n'avait aucune regle de
+     couleur et sortait donc en bleu navigateur. Style des liens de
+     texte courant, coherent avec le reste de la page. */
+  .conclusion a{color:var(--encre); font-weight:600; text-decoration:underline;}
+  .conclusion a:hover{color:var(--gris);}
+  .fonctions__etiquette{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--gris);
+  }
+
+  .fonctions__grille{display:grid; gap:16px;}
+  @media (min-width:960px){
+    .fonctions__grille{gap:20px;}
+    .fonctions__grille--2{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .fonctions__grille--3{grid-template-columns:repeat(3,minmax(0,1fr));}
+  }
+
+  /* ---------- La carte d'une fonction ---------- */
+  .fonction{padding:22px; display:flex; flex-direction:column; gap:14px;}
+  @media (min-width:960px){.fonction{padding:28px;}}
+  .fonction__texte{font-size:16px; line-height:1.55; color:var(--gris);}
+
+  /* Exergue "phrase dite" : pastille micro + citation, en plus petit
+     que .compteur__micro-rond de l'accueil (28px contre 34px).
+     Correction relecture 22/08 : flex-wrap:wrap faisait passer TOUTE
+     la citation sous le micro des qu'une phrase etait longue ("La
+     liste de courses"), laissant le rond orphelin seul sur sa ligne.
+     La ligne reste nowrap : le micro (ou le label Bouton/A l'ecran)
+     garde sa place a gauche, c'est le texte a droite qui revient a la
+     ligne DANS SA PROPRE COLONNE (flex:1 1 auto; min-width:0). */
+  .fonction__exergue{display:flex; align-items:flex-start; gap:10px; flex-wrap:nowrap;}
+  .fonction__micro{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+    width:28px; height:28px;
+    border-radius:999px;
+    background:var(--creme);
+    color:var(--flamme);
+  }
+  .fonction__citation{flex:1 1 auto; min-width:0; font-size:19px; font-weight:600; color:var(--encre);}
+
+  /* Exergues "Bouton" et "À l'écran" : même pastille, fond différent.
+     La pastille "Bouton" est un <span>, jamais un <button> : rien n'est
+     cliquable ici, on montre un libellé. */
+  .fonction__label{
+    flex:0 0 auto;
+    white-space:nowrap;
+    padding-top:6px;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--gris);
+  }
+  .fonction__pastille{
+    display:inline-flex;
+    align-items:center;
+    flex:1 1 auto;
+    min-width:0;
+    min-height:36px;
+    padding:6px 14px;
+    border-radius:12px;
+    font-size:16px;
+    font-weight:700;
+    color:var(--encre);
+  }
+  .fonction__pastille--bouton{background:var(--carte); border:1.5px solid var(--filet);}
+  .fonction__pastille--ecran{background:var(--creme); font-weight:600; border:none;}
+
+  /* Exergue "feu tricolore" : les formes sont du décor (aria-hidden
+     dans le HTML), seuls les mots Vert/Orange/Rouge portent le sens. */
+  .fonction__feux{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  .fonction__feu{display:inline-flex; align-items:center; gap:8px; font-size:16px; font-weight:600; color:var(--encre);}
+  .fonction__feu-forme{display:inline-block; width:12px; height:12px; flex:0 0 auto;}
+  .fonction__feu-forme--rond{border-radius:999px; background:var(--app-ok);}
+  .fonction__feu-forme--triangle{clip-path:polygon(50% 0,100% 100%,0 100%); background:var(--app-warn);}
+  .fonction__feu-forme--carre{border-radius:2px; background:var(--app-danger);}
+
+  /* ---------- La carte large du Pilotage (famille 04) ----------
+     Le cadre crème n'a que ses coins hauts arrondis et un overflow
+     masqué : on voit le haut de l'écran (bandeau, premières tuiles),
+     collé au bas de la carte. */
+  .fonction-large{display:flex; flex-direction:column; gap:20px; padding:22px;}
+  .fonction-large__texte{display:flex; flex-direction:column; gap:16px;}
+  .fonction-large__corps{font-size:17px; line-height:1.6; color:var(--gris);}
+  .fonction-large__note{font-size:15px; color:var(--gris);}
+  .fonction-large__cadre{
+    background:var(--creme);
+    border-radius:14px 14px 0 0;
+    overflow:hidden;
+    height:300px;
+    padding:10px 10px 0 10px;
+  }
+  .fonction-large__image{display:block; width:100%; height:auto;}
+
+  @media (min-width:960px){
+    .fonction-large{
+      display:grid;
+      grid-template-columns:minmax(0,1.1fr) minmax(0,0.9fr);
+      gap:48px;
+      align-items:end;
+      padding:40px 44px 0 44px;
+    }
+    .fonction-large__texte{padding-bottom:40px;}
+    .fonction-large__cadre{
+      width:300px;
+      height:380px;
+      border-radius:16px 16px 0 0;
+      padding:14px 14px 0 14px;
+      justify-self:end;
+    }
+  }
+
+  /* ---------- Les limites : items à deux lignes dans .refus__liste ----------
+     .refus__liste li n'a qu'une ligne de texte sur l'accueil (align-items
+     center, 19px unique). Ici chaque item a un titre ET une explication :
+     cette règle, ajoutée après, l'emporte à spécificité égale. */
+  .limites__liste li{align-items:flex-start; font-size:16px;}
+  .limites__corps{display:flex; flex-direction:column; gap:4px;}
+  .limites__titre{font-size:19px; font-weight:700; color:var(--encre);}
+  .limites__texte{font-size:16px; line-height:1.55; color:var(--gris);}
+</style>
+</head>
+<body>
+<!--
+  Page satellite de l'accueil, même monde clair "établi" (DESIGN.md),
+  même CSS copié (pas de fichier partagé, voir le commentaire en tête
+  du <style>). Détail des 24 fonctions de Stovo, en six familles.
+  Source des textes : maquettes/fonctions/generer-planches.py (mot pour
+  mot). Source de la décision : VITRINE_fonctions_inventaire_2026-08-22.md.
+-->
+<a class="saut" href="#haut">Aller au contenu</a>
+
+<header class="bandeau">
+  <div class="zone bandeau__interieur">
+    <a class="logo" href="./" aria-label="Stovo, retour à l'accueil">Stovo</a>
+    <nav class="entete-actions" aria-label="Liens de la page">
+      <a class="lien-discret entete-lien-retour" href="./">Retour à l'accueil</a>
+      <a class="lien-discret entete-lien-app" href="app/">Déjà utilisateur ? Ouvrir l'application</a>
+      <a class="bouton bouton--contour" href="#contact">
+        Écrire à Corentin
+        <svg class="bouton__fleche" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+          <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ ACCROCHE ============ -->
+  <section id="haut" class="section fonctions__accroche">
+    <div class="zone">
+      <div class="fonctions__accroche-inner">
+        <a class="lien-discret fonctions__retour-mobile" href="./">Retour à l'accueil</a>
+        <h1>Tout ce que Stovo sait faire.</h1>
+        <p class="fonctions__soustitre">Chaque fonction, dite comme vous la diriez. Et la même règle partout : <span class="accent">rien ne s'écrit sans votre oui.</span></p>
+
+        <nav class="fonctions__sommaire" aria-label="Sommaire">
+          <a class="fonctions__sommaire-lien" href="#journee"><span class="fonctions__sommaire-numero num">01</span> Au fil de la journée</a>
+          <a class="fonctions__sommaire-lien" href="#livraison"><span class="fonctions__sommaire-numero num">02</span> Une livraison, un service</a>
+          <a class="fonctions__sommaire-lien" href="#compter"><span class="fonctions__sommaire-numero num">03</span> Compter et corriger</a>
+          <a class="fonctions__sommaire-lien" href="#matin"><span class="fonctions__sommaire-numero num">04</span> Savoir où vous en êtes</a>
+          <a class="fonctions__sommaire-lien" href="#catalogue"><span class="fonctions__sommaire-numero num">05</span> Vos produits</a>
+          <a class="fonctions__sommaire-lien" href="#donnees"><span class="fonctions__sommaire-numero num">06</span> Démarrer, et repartir</a>
+        </nav>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 01. AU FIL DE LA JOURNÉE ============ -->
+  <section id="journee" class="section">
+    <div class="zone fonctions__famille">
+      <div class="fonctions__famille-tete">
+        <span class="fonctions__etiquette"><span class="num">01</span> &middot; Au fil de la journée</span>
+        <h2>Vous dites ce qui bouge.</h2>
+        <p class="conclusion">Quatre phrases couvrent une journée ordinaire. Stovo répète ce qu'il a compris, vous dites oui, c'est écrit.</p>
+      </div>
+
+      <div class="fonctions__grille fonctions__grille--2">
+
+        <article class="carte fonction">
+          <h3>Faire entrer du stock</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__micro" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="fonction__citation">«&nbsp;J'ai reçu 10 pâtes.&nbsp;»</p>
+          </div>
+          <p class="fonction__texte">Reçu, acheté, livré, rentré : Stovo comprend les verbes de tous les jours, pas un code.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Faire sortir du stock</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__micro" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="fonction__citation">«&nbsp;J'ai vendu 3 pâtes.&nbsp;»</p>
+          </div>
+          <p class="fonction__texte">Vendu, sorti, consommé, utilisé. C'est ce qui apprend à Stovo votre rythme, et ce qui fait vivre tout le reste.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Déclarer une perte, avec sa raison</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__micro" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="fonction__citation">«&nbsp;J'ai jeté 3 yaourts périmés.&nbsp;»</p>
+          </div>
+          <p class="fonction__texte">Casse, péremption, vol. Tracée à part d'une vente, pour ne pas gonfler vos prévisions et commander trop.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Annuler la dernière déclaration</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__micro" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="fonction__citation">«&nbsp;Annule le dernier.&nbsp;»</p>
+          </div>
+          <p class="fonction__texte">Rien n'est effacé : Stovo écrit le mouvement inverse. Votre historique reste entier, et vrai.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02. UNE LIVRAISON, UN SERVICE ============ -->
+  <section id="livraison" class="section">
+    <div class="zone fonctions__famille">
+      <div class="fonctions__famille-tete">
+        <span class="fonctions__etiquette"><span class="num">02</span> &middot; Une livraison, un service</span>
+        <h2>Tout un lot, d'un coup.</h2>
+        <p class="conclusion">Pour trois articles ou plus, un mode dédié : vous dictez sans verbe, vous relisez la liste, vous validez une seule fois.</p>
+      </div>
+
+      <div class="fonctions__grille fonctions__grille--2">
+
+        <article class="carte fonction">
+          <h3>Ranger une livraison</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__label">Bouton</span>
+            <span class="fonction__pastille fonction__pastille--bouton">Démarrer une réception</span>
+          </div>
+          <p class="fonction__texte">«&nbsp;12 pâtes&nbsp;», «&nbsp;huit bières&nbsp;», «&nbsp;vingt-cinq lait&nbsp;». Le seul mode où les nombres en lettres sont compris. Deux fois le même produit : les quantités s'additionnent.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Photographier le bon de livraison</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__label">Bouton</span>
+            <span class="fonction__pastille fonction__pastille--bouton">Photographier le bon de livraison</span>
+          </div>
+          <p class="fonction__texte">Stovo lit les lignes du papier et les rapproche de vos produits. Ce qu'il ne reconnaît pas, il le dit au lieu de deviner. La photo n'écrit rien tant que vous n'avez pas relu.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Sortir une série</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__label">Bouton</span>
+            <span class="fonction__pastille fonction__pastille--bouton">Démarrer une sortie</span>
+          </div>
+          <p class="fonction__texte">Le jumeau de la réception, un signe moins devant chaque quantité. Si une ligne dépasse ce que vous avez, Stovo vous prévient avant d'écrire.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Un seul chantier à la fois</h3>
+          <p class="fonction__texte">Une réception et un inventaire ne s'ouvrent pas en même temps, pour qu'un chiffre ne parte jamais au mauvais endroit. Un chantier interrompu vous attend au retour.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03. COMPTER ET CORRIGER ============ -->
+  <section id="compter" class="section">
+    <div class="zone fonctions__famille">
+      <div class="fonctions__famille-tete">
+        <span class="fonctions__etiquette"><span class="num">03</span> &middot; Compter et corriger</span>
+        <h2>Vous comptez, Stovo corrige.</h2>
+        <p class="conclusion">Vous annoncez ce que vous avez sous les yeux. L'écart, c'est lui qui le calcule.</p>
+      </div>
+
+      <div class="fonctions__grille fonctions__grille--3">
+
+        <article class="carte fonction">
+          <h3>Recaler après comptage</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__micro" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="fonction__citation">«&nbsp;En rayon, il y a 8 lait.&nbsp;»</p>
+          </div>
+          <p class="fonction__texte">Vous dites ce que vous avez compté, jamais l'écart. Stovo le calcule et écrit la correction. Si le compte est juste, il n'écrit rien.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>L'inventaire guidé</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__label">Bouton</span>
+            <span class="fonction__pastille fonction__pastille--bouton">Faire mon inventaire</span>
+          </div>
+          <p class="fonction__texte">Vos produits un par un : vous dites le chiffre, il passe au suivant. Passez un produit, arrêtez-vous, reprenez plus tard. Une seule validation recale tout.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Le comptage à l'aveugle</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__label">À l'écran</span>
+            <span class="fonction__pastille fonction__pastille--ecran">Comptage à l'aveugle</span>
+          </div>
+          <p class="fonction__texte">Le stock attendu reste caché pendant que vous comptez. On trouve ce qu'on voit, pas ce qu'on s'attend à trouver : c'est là qu'apparaît la démarque.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04. SAVOIR OÙ VOUS EN ÊTES ============ -->
+  <section id="matin" class="section">
+    <div class="zone fonctions__famille">
+      <div class="fonctions__famille-tete">
+        <span class="fonctions__etiquette"><span class="num">04</span> &middot; Savoir où vous en êtes</span>
+        <h2>Ce qu'il faut faire ce matin.</h2>
+        <p class="conclusion">Vous demandez à la voix, ou vous ouvrez l'écran Pilotage. Ni l'un ni l'autre ne touche au stock.</p>
+      </div>
+
+      <article class="carte fonction-large">
+        <div class="fonction-large__texte">
+          <h3>L'écran du matin</h3>
+          <p class="fonction-large__corps">En haut, ce qu'il faut commander aujourd'hui et ce qui sera en rupture dans moins de trois jours. Puis vos produits suivis, votre activité de la semaine, la valeur de votre stock au prix d'achat. Tout en bas, ce que vous avez jeté ces trente derniers jours.</p>
+          <p class="fonction-large__note">Les chiffres se rafraîchissent seuls, toutes les trente secondes.</p>
+        </div>
+        <div class="fonction-large__cadre">
+          <img class="fonction-large__image" src="media/geste-3-consulter.png" width="756" height="1504" loading="lazy" decoding="async" alt="Écran Pilotage de Stovo : bandeau vert foncé avec le nom Stovo et « Pilotez votre stock en un coup d'œil », la carte « Cet après-midi » annonçant 2 produits à commander et 1 en rupture imminente, puis quatre tuiles de synthèse, à commander 2, rupture imminente 1, produits suivis 13, activité 7 jours 9.">
+        </div>
+      </article>
+
+      <div class="fonctions__grille fonctions__grille--3">
+
+        <article class="carte fonction">
+          <h3>Demander un stock</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__micro" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="fonction__citation">«&nbsp;Combien il me reste de pâtes&nbsp;?&nbsp;»</p>
+          </div>
+          <p class="fonction__texte">Une question n'écrit rien et ne demande jamais de confirmation.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>La liste de courses</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__micro" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="fonction__citation">«&nbsp;Qu'est-ce que je dois commander&nbsp;?&nbsp;»</p>
+          </div>
+          <p class="fonction__texte">Tout ce qui est passé sous son point de commande. Un bouton la copie, pour l'envoyer à votre fournisseur.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Le feu tricolore</h3>
+          <div class="fonction__feux">
+            <span class="fonction__feu"><span class="fonction__feu-forme fonction__feu-forme--rond" aria-hidden="true"></span>Vert</span>
+            <span class="fonction__feu"><span class="fonction__feu-forme fonction__feu-forme--triangle" aria-hidden="true"></span>Orange</span>
+            <span class="fonction__feu"><span class="fonction__feu-forme fonction__feu-forme--carre" aria-hidden="true"></span>Rouge</span>
+          </div>
+          <p class="fonction__texte">Vert : rien à faire. Orange : à ce rythme, moins de trois jours. Rouge : à commander maintenant. Les mêmes couleurs partout dans l'app.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>L'autonomie en jours</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__label">À l'écran</span>
+            <span class="fonction__pastille fonction__pastille--ecran">Il vous reste ≈ 6 jours</span>
+          </div>
+          <p class="fonction__texte">Votre stock divisé par vos sorties des trente derniers jours. Quand il manque de recul, Stovo le dit plutôt que d'inventer un chiffre.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Le point de commande qui suit vos ventes</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__label">À l'écran</span>
+            <span class="fonction__pastille fonction__pastille--ecran">Point de commande : auto</span>
+          </div>
+          <p class="fonction__texte">Auto : il bouge avec votre rythme réel. Fixe : le seuil que vous avez dicté, tant que les ventes ne suffisent pas à calculer.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Le stock qui dort</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__label">À l'écran</span>
+            <span class="fonction__pastille fonction__pastille--ecran">Rien n'est sorti depuis 30 jours</span>
+          </div>
+          <p class="fonction__texte">Un produit qui ne bouge plus alors que le reste bouge : de l'argent immobilisé, chiffré en euros si le prix est connu.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05. VOS PRODUITS ============ -->
+  <section id="catalogue" class="section">
+    <div class="zone fonctions__famille">
+      <div class="fonctions__famille-tete">
+        <span class="fonctions__etiquette"><span class="num">05</span> &middot; Vos produits</span>
+        <h2>Votre catalogue, à la voix aussi.</h2>
+        <p class="conclusion">Pas de formulaire à remplir. Un produit se crée, se corrige et se retire en une phrase.</p>
+      </div>
+
+      <div class="fonctions__grille fonctions__grille--2">
+
+        <article class="carte fonction">
+          <h3>Créer un produit</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__micro" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="fonction__citation">«&nbsp;Ajoute le produit beurre.&nbsp;»</p>
+          </div>
+          <p class="fonction__texte">Il naît à zéro, sans prix. Vous posez ensuite la quantité et le prix, toujours à la voix.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Poser un prix, un seuil, un délai</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__micro" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="fonction__citation">«&nbsp;Le prix des pâtes, c'est 1,20.&nbsp;»</p>
+          </div>
+          <p class="fonction__texte">Aussi : «&nbsp;le seuil des bières c'est 6&nbsp;», «&nbsp;le délai de livraison du riz c'est 3 jours&nbsp;», «&nbsp;l'unité des pâtes c'est paquet&nbsp;».</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Renommer, retirer, remettre</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__micro" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="fonction__citation">«&nbsp;Renomme les pâtes en macaroni.&nbsp;»</p>
+          </div>
+          <p class="fonction__texte">«&nbsp;Désactive le produit sucre&nbsp;», «&nbsp;réactive le sucre&nbsp;». Un produit retiré garde tout son historique et revient d'un mot.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Apprendre votre mot</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__micro" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                <rect x="5.6" y="1.4" width="4.8" height="8.2" rx="2.4" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3.2 7.4v.9a4.8 4.8 0 0 0 9.6 0v-.9M8 13.1v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="fonction__citation">«&nbsp;Appelle les céréales serial.&nbsp;»</p>
+          </div>
+          <p class="fonction__texte">Quand le téléphone écorche toujours le même mot, vous apprenez le vôtre à Stovo, une fois. Il peut aussi vous le proposer de lui-même.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06. DÉMARRER, ET REPARTIR ============ -->
+  <section id="donnees" class="section">
+    <div class="zone fonctions__famille">
+      <div class="fonctions__famille-tete">
+        <span class="fonctions__etiquette"><span class="num">06</span> &middot; Démarrer, et repartir</span>
+        <h2>Vos données entrent, et ressortent.</h2>
+        <p class="conclusion">Vous arrivez avec votre liste. Vous repartez avec vos fichiers. Rien n'est retenu.</p>
+      </div>
+
+      <div class="fonctions__grille fonctions__grille--3">
+
+        <article class="carte fonction">
+          <h3>Importer votre liste</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__label">Bouton</span>
+            <span class="fonction__pastille fonction__pastille--bouton">Importer un catalogue (.xlsx)</span>
+          </div>
+          <p class="fonction__texte">Votre tableur tel quel : Stovo reconnaît vos colonnes, dit ce qu'il a compris, attend votre oui. Le réimporter ne crée pas de doublon.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Sortir vos données</h3>
+          <div class="fonction__exergue">
+            <span class="fonction__label">À l'écran</span>
+            <span class="fonction__pastille fonction__pastille--ecran">Exporter mes données</span>
+          </div>
+          <p class="fonction__texte">Deux fichiers : votre stock à l'instant, avec sa valeur, et le journal de tous vos mouvements. Pour votre comptable, ou pour partir.</p>
+        </article>
+
+        <article class="carte fonction">
+          <h3>Sur votre téléphone, rien à installer</h3>
+          <p class="fonction__texte">Stovo s'ouvre dans le navigateur et se pose sur l'écran d'accueil. Il lui faut du réseau. Vos données sont sur des serveurs en France.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LES LIMITES ============ -->
+  <section id="limites" class="section">
+    <div class="zone">
+      <div class="refus carte">
+        <div class="fonctions__famille-tete">
+          <span class="fonctions__etiquette"><span class="num">07</span> &middot; Les limites</span>
+          <h2>Trois choses que Stovo ne fait pas, et pourquoi.</h2>
+        </div>
+
+        <div>
+          <ul class="refus__liste limites__liste">
+            <li>
+              <svg class="refus__icone" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+                <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              <div class="limites__corps">
+                <span class="limites__titre">Pas de mode hors ligne.</span>
+                <span class="limites__texte">Dans une cave sans couverture, Stovo ne lit ni n'écrit. J'ai choisi de ne pas le bricoler tant qu'aucun commerce ne m'a montré le besoin.</span>
+              </div>
+            </li>
+            <li>
+              <svg class="refus__icone" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+                <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              <div class="limites__corps">
+                <span class="limites__titre">Pas de scan.</span>
+                <span class="limites__texte">Stovo se pilote à la voix, et c'est une décision : un outil qui scanne est un outil comme les autres.</span>
+              </div>
+            </li>
+            <li>
+              <svg class="refus__icone" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+                <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              <div class="limites__corps">
+                <span class="limites__titre">Pas de dates limites.</span>
+                <span class="limites__texte">Suivre les péremptions demande de gérer des lots. Je ne le ferai que pour un commerce qui le demande.</span>
+              </div>
+            </li>
+          </ul>
+          <p class="conclusion">Et toujours : pas de caisse, pas de facturation, pas de planning. <a href="./#ce-que-stovo-ne-fait-pas">C'est dit sur l'accueil.</a></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CONTACT ============ -->
+  <section id="contact" class="section">
+    <div class="zone">
+      <div class="contact">
+        <h2>Une fonction vous manque&nbsp;? Dites-le-moi.</h2>
+        <a class="bouton bouton--flamme" href="mailto:bonjour.stovo@outlook.com">
+          Écrire à Corentin
+          <svg class="bouton__fleche" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+            <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <p class="contact__intro">C'est moi qui vous réponds. Ce que vous me décrirez de votre stock compte plus que tout ce qui est écrit sur cette page.</p>
+        <p class="contact__email">bonjour.stovo@outlook.com</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pied">
+  <div class="zone pied__interieur">
+    <p class="pied__mention">Stovo, fabriqué à Rennes.</p>
+    <div class="pied__liens">
+      <a class="lien-discret pied__lien-retour" href="./">Retour à l'accueil</a>
+      <a class="lien-discret" href="app/">Déjà utilisateur ? Ouvrir l'application</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

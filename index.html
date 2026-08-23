@@ -72,7 +72,7 @@
   }
 
   *{box-sizing:border-box;}
-  html{-webkit-text-size-adjust:100%; scroll-behavior:smooth;}
+  html{-webkit-text-size-adjust:100%; text-size-adjust:100%; scroll-behavior:smooth;}
   @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}}
 
   body{
@@ -749,6 +749,21 @@
       transition-duration:.001ms !important;
     }
   }
+
+  /* ================================================================
+     Ajout du 22/08/2026 : lien d'entrée vers fonctions.html (page à
+     part, "Tout ce que Stovo sait faire"). Rien d'autre ne bouge ici.
+     ================================================================ */
+  /* Le bouton d'entrée, sous le geste zéro : même marge haute (48px)
+     que .geste-zero, pour ne pas casser le rythme d'un seul côté déjà
+     établi par les sections. */
+  .voir-tout{margin-top:48px; display:flex; flex-direction:column; align-items:flex-start; gap:16px;}
+  .voir-tout .conclusion{margin-top:0;}
+
+  /* Le pied avait un seul lien : .pied__interieur utilise
+     justify-content:space-between, donc les deux liens se regroupent
+     dans un même conteneur plutôt que d'ajouter un troisième enfant. */
+  .pied__liens{display:flex; gap:16px; flex-wrap:wrap;}
 </style>
 </head>
 <body>
@@ -973,6 +988,16 @@
         </figure>
       </div>
 
+      <div class="voir-tout">
+        <p class="conclusion">Il y a plus que trois gestes. Tout est listé, avec ce que ça fait exactement.</p>
+        <a class="bouton bouton--contour" href="fonctions.html">
+          Voir tout ce que Stovo sait faire
+          <svg class="bouton__fleche" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+            <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+
     </div>
   </section>
 
@@ -1115,7 +1140,10 @@
 <footer class="pied">
   <div class="zone pied__interieur">
     <p class="pied__mention">Stovo, fabriqué à Rennes.</p>
-    <a class="lien-discret" href="app/">Déjà utilisateur ? Ouvrir l'application</a>
+    <div class="pied__liens">
+      <a class="lien-discret" href="fonctions.html">Tout ce que Stovo sait faire</a>
+      <a class="lien-discret" href="app/">Déjà utilisateur ? Ouvrir l'application</a>
+    </div>
   </div>
 </footer>
 
