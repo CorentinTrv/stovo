@@ -344,6 +344,67 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .btn-non { background: var(--card); border: 1.5px solid var(--border); color: var(--text); font-size: 17px; }
 .btn-non:hover { background: var(--fond-chaud); }
 
+/* Choix numéroté (lot A10-6, 23/08/2026 ; poli au lot A10-6b, 23/08/2026,
+   après critique Impeccable) : « Tu veux dire 1) A ou 2) B ? » Un bouton par
+   candidat (pastille numéro + nom), un dernier bouton « Aucun de ceux-là »,
+   empilés (colonne), toute la largeur, 4 candidats maximum. Style à contour
+   comme .btn-non : un choix n'écrit rien en base (§6 du plan A10, c'est
+   toujours le "oui" qui écrit), ce n'est pas l'action pleine en flamme.
+   Aucun jeton neuf, uniquement ceux déjà posés ailleurs dans ce fichier. */
+.parler-choix { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.btn-choix {
+  /* align-items:flex-start (pas center) : un nom de produit long peut passer
+     sur deux lignes (ex. « Coca zéro sucre 33 cl bouteille verre » à 320 px),
+     et la pastille doit rester collée à la PREMIÈRE ligne, jamais flotter au
+     milieu du bloc (constaté à la capture 320 px du lot A10-6). */
+  display: flex; align-items: flex-start; gap: 10px; width: 100%;
+  min-height: 44px; padding: 7.5px 16px 7.5px 12px; border-radius: 14px;
+  font-family: inherit; font-size: 15px; font-weight: 600; text-align: left;
+  color: var(--text); background: var(--card); border: 1.5px solid var(--border);
+  cursor: pointer; transition: background .15s, border-color .15s, transform .1s;
+}
+/* Pastille numéro (lot A10-6b) : disque encre, chiffre blanc (16,4:1 sur
+   --text, comme --encre sur blanc, balayage à zéro échec), remplace l'ancien
+   « 1) » en tête de texte. Hauteur totale du bouton : 7,5 (padding) + 28
+   (pastille) + 7,5 (padding) + 3 (les deux filets de 1,5px) = 46px, la même
+   hauteur que #btn-oui/#btn-non (corrigé après relecture du Jarvis : les
+   9px d'origine donnaient 48px, l'arithmétique de la consigne n'incluait
+   pas les 3px de filet). */
+.btn-choix__num {
+  flex: 0 0 auto; width: 28px; height: 28px; border-radius: 999px;
+  background: var(--text); color: #fff; font-size: 15px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+/* padding-top:4px fait tomber le centre de la PREMIÈRE ligne du nom (20px
+   d'interligne) sur le centre de la pastille de 28px : le padding-top du
+   bouton s'ajoute de façon identique aux deux (pastille et nom), il
+   s'annule dans l'écart entre leurs centres, donc ce padding-top:4px reste
+   correct même après le changement de padding du bouton (9px -> 7,5px).
+   Mesuré à la capture, écart 0px (voir le compte rendu du lot A10-6b). */
+.btn-choix__nom { font-size: 15px; font-weight: 600; line-height: 20px; padding-top: 4px; }
+.btn-choix:hover { background: var(--fond-chaud); }
+.btn-choix:active { transform: translateY(1px); }
+.btn-choix:disabled { opacity: .6; }
+/* État pressé pendant l'appel (lot A10-6b, §1.2) : « en train d'être dite »,
+   même dessin que la démo jouable de la vitrine (DESIGN.md, « La carte du
+   compteur »). Posé/retiré par gererClicChoix (parler.js), jamais figé dans
+   le HTML de base. */
+.btn-choix.est-choisi { background: var(--fond-chaud); border-color: var(--text); }
+
+/* « Aucun de ceux-là » (lot A10-6b, §1.4) : refuser n'est pas une erreur, pas
+   de rouge, texte seul sans contour, dernier bouton de la zone, se cache
+   avec elle. Se désactive comme les candidats quand un AUTRE bouton de la
+   zone est en cours d'appel (même mécanique dans gererClicChoix). Rendu
+   seulement si l'appelant fournit un vrai rappel `surAucun` (parler.js). */
+.btn-choix-aucun {
+  width: 100%; min-height: 44px; background: transparent; border: none;
+  color: var(--muted); font-family: inherit; font-size: 14px; font-weight: 600;
+  text-align: center; cursor: pointer; border-radius: 14px;
+}
+.btn-choix-aucun:hover { background: var(--fond-chaud); }
+.btn-choix-aucun:disabled { opacity: .6; }
+
 /* Champ texte + bouton Envoyer, sur une ligne. */
 .parler-form { display: flex; gap: 10px; }
 .parler-form input {
@@ -1100,6 +1161,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   .btn-import:active,
   .btn-photo-bl:active,
   .btn-confirmation:active,
+  .btn-choix:active,
   .btn-reception-primaire:active,
   .btn-reception-secondaire:active,
   .btn-reception-demarrer:active,

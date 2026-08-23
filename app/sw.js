@@ -127,7 +127,17 @@
 // utilise par aide.js et dashboard.js) ajoute au precache ; index.html,
 // styles.css, aide.js, aide-contenu.js, dashboard.js, parler.js et les
 // icones PNG/SVG de app/icons/ modifies.
-const CACHE_NAME = 'stovo-app-v27';
+// v28 (lot A10-6, 23/08/2026) : choix numerote a l'ecran ("Tu veux dire
+// 1) A ou 2) B ? Dis le numero."), une zone de boutons #parler-choix
+// PARTAGEE entre declaration, reception et sortie, mutuellement exclusive
+// avec Oui/Non (jamais les deux zones affichees ensemble, garanti par
+// interpreterReponsePwaApi + afficherReponse/afficherChoix). index.html,
+// styles.css, parler.js, parler_logique.js, reception.js, sortie.js,
+// aide-contenu.js modifies. Meme v28 (non deployee) : lot A11 (23/08/2026)
+// -- NOUVEAU fichier parler_logique.js (extrait de parler.js sans
+// changement de comportement, teste par parler_logique_test.js, relu par
+// Codex) ajoute au precache, il manquait a la liste depuis son extraction.
+const CACHE_NAME = 'stovo-app-v28';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -147,6 +157,7 @@ const FICHIERS_COQUILLE = [
   './supabase.js',
   './auth.js',
   './parler.js',
+  './parler_logique.js',
   './reception.js',
   './inventaire.js',
   './sortie.js',

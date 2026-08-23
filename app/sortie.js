@@ -64,7 +64,7 @@ function texteInconnus(inconnus) {
   return `Pas dans ton catalogue : ${inconnus.join(', ')}. Crée-les d'abord.`;
 }
 
-export function creerModeSortie({ elements, appeler, confirmer, afficher, doc, prendreVerrou, rendreVerrou }) {
+export function creerModeSortie({ elements, appeler, confirmer, afficher, doc, prendreVerrou, rendreVerrou, afficherChoix }) {
   const document = doc || globalThis.document;
 
   // Lot S-0 (25/07/2026) : verrou de mode, injecté par parler.js (voir son bloc
@@ -74,6 +74,10 @@ export function creerModeSortie({ elements, appeler, confirmer, afficher, doc, p
   // incomplet. Ce module ne connaît toujours pas les autres modes.
   const verrouPrendre = prendreVerrou || (() => true);
   const verrouRendre = rendreVerrou || (() => {});
+  // Lot A10-6 (23/08/2026) : rendu des boutons de choix numéroté, injecté par
+  // parler.js (même fonction que la déclaration et la réception). Défaut
+  // permissif OBLIGATOIRE, même raison que ci-dessus.
+  const afficherChoixMode = afficherChoix || (() => {});
 
   let enSortie = false;      // état purement front (la session « naît » à la 1re ligne serveur)
   let sortieReprise = null;  // état renvoyé par sortie-etat, en attente d'un clic « Reprendre »
@@ -154,6 +158,7 @@ export function creerModeSortie({ elements, appeler, confirmer, afficher, doc, p
     elements.actions.hidden = false;
     if (elements.boutonImport) elements.boutonImport.hidden = true;
     if (elements.confirmation) elements.confirmation.hidden = true; // R3 : pas de Oui/Non normal en session
+    afficherChoixMode([], null); // R3 (lot A10-6) : même règle pour un choix orphelin d'avant la session
     elements.boutonEnvoyer.textContent = 'Ajouter';
     elements.champ.placeholder = PLACEHOLDER_SORTIE;
     elements.champ.value = '';
@@ -164,6 +169,11 @@ export function creerModeSortie({ elements, appeler, confirmer, afficher, doc, p
   function sortir() {
     enSortie = false;
     verrouRendre('sortie'); // Lot S-0 : libère les autres modes.
+    // Lot A10-6b (23/08/2026, corrigé après relecture du Jarvis) : un choix
+    // pouvait rester affiché à l'écran après Valider/Abandonner (rappels qui
+    // visent un mode désormais fermé). Appelé APRÈS verrouRendre pour que le
+    // pli d'écran (parler.js) se calcule avec modeCourant déjà à null.
+    afficherChoixMode([], null);
     elements.panneau.hidden = true;
     elements.actions.hidden = true;
     elements.demarrer.hidden = false;
@@ -196,6 +206,35 @@ export function creerModeSortie({ elements, appeler, confirmer, afficher, doc, p
       rendre(payload.sortie);
       elements.champ.value = ''; // champ vidé seulement si l'ajout a abouti
     }
+    afficherChoixDepuisPayload(payload);
+  }
+
+  // --- Lot A10-6 (23/08/2026) : ambiguïté sur une ligne dictée en sortie ---
+  // Jumeau de la même logique dans reception.js : pwa-api pose un choix
+  // numéroté SANS Oui/Non (déjà une session de contrôle), la ligne rejoint la
+  // liste vivante une fois le candidat choisi (§4 du plan A10, contexte B).
+  //
+  // Lot A10-6b (23/08/2026) : troisième rappel « Aucun de ceux-là », qui
+  // envoie EXACTEMENT ce que taper « non » dans le champ enverrait ici, le
+  // chemin de ligne normale (`traiterSortieLigne('non')` avec un choix en
+  // attente, jumeau exact du comportement de reception.js).
+  function afficherChoixDepuisPayload(payload) {
+    if (Array.isArray(payload.choix) && payload.choix.length > 0) {
+      afficherChoixMode(payload.choix, envoyerChoix, () => ajouterLigne('non'));
+    } else {
+      afficherChoixMode([], null);
+    }
+  }
+
+  // Rappel du bouton de choix : envoie { kind: 'choix', numero }, puis traite
+  // la réponse EXACTEMENT comme une ligne normale (même rendu de liste, mêmes
+  // messages, même gestion du null réseau).
+  async function envoyerChoix(numero) {
+    const payload = await executer({ kind: 'choix', numero }, [elements.boutonEnvoyer, elements.champ]);
+    if (!payload) { afficher(MSG_ERREUR); return; }
+    if (payload.reply) afficher(payload.reply);
+    if (payload.sortie) rendre(payload.sortie);
+    afficherChoixDepuisPayload(payload);
   }
 
   // --- Retirer une ligne (croix) ---

@@ -272,6 +272,18 @@
         <!-- Message du bot (dernière réponse de pwa-api, ou message d'accueil par défaut) -->
         <div class="parler-reponse" id="parler-reponse" aria-live="polite" aria-atomic="true">Écris ce que tu as fait, par exemple : j'ai reçu 10 pâtes.</div>
 
+        <!-- Lot A10-6 (23/08/2026) : choix numéroté ("Tu veux dire 1) A ou 2) B ?"),
+             une seule zone PARTAGÉE entre déclaration, réception et sortie (rendue
+             par afficherChoix dans parler.js). Cachée par défaut, remplie par des
+             boutons quand pwa-api renvoie un champ `choix` non vide. JAMAIS visible
+             en même temps que #parler-confirmation ci-dessous : c'est afficherReponse/
+             afficherChoix qui garantit l'exclusivité, prouvée par un test.
+             Poli au lot A10-6b (23/08/2026) : role="group" pour que les lecteurs
+             d'écran annoncent un ensemble de boutons liés, avec le libellé de
+             la question posée (pas de titre visible dédié, la bulle au-dessus
+             porte déjà la question en texte). -->
+        <div class="parler-choix" id="parler-choix" role="group" aria-label="Choisis le produit" hidden></div>
+
         <!-- Boutons Oui/Non : cachés par défaut, affichés seulement quand pwa-api renvoie enAttente=true -->
         <div class="parler-confirmation" id="parler-confirmation" hidden>
           <button class="btn-confirmation btn-oui" type="button" id="btn-oui">

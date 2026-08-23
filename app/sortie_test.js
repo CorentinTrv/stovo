@@ -138,6 +138,7 @@ function crearContexto(options = {}) {
     doc,
     prendreVerrou: options.prendreVerrou,
     rendreVerrou: options.rendreVerrou,
+    afficherChoix: options.afficherChoix,
   });
 
   return {
@@ -466,4 +467,175 @@ Deno.test("sortie.js : rendreVerrou('sortie') est appele a la sortie du mode (va
   await ctx.elements.valider.click();
 
   assertEquals(appelsRendus, ["sortie"]);
+});
+
+// ---------------------------------------------------------------------------
+// Lot A10-6 (23/08/2026) : choix numerote sur une ligne de sortie
+// ---------------------------------------------------------------------------
+
+// Fabrique un `afficherChoix` espion : capture chaque appel (candidats, et
+// les deux fonctions de rappel -- gardees telles quelles pour etre invoquees
+// au besoin). Lot A10-6b (23/08/2026) : `surAucun` s'ajoute a `surChoix`
+// (troisieme parametre de afficherChoix depuis le polish).
+function crearEspionAfficherChoix() {
+  const appels = [];
+  const fn = (candidats, surChoix, surAucun) => {
+    appels.push({ candidats, surChoix, surAucun });
+  };
+  return { fn, appels };
+}
+
+const CANDIDATS = [{ numero: 1, nom: "Coca 33 cl" }, { numero: 2, nom: "Coca zéro 33 cl" }];
+
+Deno.test("sortie.js : une reponse avec choix rend les candidats via afficherChoix, sans toucher la liste", async () => {
+  const espion = crearEspionAfficherChoix();
+  const ctx = crearContexto({ afficherChoix: espion.fn });
+  ctx.elements.demarrer.click(); // appel 1 : R3, efface un choix eventuel a l'entree
+
+  ctx.setRespuesta(() => ({
+    reply: "Tu veux dire 1) Coca 33 cl ou 2) Coca zéro 33 cl ? Dis le numéro.",
+    sortie: { active: false, lignes: [], inconnus: [], total: 0 },
+    choix: CANDIDATS,
+  }));
+  await ctx.modo.ajouterLigne("3 coca");
+
+  assertEquals(espion.appels.length, 2);
+  assertEquals(espion.appels.at(-1).candidats, CANDIDATS);
+  assertEquals(typeof espion.appels.at(-1).surChoix, "function");
+});
+
+Deno.test("sortie.js : le rappel de afficherChoix envoie exactement { kind: 'choix', numero } par appeler", async () => {
+  const espion = crearEspionAfficherChoix();
+  const ctx = crearContexto({ afficherChoix: espion.fn });
+  ctx.elements.demarrer.click();
+  ctx.setRespuesta(() => ({
+    reply: "Tu veux dire...",
+    sortie: { active: false, lignes: [], inconnus: [], total: 0 },
+    choix: CANDIDATS,
+  }));
+  await ctx.modo.ajouterLigne("3 coca");
+
+  ctx.setRespuesta(() => ({
+    reply: "Sortie : Coca 33 cl -3.",
+    sortie: { active: true, lignes: [LIGNE_PATES], inconnus: [], total: 3 },
+  }));
+  await espion.appels.at(-1).surChoix(1);
+
+  assertEquals(ctx.llamadas.at(-1), { kind: "choix", numero: 1 });
+});
+
+Deno.test("sortie.js : repondre a un choix met a jour la liste comme une ligne normale (signe moins)", async () => {
+  const espion = crearEspionAfficherChoix();
+  const ctx = crearContexto({ afficherChoix: espion.fn });
+  ctx.elements.demarrer.click();
+  ctx.setRespuesta(() => ({
+    reply: "Tu veux dire...",
+    sortie: { active: false, lignes: [], inconnus: [], total: 0 },
+    choix: CANDIDATS,
+  }));
+  await ctx.modo.ajouterLigne("3 coca");
+
+  ctx.setRespuesta(() => ({
+    reply: "Sortie : Pâtes -3.",
+    sortie: { active: true, lignes: [LIGNE_PATES], inconnus: [], total: 3 },
+  }));
+  await espion.appels.at(-1).surChoix(1);
+
+  assertEquals(ctx.elements.titreTotal.textContent, "3 lignes");
+  const item = ctx.elements.liste.children[0];
+  assertEquals(item.children[0].textContent, "Pâtes");
+  assertEquals(item.children[1].textContent, "-3");
+  assertEquals(ctx.mensajes.at(-1), "Sortie : Pâtes -3.");
+});
+
+Deno.test("sortie.js : une reponse sans choix efface la zone (afficherChoix appele avec [] et null)", async () => {
+  const espion = crearEspionAfficherChoix();
+  const ctx = crearContexto({ afficherChoix: espion.fn });
+  ctx.elements.demarrer.click(); // appel 1 : R3 (deja [] / null)
+
+  ctx.setRespuesta(() => ({
+    reply: "Sortie : Pâtes -3.",
+    sortie: { active: true, lignes: [LIGNE_PATES], inconnus: [], total: 3 },
+  }));
+  await ctx.modo.ajouterLigne("3 pâtes"); // appel 2 : ajouterLigne efface a nouveau (pas de choix)
+
+  assertEquals(espion.appels.length, 2);
+  assertEquals(espion.appels.at(-1).candidats, []);
+  assertEquals(espion.appels.at(-1).surChoix, null);
+});
+
+Deno.test("sortie.js : sans afficherChoix injecte (defaut permissif), un choix recu ne casse rien", async () => {
+  const ctx = crearContexto(); // pas de afficherChoix fourni
+  ctx.elements.demarrer.click();
+
+  ctx.setRespuesta(() => ({
+    reply: "Tu veux dire...",
+    sortie: { active: false, lignes: [], inconnus: [], total: 0 },
+    choix: CANDIDATS,
+  }));
+  await ctx.modo.ajouterLigne("3 coca");
+
+  assertEquals(ctx.mensajes.at(-1), "Tu veux dire...");
+});
+
+Deno.test("sortie.js : demarrer une sortie efface un choix qui trainait (R3, meme regle que la confirmation)", () => {
+  const espion = crearEspionAfficherChoix();
+  const ctx = crearContexto({ afficherChoix: espion.fn });
+
+  ctx.elements.demarrer.click();
+
+  assertEquals(espion.appels.length, 1);
+  assertEquals(espion.appels[0].candidats, []);
+  assertEquals(espion.appels[0].surChoix, null);
+});
+
+// ---------------------------------------------------------------------------
+// Lot A10-6b (23/08/2026) : le rappel "Aucun de ceux-la"
+// ---------------------------------------------------------------------------
+
+Deno.test("sortie.js : le rappel 'Aucun de ceux-la' envoie exactement { kind: 'sortie-ligne', texte: 'non' }, comme taper non au clavier", async () => {
+  const espion = crearEspionAfficherChoix();
+  const ctx = crearContexto({ afficherChoix: espion.fn });
+  ctx.elements.demarrer.click();
+  ctx.setRespuesta(() => ({
+    reply: "Tu veux dire...",
+    sortie: { active: false, lignes: [], inconnus: [], total: 0 },
+    choix: CANDIDATS,
+  }));
+  await ctx.modo.ajouterLigne("3 coca");
+
+  assertEquals(typeof espion.appels.at(-1).surAucun, "function");
+
+  ctx.setRespuesta(() => ({
+    reply: "D'accord, j'oublie. Redis ta phrase quand tu veux.",
+    sortie: { active: true, lignes: [], inconnus: [], total: 0 },
+  }));
+  await espion.appels.at(-1).surAucun();
+
+  assertEquals(ctx.llamadas.at(-1), { kind: "sortie-ligne", texte: "non" });
+  assertEquals(ctx.mensajes.at(-1), "D'accord, j'oublie. Redis ta phrase quand tu veux.");
+  // La reponse efface la zone de choix (pas de nouveau choix pose).
+  assertEquals(espion.appels.at(-1).candidats, []);
+  assertEquals(espion.appels.at(-1).surChoix, null);
+});
+
+Deno.test("sortie.js : valider avec un choix affiche efface la zone (sortir() ne doit pas laisser une zone de choix perimee)", async () => {
+  const espion = crearEspionAfficherChoix();
+  const ctx = crearContexto({ afficherChoix: espion.fn });
+  ctx.elements.demarrer.click();
+  ctx.setRespuesta(() => ({
+    reply: "Tu veux dire...",
+    sortie: { active: true, lignes: [LIGNE_PATES], inconnus: [], total: 3 },
+    choix: CANDIDATS,
+  }));
+  await ctx.modo.ajouterLigne("1 coca"); // pose un choix affiche, en plus de la ligne deja connue
+
+  ctx.setRespuesta(() => ({
+    reply: "Sortie enregistrée : 1 ligne.",
+    sortie: { active: false, lignes: [], inconnus: [], total: 0 },
+  }));
+  await ctx.elements.valider.click();
+
+  assertEquals(espion.appels.at(-1).candidats, []);
+  assertEquals(espion.appels.at(-1).surChoix, null);
 });

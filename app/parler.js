@@ -35,8 +35,31 @@ import { creerModeInventaire } from './inventaire.js';
 import { creerModeSortie } from './sortie.js';
 import { creerReducteurPhoto } from './photo.js';
 import { getSessionActuelle } from './auth.js';
+// Lot A11-2 (23/08/2026) : la logique PURE de cet ecran (zero DOM, zero
+// reseau) vit desormais dans parler_logique.js, testee au banc
+// parler_logique_test.js. Ce fichier ne fait plus que la CABLER au vrai DOM
+// et au vrai Supabase, comme reception.js/sortie.js le font deja pour leur
+// propre logique.
+import {
+  calculerPliChoix,
+  calculerVisibiliteAutresDemarrer,
+  choisirBranche,
+  corpsChoix,
+  corpsConfirmation,
+  corpsDeclaration,
+  corpsErreurExploitable,
+  corpsImport,
+  creerVerrouDeMode,
+  extraireBase64DepuisDataUrl,
+  interpreterReponsePwaApi,
+  lireCorpsReponse,
+  normaliserChoix,
+  texteErreurMicro,
+  texteRefusVerrou,
+} from './parler_logique.js';
 
 const zoneReponse = document.getElementById('parler-reponse');
+const zoneChoix = document.getElementById('parler-choix');
 const zoneConfirmation = document.getElementById('parler-confirmation');
 const formParler = document.getElementById('form-parler');
 const champTexte = document.getElementById('champ-parler');
@@ -65,7 +88,11 @@ const libelleImport = btnImport.querySelector('.btn-libelle');
 // rendreVerrou par injection, comme ils reçoivent déjà `appeler` et `afficher` :
 // ils ne connaissent toujours ni le DOM réel ni les autres modes, ce qui garde le
 // banc d'essai offline valable.
-let modeCourant = null; // null | 'reception' | 'inventaire' | 'sortie'
+//
+// Lot A11-2 : la machine d'état (qui détient le verrou) vit dans
+// creerVerrouDeMode() (parler_logique.js, testée isolément). Ici on ne garde
+// que le câblage DOM : quels boutons masquer/montrer, quel message afficher.
+const verrou = creerVerrouDeMode(); // null | 'reception' | 'inventaire' | 'sortie'
 
 const boutonsDemarrer = {
   reception: document.getElementById('btn-reception-demarrer'),
@@ -77,21 +104,12 @@ const boutonsDemarrer = {
 // tous visibles). Chaque mode continue de masquer le sien dans son propre
 // entrer()/demarrer() : ici on ne s'occupe que des autres.
 function majBoutonsDemarrer(modeActif) {
-  for (const [nom, bouton] of Object.entries(boutonsDemarrer)) {
-    if (!bouton || nom === modeActif) continue;
-    bouton.hidden = modeActif !== null;
+  const visibilite = calculerVisibiliteAutresDemarrer(Object.keys(boutonsDemarrer), modeActif);
+  for (const [nom, hidden] of Object.entries(visibilite)) {
+    const bouton = boutonsDemarrer[nom];
+    if (bouton) bouton.hidden = hidden;
   }
 }
-
-// Messages de refus, écrits en entier pour que l'accord soit juste (« Termine-LA »
-// pour une réception, « Termine-LE » pour un inventaire). Mêmes phrases que le
-// filet serveur (_shared/verrou_mode.ts), pour que l'utilisateur lise la même
-// chose quel que soit l'étage qui a refusé.
-const MESSAGES_VERROU = {
-  reception: 'Tu as une réception en cours. Termine-la ou abandonne-la d\'abord.',
-  inventaire: 'Tu as un inventaire en cours. Termine-le ou abandonne-le d\'abord.',
-  sortie: 'Tu as une sortie en cours. Termine-la ou abandonne-la d\'abord.',
-};
 
 // Renvoie false si un AUTRE mode détient déjà le verrou, et explique alors le
 // refus à l'écran : c'est l'arbitre qui sait nommer le mode bloquant, un module
@@ -102,14 +120,13 @@ const MESSAGES_VERROU = {
 // c'est justement le défaut qu'on répare) et afficher un reproche alors que
 // l'utilisateur n'a rien demandé serait déroutant.
 function prendreVerrou(nom, silencieux) {
-  if (modeCourant !== null && modeCourant !== nom) {
+  const resultat = verrou.prendre(nom);
+  if (!resultat.autorise) {
     if (!silencieux) {
-      zoneReponse.textContent = MESSAGES_VERROU[modeCourant]
-        || 'Tu as déjà une opération en cours. Termine-la ou abandonne-la d\'abord.';
+      zoneReponse.textContent = texteRefusVerrou(resultat.modeBloquant);
     }
     return false;
   }
-  modeCourant = nom;
   majBoutonsDemarrer(nom);
   return true;
 }
@@ -118,16 +135,192 @@ function prendreVerrou(nom, silencieux) {
 // verrou d'un autre (par exemple une reprise refusée qui appellerait quand même
 // son nettoyage). On ne libère que si on est bien le détenteur.
 function rendreVerrou(nom) {
-  if (modeCourant !== nom) return;
-  modeCourant = null;
-  majBoutonsDemarrer(null);
+  if (verrou.rendre(nom)) majBoutonsDemarrer(null);
 }
 
-// Affiche le message renvoyé par pwa-api et montre/cache les boutons Oui/Non
-// selon `enAttente` (vrai s'il y a une déclaration en attente de confirmation).
-function afficherReponse(texte, enAttente) {
+// --- Lot A10-6 (23/08/2026) : zone de choix numéroté partagée ---
+// « Tu veux dire 1) Pâtes 500 g ou 2) Pâtes complètes ? » : un bouton par
+// candidat (pastille numéro + nom), un dernier bouton « Aucun de ceux-là »,
+// empilés, toute la largeur. C'est le SEUL endroit où ces boutons sont
+// construits : la même fonction est injectée telle quelle dans reception.js
+// et sortie.js (voir plus bas), pour que le rendu ne vive qu'à un seul
+// endroit (consigne §2.3 du lot A10-6).
+//
+// `surChoix` est appelé avec le numéro cliqué, `surAucun` sans argument :
+// c'est l'appelant (déclaration ici, reception.js/sortie.js plus bas) qui
+// sait quoi en faire. Le nom du candidat vient du serveur : jamais
+// d'innerHTML, uniquement des nœuds créés via createElement + textContent,
+// comme le reste de l'app.
+//
+// Poli au lot A10-6b (23/08/2026, après critique Impeccable) : pastille
+// numéro (au lieu d'un « 1) » en tête de texte), état pressé pendant l'appel,
+// bouton « Aucun de ceux-là », pli du menu pendant un choix en déclaration,
+// focus clavier qui suit la réponse. Rien de tout ça ne change ce qui est
+// envoyé au serveur ni les messages affichés.
+//
+// `choixEnCours` est un garde de MODULE (pas par rendu) : tant qu'un clic
+// (candidat ou « Aucun ») attend sa réponse, tout autre clic dans la zone est
+// ignoré, quel que soit le bouton visé.
+let choixEnCours = false;
+
+// `focusVenaitDuChoix` (corrigé après relecture du Jarvis, 23/08/2026) : vrai
+// si le clic qui a déclenché l'appel en cours avait le focus dans
+// #parler-choix. Consommé (et remis à faux) par afficherReponse, plus bas :
+// c'est ce qui empêche Envoyer/Oui/Non/import de déplacer le focus par
+// erreur (eux ne passent jamais par gererClicChoix, donc ce booléen reste à
+// sa valeur précédente, presque toujours faux, pour ces chemins-là).
+let focusVenaitDuChoix = false;
+
+// Un clic dans #parler-choix (candidat ou « Aucun de ceux-là ») : anti
+// double-clic partagé, et état pressé optionnel (`avecEtatPresse`, réservé
+// aux candidats, « Aucun » ne propose rien, il n'y a rien à montrer « en
+// train d'être dit »). Le bouton cliqué reste actif (jamais `disabled`) pour
+// ne pas perdre le focus ; tous les AUTRES boutons de la zone se désactivent
+// le temps de l'appel (§1.2 et §1.4 de la consigne).
+//
+// Sur un échec (réseau, ou l'action qui lève), rien ne rappelle
+// `afficherChoix` : le `finally` réactive les boutons ENCORE rattachés à
+// `#parler-choix` et retire l'état pressé. Sur un succès, `afficherChoix` a
+// déjà été rappelée entre-temps (par `afficherReponse` en déclaration, ou par
+// `afficherChoixDepuisPayload` en réception/sortie) : ces nœuds sont détachés,
+// la boucle ne fait rien, sans risque.
+//
+// Corrigé après relecture du Jarvis (23/08/2026) : mémorise ici, AVANT tout
+// le reste, si le focus était dans #parler-choix au moment du clic
+// (`focusVenaitDuChoix`, booléen de MODULE, consommé par afficherReponse
+// plus bas). Sans cette restriction, `afficherReponse` déplaçait le focus
+// après N'IMPORTE QUELLE réponse en attente (y compris un simple Envoyer,
+// où le champ/bouton désactivés font tomber le focus sur `body` pendant
+// l'appel) : un second Entrée par réflexe aurait alors activé Oui, ce qui
+// n'arrivait jamais avant ce lot.
+async function gererClicChoix(boutonClique, action, avecEtatPresse) {
+  if (choixEnCours) return;
+  choixEnCours = true;
+  focusVenaitDuChoix = zoneChoix.contains(document.activeElement);
+  if (avecEtatPresse) {
+    boutonClique.classList.add('est-choisi');
+    boutonClique.setAttribute('aria-pressed', 'true');
+  }
+  for (const b of zoneChoix.children) {
+    if (b !== boutonClique) b.disabled = true;
+  }
+  try {
+    await action();
+  } finally {
+    for (const b of zoneChoix.children) {
+      b.classList.remove('est-choisi');
+      b.removeAttribute('aria-pressed');
+      b.disabled = false;
+    }
+    choixEnCours = false;
+  }
+}
+
+// Pli d'écran (lot A10-6b, §1.3) : EN CONTEXTE DÉCLARATION SEULEMENT (aucun
+// mode de session ouvert), le menu (bouton Importer + les trois Démarrer) se
+// replie tant qu'un choix occupe l'écran, pour lui laisser toute la place.
+// En réception ou en sortie, le mode gère DÉJÀ son propre écran (il masque
+// déjà l'import et les Démarrer à l'entrée, voir reception.js/sortie.js) :
+// on sort tout de suite sans rien toucher, sinon ces boutons REVIENDRAIENT à
+// la fin d'un choix EN SESSION, ce qui serait un bug.
+function appliquerPliChoix(choixVisible) {
+  const modeCourant = verrou.modeCourant();
+  if (modeCourant !== null) return;
+  const { masquerMenu } = calculerPliChoix(choixVisible, modeCourant);
+  btnImport.hidden = masquerMenu;
+  for (const bouton of Object.values(boutonsDemarrer)) {
+    if (bouton) bouton.hidden = masquerMenu;
+  }
+}
+
+// Reprise après relecture du Jarvis (23/08/2026) : `afficherChoix` est le
+// SEUL point de rendu pour les trois contextes (déclaration directement,
+// réception/sortie par injection) — c'est donc aussi le seul point où filtrer
+// via `normaliserChoix` (reception.js/sortie.js relayaient `payload.choix`
+// brut jusqu'ici, un candidat sans nom y aurait affiché un bouton
+// « undefined »).
+function afficherChoix(candidats, surChoix, surAucun) {
+  zoneChoix.innerHTML = '';
+  const liste = normaliserChoix(candidats);
+  const choixVisible = liste.length > 0;
+  appliquerPliChoix(choixVisible);
+  if (!choixVisible) {
+    zoneChoix.hidden = true;
+    return;
+  }
+  for (const candidat of liste) {
+    const bouton = document.createElement('button');
+    bouton.type = 'button';
+    bouton.className = 'btn-choix';
+    const numero = document.createElement('span');
+    numero.className = 'btn-choix__num';
+    numero.textContent = String(candidat.numero);
+    const nom = document.createElement('span');
+    nom.className = 'btn-choix__nom';
+    // Pas d'espace en tête (polish A10-6b) : l'écart visuel entre la pastille
+    // et le nom vient du `gap` du flex (styles.css), pas d'un caractère.
+    nom.textContent = candidat.nom;
+    bouton.appendChild(numero);
+    bouton.appendChild(nom);
+    bouton.addEventListener('click', () => gererClicChoix(bouton, () => surChoix(candidat.numero), true));
+    zoneChoix.appendChild(bouton);
+  }
+  // « Aucun de ceux-là » (lot A10-6b, §1.4) : dernier de la zone, se cache
+  // avec elle. Pas de rouge, refuser n'est pas une erreur. Rendu seulement si
+  // l'appelant fournit un vrai rappel (`surAucun`) : les trois contextes
+  // (déclaration, réception, sortie) le fournissent toujours en usage réel,
+  // mais un appelant de test ou de démonstration qui omettrait ce troisième
+  // paramètre ne doit pas se retrouver avec un bouton dont le clic plante.
+  if (typeof surAucun === 'function') {
+    const boutonAucun = document.createElement('button');
+    boutonAucun.type = 'button';
+    boutonAucun.className = 'btn-choix-aucun';
+    boutonAucun.textContent = 'Aucun de ceux-là';
+    boutonAucun.addEventListener('click', () => gererClicChoix(boutonAucun, surAucun, false));
+    zoneChoix.appendChild(boutonAucun);
+  }
+  zoneChoix.hidden = false;
+}
+
+// Réponse à un choix posé en DÉCLARATION (mono-coup, pas dans une session
+// réception/sortie) : passe par le même transport que Oui/Non.
+async function envoyerChoixDeclaration(numero) {
+  await appelerPwaApi(corpsChoix(numero), []);
+}
+
+// « Aucun de ceux-là » en DÉCLARATION (lot A10-6b, §1.4) : envoie EXACTEMENT
+// ce que taper « non » dans le champ enverrait dans ce contexte.
+async function envoyerAucunDeclaration() {
+  await appelerPwaApi(corpsDeclaration('non'), []);
+}
+
+// Affiche le message renvoyé par pwa-api, montre/cache les boutons Oui/Non
+// selon `enAttente`, et rend/masque la zone de choix selon `choix`. Les deux
+// zones sont mutuellement exclusives : interpreterReponsePwaApi garantit déjà
+// qu'`enAttente` est faux si `choix` est non vide, ici on se contente de
+// suivre les deux valeurs telles quelles (§2.2 de la consigne A10-6).
+//
+// Focus clavier (lot A10-6b, §1.5, corrigé après relecture du Jarvis) :
+// SEULEMENT si `focusVenaitDuChoix` est vrai (le clic qui a mené à cette
+// réponse avait le focus dans #parler-choix), on le redonne à l'action
+// principale de l'écran qui suit : Oui si une confirmation est posée, sinon
+// le premier candidat si un nouveau choix est posé, sinon rien. JAMAIS le
+// champ texte : sur iPhone, lui donner le focus ouvrirait le clavier. Le
+// booléen est consommé (remis à faux) dès qu'on entre dans ce cas, pour ne
+// jamais rejouer ce déplacement sur une réponse ultérieure sans rapport.
+function afficherReponse(texte, enAttente, choix) {
   zoneReponse.textContent = texte;
   zoneConfirmation.hidden = !enAttente;
+  afficherChoix(choix, envoyerChoixDeclaration, envoyerAucunDeclaration);
+  if (focusVenaitDuChoix) {
+    focusVenaitDuChoix = false;
+    if (enAttente) {
+      btnOui.focus();
+    } else if (!zoneChoix.hidden) {
+      const premier = zoneChoix.querySelector('.btn-choix');
+      if (premier) premier.focus();
+    }
+  }
 }
 
 // Appel générique à pwa-api. Désactive les contrôles pendant l'appel
@@ -139,10 +332,11 @@ async function appelerPwaApi(corps, controlesADesactiver) {
     const { data, error } = await supabase.functions.invoke('pwa-api', { body: corps });
     if (error) {
       console.error('Erreur pwa-api Stovo :', error.message || error);
-      afficherReponse('Désolé, une erreur est survenue. Réessaie dans quelques instants.', false);
+      afficherReponse('Désolé, une erreur est survenue. Réessaie dans quelques instants.', false, []);
       return;
     }
-    afficherReponse(data?.reply ?? 'Pas de réponse du serveur.', Boolean(data?.enAttente));
+    const { texte, enAttente, choix } = interpreterReponsePwaApi(data);
+    afficherReponse(texte, enAttente, choix);
   } finally {
     controlesADesactiver.forEach((element) => { element.disabled = false; });
   }
@@ -162,65 +356,60 @@ formParler.addEventListener('submit', async (evenement) => {
   // le premier mode écrit dans le code gagnait. Il n'y a plus d'ordre de priorité
   // implicite à connaître pour savoir où part une phrase.
   //
-  // Le `switch` lit modeCourant pour choisir la BRANCHE, mais chaque mode garde
-  // son propre état interne, qui reste la vérité de « suis-je dans le panneau ».
-  // Les deux ne disent pas la même chose, et c'est normal : une bannière de
-  // reprise prend le verrou alors que le mode n'est pas encore ouvert (on n'a pas
-  // cliqué « Reprendre »). Dans ce cas la phrase doit partir en saisie normale,
-  // avec son rempart Oui/Non. On ne libère PAS le verrou au passage : la bannière
+  // Lot A11-2 : la DÉCISION (quelle branche choisir) vit maintenant dans
+  // choisirBranche (parler_logique.js, testée isolément). Elle lit le verrou
+  // pour choisir la BRANCHE candidate, mais chaque mode garde son propre état
+  // interne, qui reste la vérité de « suis-je dans le panneau ». Les deux ne
+  // disent pas la même chose, et c'est normal : une bannière de reprise prend
+  // le verrou alors que le mode n'est pas encore ouvert (on n'a pas cliqué
+  // « Reprendre »). Dans ce cas la phrase doit partir en saisie normale, avec
+  // son rempart Oui/Non. On ne libère PAS le verrou au passage : la bannière
   // est toujours à l'écran et le résidu existe toujours.
-  //
-  // Donc la règle : le verrou choisit la branche, l'état du mode confirme, et à
-  // défaut on retombe sur le comportement le plus sûr (la saisie normale), jamais
-  // sur un tampon de session.
-  switch (modeCourant) {
+  const branche = choisirBranche(verrou.modeCourant(), {
+    reception: modeReception.estEnReception(),
+    inventaire: modeInventaire.estEnInventaire(),
+    sortie: modeSortie.estEnSortie(),
+  });
+
+  switch (branche) {
     case 'reception':
-      if (modeReception.estEnReception()) {
-        btnEnvoyer.textContent = 'Ajout…';
-        await modeReception.ajouterLigne(texte);
-        btnEnvoyer.textContent = 'Ajouter';
-        return;
-      }
-      break;
+      btnEnvoyer.textContent = 'Ajout…';
+      await modeReception.ajouterLigne(texte);
+      btnEnvoyer.textContent = 'Ajouter';
+      return;
 
     // Lot CM-C (25/07/2026) : en inventaire guidé, la phrase est le CHIFFRE
     // compté du produit affiché à l'écran, pas une déclaration.
     case 'inventaire':
-      if (modeInventaire.estEnInventaire()) {
-        btnEnvoyer.textContent = 'Compte…';
-        await modeInventaire.compter(texte);
-        btnEnvoyer.textContent = 'Compter';
-        champTexte.value = '';
-        return;
-      }
-      break;
+      btnEnvoyer.textContent = 'Compte…';
+      await modeInventaire.compter(texte);
+      btnEnvoyer.textContent = 'Compter';
+      champTexte.value = '';
+      return;
 
     case 'sortie':
-      if (modeSortie.estEnSortie()) {
-        btnEnvoyer.textContent = 'Ajout…';
-        await modeSortie.ajouterLigne(texte);
-        btnEnvoyer.textContent = 'Ajouter';
-        return;
-      }
-      break;
+      btnEnvoyer.textContent = 'Ajout…';
+      await modeSortie.ajouterLigne(texte);
+      btnEnvoyer.textContent = 'Ajouter';
+      return;
 
     default:
       break;
   }
 
   btnEnvoyer.textContent = 'Envoi…';
-  await appelerPwaApi({ kind: 'declaration', texte }, [btnEnvoyer, champTexte]);
+  await appelerPwaApi(corpsDeclaration(texte), [btnEnvoyer, champTexte]);
   btnEnvoyer.textContent = 'Envoyer';
   champTexte.value = '';
 });
 
 // --- Confirmation Oui / Non ---
 btnOui.addEventListener('click', async () => {
-  await appelerPwaApi({ kind: 'confirmation', reponse: 'oui' }, [btnOui, btnNon]);
+  await appelerPwaApi(corpsConfirmation('oui'), [btnOui, btnNon]);
 });
 
 btnNon.addEventListener('click', async () => {
-  await appelerPwaApi({ kind: 'confirmation', reponse: 'non' }, [btnOui, btnNon]);
+  await appelerPwaApi(corpsConfirmation('non'), [btnOui, btnNon]);
 });
 
 // --- Mode réception multi-produits (N1, lots FR-4 + FR-5) ---
@@ -228,20 +417,12 @@ btnNon.addEventListener('click', async () => {
 // on lui injecte le vrai Supabase et le vrai DOM. Les kinds reception-* renvoient
 // { reply, session } (et non { reply, enAttente }) : on lit `session` pour rendre
 // la liste vivante.
-
-// Lit le corps JSON d'une réponse d'erreur si possible. pwa-api répond 400 sur
-// un corps de kind reception-* malformé, MAIS renvoie quand même { reply, session }
-// (choix §3.4/§3.5 du rapport API-3) : supabase-js expose alors la Response dans
-// error.context, il faut la lire au lieu de traiter ça comme un échec sec.
-async function lireCorpsReponse(error) {
-  try {
-    const reponse = error && error.context;
-    if (reponse && typeof reponse.json === 'function') return await reponse.json();
-  } catch (_erreur) {
-    /* corps illisible : on retombera sur le message d'erreur générique */
-  }
-  return null;
-}
+//
+// Lot A11-2 : lireCorpsReponse vit désormais dans parler_logique.js (importée
+// en haut de ce fichier). pwa-api répond 400 sur un corps de kind reception-*
+// malformé, MAIS renvoie quand même { reply, session } (choix §3.4/§3.5 du
+// rapport API-3) : supabase-js expose alors la Response dans error.context,
+// il faut la lire au lieu de traiter ça comme un échec sec.
 
 // Appel API pour les kinds reception-* : renvoie { reply, session } ou null (null
 // = vrai échec réseau/serveur sans corps exploitable). Aucun effet DOM ici : c'est
@@ -251,7 +432,7 @@ async function appelerReceptionApi(corps) {
     const { data, error } = await supabase.functions.invoke('pwa-api', { body: corps });
     if (error) {
       const corpsErreur = await lireCorpsReponse(error);
-      if (corpsErreur && (corpsErreur.reply || corpsErreur.session)) return corpsErreur;
+      if (corpsErreurExploitable(corpsErreur)) return corpsErreur;
       console.error('Erreur pwa-api réception Stovo :', error.message || error);
       return null;
     }
@@ -292,6 +473,9 @@ const modeReception = creerModeReception({
   // Lot S-0 : exclusivité des modes (voir le bloc verrou en haut de ce fichier).
   prendreVerrou,
   rendreVerrou,
+  // Lot A10-6 : même rendu de boutons de choix que la déclaration (voir plus
+  // haut) — un seul endroit qui les construit, injecté ici comme le reste.
+  afficherChoix,
   // Lot P-3 : réduction de la photo côté navigateur (~2000 px, JPEG, EXIF
   // respecté) avant l'envoi. Le module photo.js ne connaît ni Supabase ni le
   // reste de l'app : on lui laisse ses dépendances navigateur par défaut.
@@ -387,6 +571,9 @@ const modeSortie = creerModeSortie({
   // Lot S-0 : exclusivité des modes (voir le bloc verrou en haut de ce fichier).
   prendreVerrou,
   rendreVerrou,
+  // Lot A10-6 : même rendu de boutons de choix que la déclaration et la
+  // réception (voir plus haut).
+  afficherChoix,
 });
 
 // Reprise : si une réception a été laissée en cours (app fermée en plein milieu),
@@ -415,14 +602,13 @@ btnImport.addEventListener('click', () => {
 
 // Lit un File en base64 (FileReader.readAsDataURL renvoie une data URL du type
 // "data:...;base64,XXXX" : on ne garde que la partie après la virgule).
+// Lot A11-2 : le découpage de la data URL vit dans extraireBase64DepuisDataUrl
+// (parler_logique.js, testée isolément) ; FileReader lui-même reste ici, ce
+// n'est pas une API séparable du navigateur.
 function lireFichierEnBase64(fichier) {
   return new Promise((resolve, reject) => {
     const lecteur = new FileReader();
-    lecteur.onload = () => {
-      const resultat = String(lecteur.result || '');
-      const virgule = resultat.indexOf(',');
-      resolve(virgule === -1 ? resultat : resultat.slice(virgule + 1));
-    };
+    lecteur.onload = () => resolve(extraireBase64DepuisDataUrl(lecteur.result));
     lecteur.onerror = () => reject(lecteur.error);
     lecteur.readAsDataURL(fichier);
   });
@@ -437,10 +623,10 @@ champImport.addEventListener('change', async () => {
   try {
     const contenuBase64 = await lireFichierEnBase64(fichier);
     libelleImport.textContent = 'Import en cours…';
-    await appelerPwaApi({ kind: 'import', nomFichier: fichier.name, contenuBase64 }, [btnImport]);
+    await appelerPwaApi(corpsImport(fichier.name, contenuBase64), [btnImport]);
   } catch (erreur) {
     console.error('Erreur lecture fichier import Stovo :', erreur);
-    afficherReponse("Je n'ai pas pu lire ce fichier. Réessaie.", false);
+    afficherReponse("Je n'ai pas pu lire ce fichier. Réessaie.", false, []);
   } finally {
     libelleImport.textContent = 'Importer un catalogue (.xlsx)';
     // Réinitialise la valeur : sinon 'change' ne se redéclenche pas si l'utilisateur
@@ -475,13 +661,8 @@ function afficherEtatMicro(texte) {
 }
 
 // Messages clairs par code d'erreur SpeechRecognition (voir la spec Web
-// Speech API pour la liste des valeurs possibles de event.error).
-const MESSAGES_ERREUR_MICRO = {
-  'not-allowed': 'Micro refusé. Autorise le micro dans les réglages du navigateur.',
-  'service-not-allowed': 'Micro refusé. Autorise le micro dans les réglages du navigateur.',
-  'no-speech': "Je n'ai rien entendu, réessaie.",
-  'network': 'Souci réseau pour la reconnaissance vocale.',
-};
+// Speech API pour la liste des valeurs possibles de event.error). Lot A11-2 :
+// la table et le repli vivent dans texteErreurMicro (parler_logique.js).
 
 // Construit une instance fraîche à chaque écoute (une instance ne se
 // réutilise pas après avoir terminé, c'est l'usage recommandé de l'API).
@@ -505,7 +686,7 @@ function creerReconnaissance() {
   reconnaissance.onerror = (evenement) => {
     console.error('Erreur reconnaissance vocale Stovo :', evenement.error);
     erreurEnCours = true;
-    afficherEtatMicro(MESSAGES_ERREUR_MICRO[evenement.error] || 'Problème avec le micro, réessaie ou utilise le clavier.');
+    afficherEtatMicro(texteErreurMicro(evenement.error));
   };
 
   // onend arrive toujours (fin normale, arrêt manuel, ou juste après une
@@ -550,4 +731,15 @@ if (!SR) {
     }
     demarrerEcoute();
   });
+}
+
+// --- Aide aux captures d'écran locales (lot A10-6, 23/08/2026) ---
+// Expose le VRAI rendu de l'app sur window, pour que les captures du Codeur
+// forcent un état à l'écran sans jamais appeler pwa-api (afficherReponse et
+// afficherChoix ne font que du rendu DOM, l'écriture reste entièrement
+// derrière l'appel réseau de appelerPwaApi, jamais déclenché ici). Actif
+// UNIQUEMENT en local (localhost/127.0.0.1) : mort en production, où
+// `location.hostname` vaut 'corentintrv.github.io'.
+if (globalThis.location && (globalThis.location.hostname === 'localhost' || globalThis.location.hostname === '127.0.0.1')) {
+  globalThis.__stovoDebug = { afficherReponse, afficherChoix };
 }

@@ -50,7 +50,7 @@ function texteInconnus(inconnus) {
 const MSG_PHOTO_ENVOI = 'Je lis ta photo, un instant…';
 const MSG_PHOTO_ILLISIBLE = "Je n'ai pas réussi à préparer cette photo. Reprends-la, ou dicte les lignes.";
 
-export function creerModeReception({ elements, appeler, confirmer, afficher, doc, prendreVerrou, rendreVerrou, reduirePhoto }) {
+export function creerModeReception({ elements, appeler, confirmer, afficher, doc, prendreVerrou, rendreVerrou, reduirePhoto, afficherChoix }) {
   const document = doc || globalThis.document;
 
   // Lot S-0 (25/07/2026) : verrou de mode, injecté par parler.js (voir son bloc
@@ -60,6 +60,10 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
   // test incomplet. Ce module ne connaît toujours pas les autres modes.
   const verrouPrendre = prendreVerrou || (() => true);
   const verrouRendre = rendreVerrou || (() => {});
+  // Lot A10-6 (23/08/2026) : rendu des boutons de choix numéroté, injecté par
+  // parler.js (même fonction que la déclaration et la sortie). Défaut
+  // permissif OBLIGATOIRE, même raison que ci-dessus.
+  const afficherChoixMode = afficherChoix || (() => {});
 
   let enReception = false;      // état purement front (la session « naît » à la 1re ligne serveur)
   let sessionReprise = null;    // état renvoyé par reception-etat, en attente d'un clic « Reprendre »
@@ -133,6 +137,7 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     elements.actions.hidden = false;
     if (elements.boutonImport) elements.boutonImport.hidden = true;
     if (elements.confirmation) elements.confirmation.hidden = true; // R3 : pas de Oui/Non normal en session
+    afficherChoixMode([], null); // R3 (lot A10-6) : même règle pour un choix orphelin d'avant la session
     elements.boutonEnvoyer.textContent = 'Ajouter';
     elements.champ.placeholder = PLACEHOLDER_RECEPTION;
     elements.champ.value = '';
@@ -144,6 +149,11 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
   function sortir() {
     enReception = false;
     verrouRendre('reception'); // Lot S-0 : libère les autres modes.
+    // Lot A10-6b (23/08/2026, corrigé après relecture du Jarvis) : un choix
+    // pouvait rester affiché à l'écran après Valider/Abandonner (rappels qui
+    // visent un mode désormais fermé). Appelé APRÈS verrouRendre pour que le
+    // pli d'écran (parler.js) se calcule avec modeCourant déjà à null.
+    afficherChoixMode([], null);
     elements.panneau.hidden = true;
     elements.actions.hidden = true;
     elements.demarrer.hidden = false;
@@ -180,6 +190,43 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     // Toute autre action que la photo périme son journal de lecture : le laisser
     // affiché donnerait à relire un état qui n'est plus celui de la liste.
     rendreLecture(payload.lecture);
+    afficherChoixDepuisPayload(payload);
+  }
+
+  // --- Lot A10-6 (23/08/2026) : ambiguïté sur une ligne dictée en réception ---
+  // pwa-api pose un choix numéroté ("10 pâtes" -> "Pâtes 500 g" ou "Pâtes
+  // complètes ?") exactement comme en déclaration, mais SANS Oui/Non : ici
+  // c'est déjà une session de contrôle, la ligne rejoint juste la liste
+  // vivante une fois le candidat choisi (§4 du plan A10, contexte B).
+  //
+  // Affiche (ou efface) la zone de choix selon `payload.choix`. Facteur commun
+  // à ajouterLigne et envoyerChoix (une réponse à un choix peut elle-même
+  // reposer un nouveau choix, cas hors bornes repose côté serveur).
+  //
+  // Lot A10-6b (23/08/2026) : troisième rappel « Aucun de ceux-là », qui
+  // envoie EXACTEMENT ce que taper « non » dans le champ enverrait ici, le
+  // chemin de ligne normale (`traiterReceptionLigne('non')` avec un choix en
+  // attente rend « D'accord, j'oublie. Redis ta phrase quand tu veux. »,
+  // _shared/coeur.ts ligne 1366).
+  function afficherChoixDepuisPayload(payload) {
+    if (Array.isArray(payload.choix) && payload.choix.length > 0) {
+      afficherChoixMode(payload.choix, envoyerChoix, () => ajouterLigne('non'));
+    } else {
+      afficherChoixMode([], null);
+    }
+  }
+
+  // Rappel du bouton de choix (ou de la réponse dictée/tapée équivalente,
+  // gérée directement par pwa-api) : envoie { kind: 'choix', numero }, puis
+  // traite la réponse EXACTEMENT comme une ligne normale (même rendu de
+  // liste, mêmes messages, même gestion du null réseau).
+  async function envoyerChoix(numero) {
+    const payload = await executer({ kind: 'choix', numero }, [elements.boutonEnvoyer, elements.champ]);
+    if (!payload) { afficher(MSG_ERREUR); return; }
+    if (payload.reply) afficher(payload.reply);
+    if (payload.session) rendre(payload.session);
+    rendreLecture(payload.lecture); // jamais fourni par kind="choix" : périme le journal, comme une ligne normale
+    afficherChoixDepuisPayload(payload);
   }
 
   // --- Ajouter des lignes depuis une PHOTO de bon de livraison (lot P-3) ---

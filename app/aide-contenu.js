@@ -119,7 +119,7 @@ export const CONTENU = [
       },
       {
         type: 'texte',
-        texte: 'Les chiffres se rafraîchissent <b>toutes les 30 secondes</b>, et le bouton ↻ force la mise à jour. Stovo a besoin d\'une connexion : hors réseau, l\'app s\'ouvre mais ne peut ni lire ni écrire.',
+        texte: 'Les chiffres se rafraîchissent <b>toutes les 30 secondes</b>, et le bouton Rafraîchir, en haut du Pilotage, force la mise à jour. Stovo a besoin d\'une connexion : hors réseau, l\'app s\'ouvre mais ne peut ni lire ni écrire.',
       },
     ],
   },
@@ -307,7 +307,7 @@ export const CONTENU = [
       {
         type: 'astuce',
         titre: 'Deux produits qui se ressemblent ? Précise',
-        texte: 'Si tu as « Lait » et « Lait entier » et que tu dis juste « lait », Stovo <b>ne choisit pas au hasard</b> : il te demande lequel. C\'est voulu, et ça devient précieux quand ton catalogue grossit. Réponds avec le nom complet.',
+        texte: 'Si tu as « Lait » et « Lait entier » et que tu dis juste « lait », Stovo <b>ne choisit pas au hasard</b> : il te propose une liste numérotée, du genre « 1) Lait ou 2) Lait entier ? ». Dis le numéro ou touche le bouton correspondant. Au-delà de quatre produits qui se ressemblent, il te redemande le nom complet.',
       },
       {
         type: 'astuce',

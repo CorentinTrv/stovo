@@ -18,6 +18,7 @@
 
 import { assertEquals, assert, assertMatch } from "jsr:@std/assert";
 import { CONTENU } from "./aide-contenu.js";
+import { ICONES } from "./icones.js";
 
 // ---------------------------------------------------------------------------
 // CONTENU se charge sans DOM, structure de base
@@ -168,16 +169,16 @@ Deno.test("aide-contenu : un geste 'geste' decrit la photo du bon de livraison e
   assertEquals(geste.exemples, []);
 });
 
-Deno.test("aide-contenu : la ligne '🎙️ Parler' de la section 'comprendre' mentionne le mode sortie et la photo du bon de livraison", () => {
+Deno.test("aide-contenu : la ligne 'Parler' de la section 'comprendre' mentionne le mode sortie et la photo du bon de livraison", () => {
   const section = CONTENU.find((s) => s.id === 'comprendre');
-  const defs = section.blocs.find((b) => b.type === 'defs' && b.items.some((i) => i.terme === '🎙️ Parler'));
-  const ligneParler = defs.items.find((i) => i.terme === '🎙️ Parler');
+  const defs = section.blocs.find((b) => b.type === 'defs' && b.items.some((i) => i.terme === 'Parler'));
+  const ligneParler = defs.items.find((i) => i.terme === 'Parler');
   assertMatch(ligneParler.texte, /sortie/);
   assertMatch(ligneParler.texte, /photo/);
 });
 
 Deno.test("aide-contenu : la note du geste de reception n'affirme plus etre le seul mode a comprendre les nombres en lettres", () => {
-  const geste = gesteParTitre('📦 Ranger toute une livraison d\'un coup');
+  const geste = gesteParTitre('Ranger toute une livraison d\'un coup');
   assert(geste, "geste de reception introuvable par son titre");
   assert(
     !/seul(e)?\s+(le\s+)?mode\b/i.test(geste.note),
@@ -205,11 +206,90 @@ Deno.test("aide-contenu : aucune formule 'seul mode' / 'Seul le mode' nulle part
 });
 
 // ---------------------------------------------------------------------------
+// Lot A10-6 (23/08/2026) : l'astuce sur les homonymes decrit le choix
+// numerote, plus le vieux "reponds avec le nom complet" comme SEULE issue.
+// ---------------------------------------------------------------------------
+
+Deno.test("aide-contenu : l'astuce 'Deux produits qui se ressemblent' decrit le choix numerote (numero ou bouton)", () => {
+  const astuce = CONTENU.flatMap((s) => s.blocs)
+    .find((b) => b.type === 'astuce' && b.titre === 'Deux produits qui se ressemblent ? Précise');
+  assert(astuce, "astuce 'Deux produits qui se ressemblent ? Précise' introuvable");
+  assertMatch(astuce.texte, /numéro/i);
+  assertMatch(astuce.texte, /bouton/i);
+});
+
+Deno.test("aide-contenu : la formule exacte 'Réponds avec le nom complet.' (demi-verite depuis le lot A10-6) ne revient jamais", () => {
+  const texteComplet = JSON.stringify(CONTENU);
+  assert(
+    !texteComplet.includes("Réponds avec le nom complet."),
+    "la phrase retiree au lot A10-6 ('nom complet' comme SEULE reponse possible) est revenue dans CONTENU",
+  );
+});
+
+// ---------------------------------------------------------------------------
 // Zero caractere combinant (U+0300-U+036F) : le texte doit etre en NFC
 // precompose, jamais en forme decomposee invisible (piege deja rencontre
 // trois fois sur ce depot, voir la memoire d'agent
 // "regex-diacritiques-forme-echappee").
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Icones SVG en trait (lot "l'app rejoint le monde clair, suite", 23/08/2026) :
+// chaque `icone` cite (section, geste, def) doit etre une cle reelle du
+// registre app/icones.js, et plus aucun `titre`/`terme` ne doit porter
+// d'emoji (retire au profit de ces icones).
+// ---------------------------------------------------------------------------
+
+function toutesLesIconesCitees() {
+  const icones = [];
+  for (const section of CONTENU) {
+    icones.push(section.icone);
+    for (const bloc of section.blocs) {
+      if (bloc.type === 'geste') icones.push(bloc.icone);
+      if (bloc.type === 'defs') {
+        for (const item of bloc.items) {
+          if (item.icone) icones.push(item.icone);
+        }
+      }
+    }
+  }
+  return icones;
+}
+
+Deno.test("aide-contenu : chaque icone citee (section, geste, def) est une cle reelle de ICONES", () => {
+  const icones = toutesLesIconesCitees();
+  assert(icones.length > 0);
+  for (const cle of icones) {
+    assert(typeof cle === 'string' && cle.trim().length > 0, `icone manquante ou vide : ${JSON.stringify(cle)}`);
+    assert(
+      Object.prototype.hasOwnProperty.call(ICONES, cle),
+      `icone '${cle}' citee dans aide-contenu.js mais absente du registre icones.js`,
+    );
+  }
+});
+
+function tousLesTitresEtTermes() {
+  const valeurs = [];
+  for (const section of CONTENU) {
+    valeurs.push(section.titre);
+    for (const bloc of section.blocs) {
+      if (bloc.type === 'geste' || bloc.type === 'astuce') valeurs.push(bloc.titre);
+      if (bloc.type === 'defs') {
+        for (const item of bloc.items) valeurs.push(item.terme);
+      }
+    }
+  }
+  return valeurs;
+}
+
+Deno.test("aide-contenu : aucun titre ni terme ne contient plus d'emoji", () => {
+  const motif = /\p{Extended_Pictographic}/u;
+  const valeurs = tousLesTitresEtTermes();
+  assert(valeurs.length > 0);
+  for (const v of valeurs) {
+    assert(!motif.test(v), `emoji trouve dans un titre/terme : ${JSON.stringify(v)}`);
+  }
+});
 
 Deno.test("aide-contenu : aucun caractere combinant (U+0300-U+036F) dans tout le contenu", () => {
   const texteComplet = JSON.stringify(CONTENU);
