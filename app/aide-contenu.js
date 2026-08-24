@@ -195,8 +195,8 @@ export const CONTENU = [
         icone: 'plus',
         titre: 'Créer un produit',
         quoi: 'Ajouter une référence qui n\'existe pas encore au catalogue.',
-        exemples: ['ajoute le produit beurre', 'crée le produit farine', 'nouveau produit sucre'],
-        note: 'Le produit naît avec un stock à 0 et sans prix : tu poses ensuite la quantité et le prix à la voix. Il faut un marqueur explicite (« le produit », « nouveau produit », « référence le »), c\'est ce qui évite de confondre avec une entrée de stock.',
+        exemples: ['ajoute le produit beurre', 'crée le produit farine', 'nouveau produit sucre', 'nouveau produit coca 50 cl'],
+        note: 'Le produit naît avec un stock à 0 et sans prix : tu poses ensuite la quantité et le prix à la voix. Il faut un marqueur explicite (« le produit », « nouveau produit », « référence le », « l\'article »), c\'est ce qui évite de confondre avec une entrée de stock.',
       },
       {
         type: 'geste',
@@ -297,7 +297,7 @@ export const CONTENU = [
       {
         type: 'astuce',
         titre: 'Le piège du mot « ajoute »',
-        texte: '« <b>j\'ai ajouté 10 pâtes</b> » fait entrer 10 pâtes en stock. « <b>ajoute le produit pâtes</b> » crée une nouvelle référence. Même verbe, deux sens : ce sont les mots « le produit » qui basculent vers la création. Si tu veux juste du stock, ne dis jamais « le produit ».',
+        texte: '« <b>j\'ai ajouté 10 pâtes</b> » fait entrer 10 pâtes en stock. « <b>ajoute le produit pâtes</b> » crée une nouvelle référence. Même verbe, deux sens : ce sont des mots comme « le produit » ou « l\'article » qui basculent vers la création. Si tu veux juste du stock, évite ces mots-là.',
       },
       {
         type: 'astuce',

@@ -145,7 +145,11 @@
 // Entree envoie toujours, Maj+Entree insere une ligne (toucheEnvoie,
 // parler_logique.js). index.html, styles.css, parler.js, parler_logique.js,
 // aide.js, dashboard.js modifies. Aucun nouveau fichier a precacher.
-const CACHE_NAME = 'stovo-app-v29';
+// v30 (lot G D14+D16, 25/08/2026) : aide-contenu.js modifie (« l'article »,
+// exemple a nom chiffre, astuce reformulee), deja au precache, rien de
+// nouveau a precacher, seul le contenu change. Pas de skipWaiting, mise a
+// jour au prochain demarrage a froid, comme toujours.
+const CACHE_NAME = 'stovo-app-v30';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
