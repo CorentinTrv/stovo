@@ -94,19 +94,19 @@ header {
    comportement responsive. Mobile-first : icone seule (carre 44x44), le
    libelle (span.btn-label.sr-only) redevient visible a partir de 560px,
    l'aria-label reste pose dans les deux etats (nom accessible constant). */
-.btn-refresh, .btn-deconnexion {
+.btn-refresh, .btn-reglages {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   width: 44px; height: 44px; padding: 0;
   font-family: inherit; font-size: 14px; font-weight: 600; color: var(--text);
   background: var(--card); border: 1.5px solid var(--border); border-radius: 14px;
   cursor: pointer; transition: background .15s, transform .1s;
 }
-.btn-refresh svg, .btn-deconnexion svg { display: block; flex: 0 0 auto; }
-.btn-refresh:hover, .btn-deconnexion:hover { background: var(--fond-chaud); }
-.btn-refresh:active, .btn-deconnexion:active { transform: translateY(1px); }
+.btn-refresh svg, .btn-reglages svg { display: block; flex: 0 0 auto; }
+.btn-refresh:hover, .btn-reglages:hover { background: var(--fond-chaud); }
+.btn-refresh:active, .btn-reglages:active { transform: translateY(1px); }
 @media (min-width: 560px) {
-  .btn-refresh, .btn-deconnexion { width: auto; padding: 0 14px; justify-content: flex-start; }
-  .btn-refresh .btn-label, .btn-deconnexion .btn-label {
+  .btn-refresh, .btn-reglages { width: auto; padding: 0 14px; justify-content: flex-start; }
+  .btn-refresh .btn-label, .btn-reglages .btn-label {
     position: static; width: auto; height: auto; padding: 0; margin: 0;
     overflow: visible; clip: auto; white-space: nowrap; border: 0;
   }
@@ -645,13 +645,35 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .nav-item.actif .nav-label { color: var(--text); font-weight: 700; }
 .nav-item:active { transform: translateY(1px); }
 
+/* Bannière « nouvelle version prête » (lot A6, 25/08/2026). Choix n°5 de
+   l'Architecte : jamais automatique, jamais en pleine session sans ce
+   bandeau. Fixée juste AU-DESSUS de la nav (même 78px que body
+   padding-bottom ci-dessus, ligne 254 : la nav mesure cette hauteur), pour
+   ne jamais recouvrir une saisie en cours (le champ de "Parler" est plus
+   haut dans le flux, jamais coincé contre la nav). Bouton réutilise
+   .btn-reception-primaire (flamme + blanc déjà audité, §2bis) : .maj-bouton
+   ne fait qu'ajuster sa taille dans ce contexte plus étroit. */
+.maj-bandeau {
+  position: fixed; left: 0; right: 0; z-index: 55;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  background: var(--card); border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  box-shadow: 0 -2px 10px rgba(29,30,28,.08);
+}
+.maj-texte { font-size: 14px; font-weight: 600; color: var(--text); margin: 0; }
+/* Cible tactile : le gabarit de .btn-reception-primaire (46px, deja >= 44px,
+   regle des lots A1/A2) n'est PAS retaille ici, seule sa largeur est
+   contrainte pour cohabiter avec le texte dans la banniere. */
+.maj-bandeau .maj-bouton { flex: 0 0 auto; }
+
 /* =====================================================================
    Connexion (lot 9b) — écran de login.
-   Le bouton de déconnexion (.btn-deconnexion) est stylé avec .btn-refresh
-   plus haut (section En-tête, monde clair) : une seule règle pour les deux
-   boutons à contour de l'en-tête, pas de redéfinition ici. L'écran de
-   connexion lui-même n'est pas repris dans ce lot (reste teal, voir
-   DESIGN.md "L'app").
+   Le bouton d'engrenage de l'en-tête (.btn-reglages, ouvre l'écran Réglages
+   depuis le lot A4, 24/08/2026 — la déconnexion a quitté l'en-tête pour ce
+   nouvel écran) est stylé avec .btn-refresh plus haut (section En-tête,
+   monde clair) : une seule règle pour les deux boutons à contour de
+   l'en-tête, pas de redéfinition ici.
    ===================================================================== */
 
 /* Correctif d'affichage (11/07) : l'attribut `hidden` doit TOUJOURS
@@ -685,14 +707,29 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .login-carte h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; color: var(--text); }
 .login-soustitre { font-size: 15px; color: var(--muted); margin: 6px 0 26px; }
 
-#form-login { display: flex; flex-direction: column; gap: 6px; }
-#form-login label { font-size: 13.5px; font-weight: 600; color: var(--muted); margin-top: 10px; }
-#form-login input {
+/* Lot A4 (24/08/2026) : le sélecteur était ID-spécifique à #form-login (lot
+   9b), donc IGNORAIT les 3 nouveaux formulaires du mot de passe perdu
+   (#form-code-demande, #form-code-saisie) et de son changement connecté
+   (#form-changer-mdp) — repéré à la relecture des premières captures
+   (champs rendus avec le style par défaut du navigateur). `.login-carte`
+   est le conteneur COMMUN à toutes ces cartes (voir index.html), qu'elles
+   vivent dans un `.ecran-login` (avant connexion) ou dans un `.ecran`
+   classique (#ecran-changer-mdp, connecté) : un seul sélecteur suffit. */
+.login-carte form { display: flex; flex-direction: column; gap: 6px; }
+.login-carte form label { font-size: 13.5px; font-weight: 600; color: var(--muted); margin-top: 10px; }
+.login-carte form input {
   font-family: inherit; font-size: 15px; padding: 11px 13px;
   border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text);
   transition: border-color .15s;
 }
-#form-login input:focus { border-color: var(--text); }
+.login-carte form input:focus { border-color: var(--text); }
+/* Champ du code reçu (planche Code2Saisie) : grand, centré, chiffres
+   alignés (tabular-nums), pour qu'un code à 6 chiffres se lise d'un coup
+   d'œil — reprend l'esprit de la maquette sans copier ses valeurs exactes. */
+#recup-code {
+  font-size: 26px; font-weight: 700; letter-spacing: .14em; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
 
 /* Bouton flamme, pleine largeur : c'est le "Oui" de cet écran (audit --brand,
    §2bis, comme .matin-copier et .btn-reception-primaire). */
@@ -1181,7 +1218,8 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   .aide-exemple:active,
   .nav-item:active,
   .btn-micro:not(:disabled):active,
-  .btn-deconnexion:active {
+  .btn-reglages:active,
+  .reglages-btn-mailto:active {
     transform: none;
   }
 }
@@ -1209,4 +1247,127 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   position: absolute; width: 1px; height: 1px;
   padding: 0; margin: -1px; overflow: hidden;
   clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* =====================================================================
+   Lot A4 (24/08/2026) : mot de passe perdu (écrans avant connexion) et
+   écran Réglages (compte, contact, version). Aucun jeton neuf : uniquement
+   ceux déjà posés ailleurs dans ce fichier. Le teal n'apparaît qu'une fois
+   (.pastille-validee, l'écran "Fait") : règle 10 de DESIGN.md, il reste
+   réservé aux états, jamais à un bouton ou un lien.
+   ===================================================================== */
+
+/* Lien centré sous un formulaire de .ecran-login ("Mot de passe oublié ?",
+   "Renvoyer un code") : même couleur d'action que le reste de l'app, cible
+   tactile 44px. */
+.login-lien-centre { display: flex; justify-content: center; margin-top: 14px; }
+.login-lien-centre a {
+  display: inline-flex; align-items: center; min-height: 44px;
+  font-size: 15px; font-weight: 600; color: var(--text);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.login-lien-centre a:hover { color: var(--muted); }
+/* Grisé pendant le compte à rebours des 60 s de "Renvoyer un code"
+   (recuperation.js, Supabase refuse un 2e envoi avant une minute) : plus de
+   couleur d'action tant que le clic ne fait rien, curseur par défaut. */
+.login-lien-centre a.lien-recup-inactif {
+  color: var(--muted); text-decoration: none; cursor: default;
+}
+
+/* Lien de retour ("← Connexion", "← Réglages"...), au-dessus d'une carte de
+   .ecran-login ou de .reglages-page. Cible tactile 44px comme les autres
+   liens/boutons de navigation de l'app. */
+.login-retour { padding: 12px 12px 0; }
+.lien-retour {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 44px;
+  padding: 0 8px; color: var(--text); text-decoration: none;
+  font-size: 15px; font-weight: 600;
+}
+.lien-retour svg { flex: 0 0 auto; }
+.lien-retour:hover { color: var(--muted); }
+
+/* Note sous le formulaire de "Recevoir un code" (planche Code1Demande). */
+.login-note { font-size: 14px; color: var(--muted); margin-top: 16px; line-height: 1.5; text-align: center; }
+
+/* Champ en état d'erreur (planche Code2Erreur, écran "Nouveau mot de passe") :
+   bordure en encre plutôt qu'un rouge d'alerte classique, le bloc d'alerte
+   juste en dessous (.login-erreur, déjà stylé) porte la couleur du message. */
+#form-code-saisie input.champ-erreur { border-color: var(--text); }
+
+/* Pastille "validé" de l'écran "Fait" (planche Code3Fait) : blanc sur --ok
+   mesuré à 5,47:1 (balayage-contrastes.mjs), largement au-dessus du seuil
+   même à 15px — pas besoin d'un texte large ici, contrairement à la flamme. */
+.pastille-validee {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 36px; padding: 6px 14px; margin-bottom: 4px;
+  border-radius: 999px; background: var(--ok); color: #fff;
+  font-size: 15px; font-weight: 600;
+}
+
+/* ---------- Écran Réglages ---------- */
+.reglages-page { padding-top: 8px; padding-bottom: 30px; max-width: 480px; }
+.reglages-page-etroite { max-width: 420px; }
+.reglages-page .section-title { margin-top: 4px; }
+
+.reglages-carte { display: flex; flex-direction: column; gap: 4px; margin-top: 18px; }
+.reglages-soustitre { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.reglages-email { font-size: 15px; font-weight: 600; color: var(--text); margin: 6px 0 10px; }
+.reglages-separateur { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* Une ligne de compte = un bouton pleine largeur (icône, texte, chevron
+   optionnel) : même esprit que .aide-geste-titre mais cliquable. */
+.reglages-ligne {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  min-height: 52px; padding: 4px 0; border: none; background: none;
+  font-family: inherit; font-size: 17px; font-weight: 600; color: var(--text);
+  text-align: left; cursor: pointer;
+}
+.reglages-ligne-icone {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 999px;
+  background: var(--fond-chaud); color: var(--flamme);
+}
+.reglages-ligne-texte { flex: 1 1 auto; }
+.reglages-chevron { flex: 0 0 auto; color: var(--muted-light); }
+
+/* Carte "Une question, un souci ?" : fond chaud plein (comme la planche
+   Main), pas de bordure — se distingue visuellement de la carte "Mon compte"
+   juste au-dessus. */
+.reglages-contact {
+  background: var(--fond-chaud); border-radius: var(--radius);
+  padding: 22px 20px; margin-top: 16px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.reglages-contact-texte { font-size: 16px; color: var(--text); line-height: 1.5; margin: 0; }
+/* Bouton flamme pleine largeur pour "Écrire à Corentin" : c'est un <a> (lien
+   mailto, pas un bouton de formulaire), donc son style est écrit ici plutôt
+   que de réutiliser .btn-login (qui suppose display:block via un <button>
+   natif — un <a> reste "inline" par défaut et ignorerait sa largeur/hauteur
+   sans ce display explicite). */
+.reglages-btn-mailto {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; min-height: 50px; padding: 12px 20px;
+  background: var(--flamme); color: #fff; text-decoration: none;
+  font-family: inherit; font-size: 19px; font-weight: 700; border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(250,93,0,.25);
+  transition: background .15s, transform .1s;
+}
+.reglages-btn-mailto:hover { background: var(--flamme-sombre); }
+.reglages-btn-mailto:active { transform: translateY(1px); }
+.reglages-adresse-ligne { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.reglages-adresse { font-size: 15px; color: var(--text); word-break: break-all; }
+
+.reglages-version { font-size: 13px; color: var(--muted); margin-top: 22px; line-height: 1.5; }
+.reglages-version a { color: var(--muted); }
+
+/* ---------- Écran "Changer mon mot de passe" ---------- */
+/* Un seul élément pour le succès ET l'échec (reglages.js bascule la classe) :
+   même patron que .export-etat (dashboard.js/export). */
+.changer-mdp-message {
+  margin-top: 14px; padding: 10px 14px; border-radius: 10px;
+  font-size: 13.5px; font-weight: 600;
+  color: var(--ok); background: var(--ok-bg); border: 1px solid var(--brand-light);
+}
+.changer-mdp-message.est-erreur {
+  color: var(--danger-text); background: var(--danger-bg); border-color: var(--danger-border);
 }

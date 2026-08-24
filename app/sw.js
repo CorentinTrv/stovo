@@ -149,7 +149,30 @@
 // exemple a nom chiffre, astuce reformulee), deja au precache, rien de
 // nouveau a precacher, seul le contenu change. Pas de skipWaiting, mise a
 // jour au prochain demarrage a froid, comme toujours.
-const CACHE_NAME = 'stovo-app-v30';
+// v31 (lot A6, 25/08/2026) : bandeau "nouvelle version prete" cote app.js.
+// Fichiers modifies : app.js (detection registration.waiting +
+// updatefound/statechange, affichage, garde anti-double-reload sur
+// controllerchange), sw.js (ce fichier), index.html (le bandeau),
+// styles.css (son style). NOUVEAU fichier maj_worker.js (module pur,
+// decision d'affichage + garde, teste par maj_worker_test.js) ajoute au
+// precache. Rappel qui ne change pas ici : pas de skipWaiting automatique,
+// SEULEMENT sur un geste utilisateur relaye par le message SKIP_WAITING
+// ci-dessous (choix n°5 de l'Architecte, toujours en vigueur).
+// v32 (lot A4, 24/08/2026) : mot de passe perdu PAR CODE (jamais par lien,
+// decision du 23/08) et ecran Reglages (compte, contact, version -- la
+// deconnexion QUITTE l'en-tete pour cet ecran). QUATRE nouveaux fichiers au
+// precache : ecran_session.js (afficherApp/afficherLogin, extraits de
+// app.js sans changement de comportement), recuperation_logique.js (module
+// pur : garde de recuperation + minuterie des 60 s), contact.js (module pur :
+// construction du lien mailto + numero de version affiche), recuperation.js
+// et reglages.js (glu DOM des nouveaux ecrans). Fichiers modifies : app.js
+// (ECRANS map etendue, import de la garde, afficherApp/afficherLogin
+// deplaces), auth.js (messageLisible exportee et etendue a 5 nouvelles
+// erreurs, 3 fonctions reseau ajoutees), icones.js (cle 'reglages'),
+// aide-contenu.js (section "Mon compte et contact"), index.html (4 nouveaux
+// ecrans + l'engrenage remplace la deconnexion dans l'en-tete), styles.css
+// (leurs styles). pwa-api INCHANGEE : tout passe par l'API Auth de Supabase.
+const CACHE_NAME = 'stovo-app-v32';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -168,6 +191,11 @@ const FICHIERS_COQUILLE = [
   './icones.js',
   './supabase.js',
   './auth.js',
+  './ecran_session.js',
+  './recuperation_logique.js',
+  './recuperation.js',
+  './contact.js',
+  './reglages.js',
   './parler.js',
   './parler_logique.js',
   './reception.js',
@@ -175,6 +203,7 @@ const FICHIERS_COQUILLE = [
   './sortie.js',
   './photo.js',
   './export.js',
+  './maj_worker.js',
   './fonts/dm-sans-latin.woff2',
   './manifest.json',
   './icons/icon.svg',
@@ -183,6 +212,17 @@ const FICHIERS_COQUILLE = [
   './icons/icon-512-maskable.png',
   './icons/apple-touch-icon-180.png',
 ];
+
+// Lot A6 (25/08/2026) : le SEUL déclencheur de self.skipWaiting() dans tout
+// ce fichier. Il ne réagit qu'au message précis envoyé par app.js quand
+// l'utilisateur tape sur la bannière (majBouton) — jamais à un autre
+// message, jamais tout seul. Sans ce tap, ce service worker reste "en
+// attente" indéfiniment, exactement comme avant le lot A6.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -198,10 +238,14 @@ self.addEventListener('activate', (event) => {
       await Promise.all(
         noms.filter((nom) => nom !== CACHE_NAME).map((nom) => caches.delete(nom))
       );
-      // Prend le controle des pages ouvertes des cette activation. Sans risque
-      // ici puisque l'activation elle-meme n'arrive qu'au prochain demarrage
-      // a froid (pas de skipWaiting), donc pas d'onglet "surpris" en pleine
-      // session par ce changement de controleur.
+      // Prend le controle des pages ouvertes des cette activation. Sans
+      // risque ici : l'activation n'arrive JAMAIS toute seule (toujours pas
+      // de skipWaiting automatique). Elle survient soit au prochain
+      // demarrage a froid (aucun onglet n'ecoutait, rien a surprendre), soit
+      // juste apres le message SKIP_WAITING envoye par app.js au tap de
+      // l'utilisateur sur la banniere (lot A6) -- et dans ce cas
+      // app.js ecoute deja 'controllerchange' pour recharger la page
+      // lui-meme, avec une garde anti-double-reload.
       await self.clients.claim();
     })()
   );

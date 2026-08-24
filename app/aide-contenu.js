@@ -56,6 +56,13 @@
 // son emoji de tete (le texte ne change pas au-dela de ce retrait). Les
 // blocs `astuce` n'ont PAS de cle par bloc : aide.js pose l'icone 'ampoule'
 // pour tous, en dur (voir aide.js). Aucun texte de fond ne change.
+//
+// LOT A4 (24/08/2026) : section "Mon compte et contact" ajoutee en fin de
+// liste (mot de passe perdu par code, changer son mot de passe, ecrire a
+// Corentin, et ou vit desormais la deconnexion). Grep de l'existant avant
+// d'ecrire cette section ("seul", "sauf", "Deconnexion", "en-tete", "mot de
+// passe") : aucune astuce ne mentionnait ni l'en-tete ni la deconnexion,
+// rien a corriger ailleurs dans ce fichier.
 
 // ====================================================================
 // LE CONTENU
@@ -341,8 +348,8 @@ export const CONTENU = [
       },
       {
         type: 'astuce',
-        titre: 'L\'app se met à jour au démarrage à froid',
-        texte: 'Quand une nouvelle version est publiée, elle n\'arrive pas en pleine session (jamais de coupure au milieu d\'une saisie). Ferme complètement Stovo et rouvre-le pour l\'avoir.',
+        titre: 'L\'app se met à jour au démarrage à froid, ou d\'un tap',
+        texte: 'Quand une nouvelle version est publiée, elle n\'arrive jamais toute seule en pleine session (jamais de coupure au milieu d\'une saisie) : soit tu fermes complètement Stovo et tu le rouvres, soit un bandeau « Nouvelle version prête. Appuie pour recharger. » apparaît et c\'est toi qui choisis le moment en appuyant dessus.',
       },
     ],
   },
@@ -364,6 +371,31 @@ export const CONTENU = [
       {
         type: 'texte',
         texte: 'La valeur affichée est indicative, calculée au dernier prix d\'achat connu : donne ces deux fichiers à ton comptable, c\'est à lui de les retraiter selon ses règles.',
+      },
+    ],
+  },
+
+  // ---------------- 5. MON COMPTE ET CONTACT (lot A4, 24/08/2026) ----------------
+  {
+    id: 'compte',
+    icone: 'reglages',
+    titre: 'Mon compte et contact',
+    blocs: [
+      {
+        type: 'texte',
+        texte: 'Tout ce qui n\'est pas du stock vit dans <b>Réglages</b>, ouvert par l\'engrenage en haut du Pilotage, à côté de Rafraîchir : ton compte, le contact, et la version de l\'app. <b>La déconnexion vit désormais là</b>, elle a quitté l\'en-tête.',
+      },
+      {
+        type: 'texte',
+        texte: 'Mot de passe oublié ? Sur l\'écran de connexion, tape « Mot de passe oublié&nbsp;? ». Stovo t\'envoie un <b>code à 6 chiffres</b> par e-mail, jamais un lien à cliquer : tu le saisis dans Stovo avec ton nouveau mot de passe, et c\'est fait.',
+      },
+      {
+        type: 'texte',
+        texte: 'Depuis Réglages, « Changer mon mot de passe » t\'en fait choisir un nouveau sans rien redemander d\'autre.',
+      },
+      {
+        type: 'texte',
+        texte: '« Écrire à Corentin » ouvre ton application de mail avec l\'adresse déjà remplie (<b>bonjour.stovo@outlook.com</b>, aussi copiable d\'un bouton) : un simple mail, il répond lui-même.',
       },
     ],
   },

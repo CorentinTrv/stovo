@@ -566,10 +566,32 @@ async function charger() {
   // 15 derniers mouvements plus bas n'utilise que `nom`/`unite`, il continue
   // de fonctionner à l'identique avec ce champ en plus.
   const depuis = new Date(Date.now() - 30 * 864e5).toISOString();
-  const { data: mvts, error: errM } = await supabase
-    .from('mouvements')
-    .select('id, produit_id, type, quantite, source, motif, cree_le, produits ( nom, unite, prix_achat )')
-    .gte('cree_le', depuis).order('cree_le', { ascending: false });
+  // LOT A5 (alerte 6.1 du bilan du 22/08/2026) : cette lecture partait en
+  // UNE SEULE requête, tronquée en silence par PostgREST au-delà de 1000
+  // lignes (~30 mouvements/jour × 250 références frôle 900/mois : le jour du
+  // dépassement, couverture/point de commande/démarque des 30 jours
+  // deviennent faux sans aucun message). lireTable() (même fonction que les
+  // deux exports plus haut) pagine par tranches et lève une erreur explicite
+  // plutôt que de rendre un résultat possiblement tronqué. Départage
+  // `.order('id', { ascending: false })` en second critère : plusieurs
+  // mouvements d'une même réception validée partagent le même `cree_le`,
+  // sans lui des lignes ex æquo pourraient être dupliquées ou sautées à la
+  // frontière de deux `.range()` (même raison que le départage des exports,
+  // lignes ~517-524 plus haut). errM reproduit le contrat existant (message
+  // affiché à l'historique plus bas, mvts laissé indéfini) : lireTable lève,
+  // le try/catch attrape.
+  let mvts, errM = null;
+  try {
+    mvts = await lireTable((de, a) => supabase
+      .from('mouvements')
+      .select('id, produit_id, type, quantite, source, motif, cree_le, produits ( nom, unite, prix_achat )')
+      .gte('cree_le', depuis)
+      .order('cree_le', { ascending: false })
+      .order('id', { ascending: false })
+      .range(de, a));
+  } catch (e) {
+    errM = e;
+  }
 
   // --- Consommation par produit : formule PARTAGÉE avec la voix (N4) et la
   // page racine du site (pilotage.js). LOT P-2b : la fenêtre de mesure passe

@@ -56,6 +56,15 @@ const TRACES = {
 
   // ---- colonne « Source » du tableau des mouvements (dashboard.js) ----
   clavier: '<rect x="3.5" y="6" width="13" height="8" rx="1.5"/><path d="M6 9h1M9 9h1M12 9h1M6 12h6M13.5 12h1"/>',
+
+  // ---- Réglages (lot A4, 24/08/2026) : engrenage de l'en-tête (index.html,
+  // à côté de Rafraîchir) ET icône de la section « Mon compte et contact » de
+  // l'Aide (aide-contenu.js). Tracé recopié de la maquette EnTete.dc.html,
+  // stroke-width laissé à la spécification commune (1,8) plutôt que le 1,6 du
+  // croquis, comme les autres icônes de ce registre (voir l'en-tête du
+  // fichier) : la cohérence entre les icônes déjà en prod prime sur le trait
+  // exact du croquis.
+  reglages: '<circle cx="10" cy="10" r="2.6"/><path d="M10 2.5v2.2M10 15.3v2.2M2.5 10h2.2M15.3 10h2.2M4.7 4.7l1.6 1.6M13.7 13.7l1.6 1.6M15.3 4.7l-1.6 1.6M6.3 13.7l-1.6 1.6"/>',
 };
 
 // ICONES[cle] : la chaîne SVG complète (spécification commune + tracé),
