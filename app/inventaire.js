@@ -127,6 +127,28 @@ export function creerModeInventaire({ elements, appeler, chargerProduits, confir
     basculerFormulaire(false);
   }
 
+  // --- Sortie de session propre (lot du 25/08/2026) ---
+  // Appelée par parler.js (viderParler) à la déconnexion, quel que soit
+  // l'état du parcours à cet instant. `terminerParcours()` couvre déjà le
+  // cas d'un parcours actif (masque panneau/parcours/clôture, remet
+  // "Démarrer" visible, libère le verrou — sans risque même si `actif` était
+  // déjà faux, voir creerVerrouDeMode) ; cette fonction couvre en plus les
+  // résidus qu'il ne touche pas — bannière de reprise, catalogue mémorisé,
+  // et le texte de chaque champ du parcours (nom de produit, stock, récap)
+  // qui reste dans le DOM même une fois `hidden` posé.
+  function reinitialiser() {
+    terminerParcours();
+    montrer(el.reprise, false);
+    if (el.repriseTexte) el.repriseTexte.textContent = '';
+    produits = [];
+    if (el.progression) el.progression.textContent = '';
+    if (el.nomProduit) el.nomProduit.textContent = '';
+    if (el.stockTheorique) el.stockTheorique.textContent = '';
+    if (el.dejaCompte) el.dejaCompte.textContent = '';
+    if (el.total) el.total.textContent = '';
+    if (el.recap) el.recap.textContent = '';
+  }
+
   // --- Actions publiques ---
 
   async function demarrer() {
@@ -285,6 +307,7 @@ export function creerModeInventaire({ elements, appeler, chargerProduits, confir
     valider,
     abandonner,
     verifierReprise,
+    reinitialiser,
     // Exposés pour le banc d'essai offline.
     _etat: () => ({ index, actif, comptes: new Map(comptes), produits: [...produits] }),
   };

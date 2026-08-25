@@ -183,7 +183,39 @@
 // reglages.js (carte "Couleur de Stovo" en tete de l'ecran), index.html
 // (script en tete qui pose data-couleur AVANT le premier rendu, markup de
 // la carte), aide-contenu.js (une ligne dans "Mon compte et contact").
-const CACHE_NAME = 'stovo-app-v33';
+// v34 (lot "sortie de session propre", 25/08/2026) : plus aucune donnee d'un
+// compte visible ni recuperable a l'ecran apres sa deconnexion. Avant ce lot,
+// afficherLogin() (ecran_session.js) masquait #app-shell SANS rien vider, et
+// la garde anti-double-demarrage de demarrerDashboard() (dashboard.js)
+// empechait tout nouveau charger() a la reconnexion -- l'ecran montrait donc
+// le stock du compte precedent jusqu'a 30 s (prochain tick du setInterval).
+// Fichiers modifies : dashboard.js (charger() separe du cablage a usage
+// unique, rejoue a CHAQUE afficherApp() ; nouvelle fonction viderDashboard()
+// exportee), ecran_session.js (afficherLogin() appelle viderDashboard() +
+// viderParler(), vide les champs de connexion), parler.js (nouvelle fonction
+// viderParler() exportee : bulle de reponse, zone de choix, delegue aux 3
+// modes), reception.js/sortie.js/inventaire.js (nouvelle fonction
+// reinitialiser() par mode : liste vivante, banniere de reprise, journal de
+// lecture d'une photo). Aucun nouveau fichier a precacher. Le comportement du
+// lot A4 (garde de recuperation de mot de passe) est INCHANGE : afficherLogin()
+// n'est jamais invoquee pendant ce parcours (voir le registre du rapport de
+// passation).
+// Corrections apres relecture du Jarvis (25/08/2026, meme v34, jour meme) :
+// (1) regression trouvee avant deploiement -- afficherApp() est appelee
+// PLUSIEURS FOIS par ouverture reelle de session (getSessionActuelle() +
+// onAuthChange qui recoit INITIAL_SESSION/SIGNED_IN en plus, et un
+// TOKEN_REFRESHED a chaque renouvellement de jeton), donc appeler charger()
+// sans garde a chaque demarrerDashboard() partait en double, voire triple.
+// dashboard.js : nouveau drapeau de module `donneesACharger` (vrai au
+// demarrage, remis a vrai par viderDashboard()), consomme UNE fois par
+// ouverture reelle, jamais par le bouton Rafraichir ni le setInterval (qui
+// appellent charger() directement, inchange). Mesure au harnais : 1 appel
+// reseau vers /rest/v1/produits par ouverture (voir le rapport de passation,
+// paragraphe des corrections). (2) l'ecran actif restait sur Reglages apres
+// une reconnexion (seule porte de sortie du compte) : ecran_session.js
+// (afficherLogin()) emet desormais 'stovo:onglet' -> 'dashboard' (evenement
+// deja ecoute par app.js, aucune ligne changee la-bas).
+const CACHE_NAME = 'stovo-app-v34';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,

@@ -343,6 +343,24 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     sessionReprise = null;
   }
 
+  // --- Sortie de session propre (lot du 25/08/2026) ---
+  // Appelée par parler.js (viderParler) quand le compte se déconnecte, quel
+  // que soit l'état du mode à cet instant (session ouverte, bannière de
+  // reprise affichée, ou rien du tout) : `sortir()` gère déjà le cas normal
+  // (idempotent si `enReception` était déjà faux, voir creerVerrouDeMode),
+  // cette fonction couvre en plus les deux résidus que sortir() ne touche
+  // pas — la bannière de reprise et le journal de lecture d'une photo — pour
+  // qu'aucun nom de produit de l'ancien compte ne reste dans le DOM, même
+  // masqué.
+  function reinitialiser() {
+    sortir();
+    elements.reprise.hidden = true;
+    if (elements.repriseTexte) elements.repriseTexte.textContent = '';
+    sessionReprise = null;
+    rendre(null); // revide la liste vivante (au cas où sortir() a été appelé sans passer par valider/abandonner)
+    rendreLecture([]); // le journal de lecture d'une photo peut contenir des noms de produits
+  }
+
   // --- Reprise : au chargement, s'il reste une réception côté serveur ---
   // Isolation R4 : une session oubliée dort dans sa table dédiée sans polluer
   // la boucle normale ; la bannière la fait remonter au prochain démarrage.
@@ -393,5 +411,6 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     ajouterLigne,
     envoyerPhoto,
     verifierReprise,
+    reinitialiser,
   };
 }

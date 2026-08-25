@@ -625,6 +625,38 @@ const modeSortie = creerModeSortie({
   afficherChoix,
 });
 
+// =========================================================================
+// Lot "sortie de session propre" (25/08/2026)
+// =========================================================================
+// Appelée par ecran_session.js (afficherLogin) à la déconnexion, AVANT que
+// #app-shell ne redevienne visible pour un éventuel prochain compte. Vide
+// tout ce que parler.js affiche en propre (bulle de réponse, zone de choix
+// numéroté partagée par la déclaration ET les 3 modes) puis délègue à chaque
+// mode le nettoyage de ses propres résidus (liste vivante, bannière de
+// reprise) via `reinitialiser()` — ce module ne connaît pas leurs éléments
+// DOM internes, seul reception.js/sortie.js/inventaire.js les possède.
+//
+// Texte de #parler-reponse identique à l'état initial d'index.html (message
+// d'accueil), jamais un texte vide : c'est l'écran "Parler" qu'un prochain
+// compte verra en premier, il doit inviter à parler, pas rester muet.
+const TEXTE_REPONSE_INITIAL = "Écris ce que tu as fait, par exemple : j'ai reçu 10 pâtes.";
+
+export function viderParler() {
+  zoneReponse.textContent = TEXTE_REPONSE_INITIAL;
+  zoneConfirmation.hidden = true;
+  // Appelés AVANT afficherChoix([], null, null) ci-dessous : chacun libère
+  // son verrou s'il le détenait, pour que le calcul du pli du menu
+  // (appliquerPliChoix) voie déjà `modeCourant() === null` et rétablisse le
+  // bouton Importer + les 3 boutons Démarrer.
+  modeReception.reinitialiser();
+  modeInventaire.reinitialiser();
+  modeSortie.reinitialiser();
+  // Vide #parler-choix : couvre le cas d'un choix posé en simple déclaration
+  // (aucun mode de session ouvert), que les 3 `reinitialiser()` ci-dessus ne
+  // touchent pas.
+  afficherChoix([], null);
+}
+
 // Reprise : si une réception a été laissée en cours (app fermée en plein milieu),
 // on la fait remonter au chargement, une fois la session confirmée (l'appel
 // reception-etat exige un JWT valide). Sans session, on ne tente rien.

@@ -639,3 +639,50 @@ Deno.test("sortie.js : valider avec un choix affiche efface la zone (sortir() ne
   assertEquals(espion.appels.at(-1).candidats, []);
   assertEquals(espion.appels.at(-1).surChoix, null);
 });
+
+// ---------------------------------------------------------------------------
+// Lot "sortie de session propre" (25/08/2026) : reinitialiser()
+// ---------------------------------------------------------------------------
+
+Deno.test("sortie.js : reinitialiser() pendant une session active vide la liste et masque le panneau", async () => {
+  const ctx = crearContexto();
+  ctx.elements.demarrer.click();
+  ctx.setRespuesta(() => ({
+    reply: "Sortie : Pâtes -3.",
+    sortie: { active: true, lignes: [LIGNE_PATES], inconnus: [], total: 3 },
+  }));
+  await ctx.modo.ajouterLigne("3 pâtes");
+  assertEquals(ctx.elements.liste.children[0].children[0].textContent, "Pâtes"); // la ligne de l'ancien compte est bien affichee
+
+  ctx.modo.reinitialiser();
+
+  assertEquals(ctx.modo.estEnSortie(), false);
+  assertEquals(ctx.elements.panneau.hidden, true);
+  assertEquals(ctx.elements.demarrer.hidden, false);
+  assertEquals(ctx.elements.titreTotal.textContent, "0 ligne");
+  assertEquals(ctx.elements.liste.children.length, 1);
+  assertEquals(ctx.elements.liste.children[0].className, "reception-vide"); // plus aucune ligne de l'ancien compte
+  assertEquals(ctx.elements.valider.disabled, true);
+});
+
+Deno.test("sortie.js : reinitialiser() efface une banniere de reprise affichee (chiffres du compte precedent dans repriseTexte)", async () => {
+  const ctx = crearContexto();
+  ctx.setRespuesta(() => ({ reply: "", sortie: { active: true, lignes: [LIGNE_PATES], inconnus: [], total: 3 } }));
+  await ctx.modo.verifierReprise();
+  assertEquals(ctx.elements.reprise.hidden, false);
+  assertMatch(ctx.elements.repriseTexte.textContent, /3 lignes/);
+
+  ctx.modo.reinitialiser();
+
+  assertEquals(ctx.elements.reprise.hidden, true);
+  assertEquals(ctx.elements.repriseTexte.textContent, "");
+});
+
+Deno.test("sortie.js : reinitialiser() sans rien en cours ne casse rien (idempotent, comme sortir())", () => {
+  const ctx = crearContexto();
+  ctx.modo.reinitialiser();
+  assertEquals(ctx.modo.estEnSortie(), false);
+  assertEquals(ctx.elements.panneau.hidden, true);
+  assertEquals(ctx.elements.demarrer.hidden, false);
+  assertEquals(ctx.elements.reprise.hidden, true);
+});

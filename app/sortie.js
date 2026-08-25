@@ -275,6 +275,19 @@ export function creerModeSortie({ elements, appeler, confirmer, afficher, doc, p
     sortieReprise = null;
   }
 
+  // --- Sortie de session propre (lot du 25/08/2026) ---
+  // Jumeau de reinitialiser() dans reception.js (voir son commentaire) :
+  // appelée par parler.js (viderParler) à la déconnexion, quel que soit
+  // l'état du mode à cet instant. Pas de journal de lecture ici (la sortie
+  // n'a pas de photo, voir l'en-tête du fichier).
+  function reinitialiser() {
+    sortir();
+    elements.reprise.hidden = true;
+    if (elements.repriseTexte) elements.repriseTexte.textContent = '';
+    sortieReprise = null;
+    rendre(null);
+  }
+
   // --- Reprise : au chargement, s'il reste une sortie côté serveur ---
   // Isolation R4 : une session oubliée dort dans sa table dédiée sans polluer
   // la boucle normale ; la bannière la fait remonter au prochain démarrage.
@@ -310,5 +323,6 @@ export function creerModeSortie({ elements, appeler, confirmer, afficher, doc, p
     estEnSortie: () => enSortie,
     ajouterLigne,
     verifierReprise,
+    reinitialiser,
   };
 }

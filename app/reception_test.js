@@ -668,3 +668,57 @@ Deno.test("reception.js : valider avec un choix affiche efface la zone (sortir()
   assertEquals(espion.appels.at(-1).candidats, []);
   assertEquals(espion.appels.at(-1).surChoix, null);
 });
+
+// ---------------------------------------------------------------------------
+// Lot "sortie de session propre" (25/08/2026) : reinitialiser()
+// ---------------------------------------------------------------------------
+
+Deno.test("reception.js : reinitialiser() pendant une session active vide la liste, masque le panneau et le journal de lecture", async () => {
+  const ctx = crearContexto({
+    reduirePhotoImpl: () => ({ base64: "QUJD", mimeType: "image/jpeg" }),
+  });
+  ctx.elements.demarrer.click();
+  ctx.setRespuesta(() => ({
+    reply: "J'ai lu 1 produit sur ta photo.",
+    session: { active: true, lignes: [LIGNE_PATES], inconnus: [], total: 10 },
+    lecture: [{ libelle: "PATE FEUILLETEE 230G", nom: "Pâtes", quantite: 10 }],
+  }));
+  await ctx.modo.envoyerPhoto({ name: "bl.jpg" });
+  assertEquals(ctx.elements.liste.children[0].children[0].textContent, "Pâtes"); // la ligne de l'ancien compte est bien affichee
+
+  ctx.modo.reinitialiser();
+
+  assertEquals(ctx.modo.estEnReception(), false);
+  assertEquals(ctx.elements.panneau.hidden, true);
+  assertEquals(ctx.elements.demarrer.hidden, false);
+  assertEquals(ctx.elements.titreTotal.textContent, "0 ligne");
+  assertEquals(ctx.elements.liste.children.length, 1);
+  assertEquals(ctx.elements.liste.children[0].className, "reception-vide"); // plus aucune ligne de l'ancien compte
+  assertEquals(ctx.elements.lecture.hidden, true);
+  assertEquals(ctx.elements.lecture.innerHTML, "");
+  assertEquals(ctx.elements.valider.disabled, true);
+});
+
+Deno.test("reception.js : reinitialiser() efface une banniere de reprise affichee (nom du compte precedent dans repriseTexte)", async () => {
+  const ctx = crearContexto();
+  ctx.setRespuesta(() => ({
+    session: { active: true, lignes: [LIGNE_PATES], inconnus: [], total: 10 },
+  }));
+  await ctx.modo.verifierReprise();
+  assertEquals(ctx.elements.reprise.hidden, false);
+  assertMatch(ctx.elements.repriseTexte.textContent, /10 lignes/);
+
+  ctx.modo.reinitialiser();
+
+  assertEquals(ctx.elements.reprise.hidden, true);
+  assertEquals(ctx.elements.repriseTexte.textContent, "");
+});
+
+Deno.test("reception.js : reinitialiser() sans rien en cours ne casse rien (idempotent, comme sortir())", () => {
+  const ctx = crearContexto();
+  ctx.modo.reinitialiser();
+  assertEquals(ctx.modo.estEnReception(), false);
+  assertEquals(ctx.elements.panneau.hidden, true);
+  assertEquals(ctx.elements.demarrer.hidden, false);
+  assertEquals(ctx.elements.reprise.hidden, true);
+});

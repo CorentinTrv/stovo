@@ -774,65 +774,180 @@ async function charger() {
 // app.js appelait ceci deux fois (ex. session deja active + evenement
 // onAuthStateChange qui suit), on ne veut ni deux setInterval empiles ni
 // deux ecouteurs sur le bouton "Rafraichir".
+//
+// Lot "sortie de session propre" (25/08/2026) : le CABLAGE (ecouteurs,
+// setInterval) ne doit s'attacher qu'UNE SEULE FOIS pour toute la vie de la
+// page, mais le CHARGEMENT des donnees (charger()) doit rejouer a CHAQUE
+// ouverture RÉELLE de session (deconnexion puis reconnexion sans recharger
+// l'onglet), sans attendre le prochain tick du setInterval (jusqu'a 30 s) —
+// c'est le defaut constate le 25/08 en changeant de compte sur l'iPhone. Le
+// fond de l'ecran est lui aussi vide a la deconnexion (viderDashboard(),
+// plus bas), donc ce charger() est ce qui le repeint.
+//
+// Correction post-relecture du Jarvis (25/08/2026, meme lot) : `afficherApp()`
+// (ecran_session.js) est appelee PLUSIEURS FOIS par ouverture reelle de
+// session, pas une seule — app.js ecoute a la fois `getSessionActuelle()`
+// (au chargement) ET `onAuthChange`, qui recoit lui-meme un evenement
+// `INITIAL_SESSION` en plus (chargement), `SIGNED_IN` en plus de l'appel
+// direct du formulaire de connexion (connexion), et surtout un
+// `TOKEN_REFRESHED` a CHAQUE renouvellement automatique du jeton
+// (`autoRefreshToken`), bien apres l'ouverture de la session. Une premiere
+// version de ce lot appelait `charger()` sans garde a chaque appel de
+// `demarrerDashboard()` : resultat, une lecture complete de `produits` et
+// des 30 jours de `mouvements` PLUSIEURS FOIS par ouverture, et une a
+// chaque renouvellement de jeton (silencieux, periodique, jamais vu a
+// l'ecran mais couteux en requetes). `donneesACharger` distingue "il faut
+// vraiment recharger" (vrai au tout premier appel, remis a vrai par
+// viderDashboard() a chaque deconnexion) de "encore un echo d'evenement
+// d'auth sur la MEME session" (tous les appels suivants, TOKEN_REFRESHED
+// inclus) : consomme (repose a faux) AVANT l'appel a charger(), pour qu'un
+// evenement qui arriverait PENDANT que charger() tourne encore (async) n'en
+// redeclenche pas un second. Le bouton "Rafraichir" et le setInterval
+// continuent d'appeler charger() DIRECTEMENT (voir plus bas), ils ne
+// passent jamais par ce drapeau : un rafraichissement manuel ou periodique
+// doit toujours fonctionner, drapeau ou pas.
 let demarre = false;
+let donneesACharger = true;
 
 export function demarrerDashboard() {
-  if (demarre) return;
-  demarre = true;
-  // Restaurer le repli du bandeau du matin AVANT le premier rendu (evite un
-  // clignotement de la liste qui s'afficherait puis se replierait).
-  try { if (localStorage.getItem('stovo_matin_replie') === '1') $('matin').classList.add('replie'); } catch (_e) { /* stockage indispo */ }
-  charger();
-  $('refresh').addEventListener('click', charger);
-  // Bouton "Copier la liste" de l'ecran du matin : copie le texte prepare au
-  // dernier rendu (texteListeCourses). Attache une seule fois, comme refresh ;
-  // le contenu, lui, est remis a jour a chaque charger().
-  $('matin-copier').addEventListener('click', async () => {
-    if (!texteListeCourses) return;
-    const btn = $('matin-copier');
-    try {
-      await navigator.clipboard.writeText(texteListeCourses);
-      const orig = btn.textContent;
-      btn.textContent = '✓ Copié';
-      setTimeout(() => { btn.textContent = orig; }, 1500);
-    } catch (_e) {
-      // Presse-papier indisponible (vieux navigateur, contexte non securise) :
-      // repli par une invite ou l'utilisateur fait Ctrl+C.
-      globalThis.prompt('Copie ta liste (Ctrl+C) :', texteListeCourses);
-    }
-  });
-  // Repli/depli du bandeau du matin ; l'etat est memorise (localStorage).
-  const majAriaMatin = () => $('matin-toggle').setAttribute('aria-expanded', String(!$('matin').classList.contains('replie')));
-  majAriaMatin();
-  $('matin-toggle').addEventListener('click', () => {
-    const replie = $('matin').classList.toggle('replie');
+  if (!demarre) {
+    demarre = true;
+    // Restaurer le repli du bandeau du matin AVANT le premier rendu (evite un
+    // clignotement de la liste qui s'afficherait puis se replierait).
+    try { if (localStorage.getItem('stovo_matin_replie') === '1') $('matin').classList.add('replie'); } catch (_e) { /* stockage indispo */ }
+    $('refresh').addEventListener('click', charger);
+    // Bouton "Copier la liste" de l'ecran du matin : copie le texte prepare au
+    // dernier rendu (texteListeCourses). Attache une seule fois, comme refresh ;
+    // le contenu, lui, est remis a jour a chaque charger().
+    $('matin-copier').addEventListener('click', async () => {
+      if (!texteListeCourses) return;
+      const btn = $('matin-copier');
+      try {
+        await navigator.clipboard.writeText(texteListeCourses);
+        const orig = btn.textContent;
+        btn.textContent = '✓ Copié';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      } catch (_e) {
+        // Presse-papier indisponible (vieux navigateur, contexte non securise) :
+        // repli par une invite ou l'utilisateur fait Ctrl+C.
+        globalThis.prompt('Copie ta liste (Ctrl+C) :', texteListeCourses);
+      }
+    });
+    // Repli/depli du bandeau du matin ; l'etat est memorise (localStorage).
+    const majAriaMatin = () => $('matin-toggle').setAttribute('aria-expanded', String(!$('matin').classList.contains('replie')));
     majAriaMatin();
-    try { localStorage.setItem('stovo_matin_replie', replie ? '1' : '0'); } catch (_e) { /* stockage indispo */ }
-  });
-  // Memoriser l'etat ouvert/ferme des groupes d'inventaire, sinon le
-  // rafraichissement toutes les 30 s les refermerait. L'evenement "toggle" ne
-  // bouillonne pas -> ecoute en phase de capture.
-  $('inv-grid').addEventListener('toggle', (e) => {
-    const d = e.target;
-    if (d.tagName === 'DETAILS' && d.dataset.groupe) invGroupesOuverts[d.dataset.groupe] = d.open;
-  }, true);
-  // Chantier C1 : le <details> de la demarque vit hors de #inv-grid (voir
-  // index.html), donc il lui faut son propre listener. Purement documentaire
-  // (voir la note sur invGroupesOuverts.pertes plus haut) : ce <details>
-  // n'etant jamais recree par charger(), son etat visuel survit deja tout
-  // seul, ce listener ne fait que garder invGroupesOuverts a jour par
-  // coherence avec les 3 groupes d'inventaire.
-  const pertesDetails = $('pertes-groupe');
-  if (pertesDetails) {
-    pertesDetails.addEventListener('toggle', () => { invGroupesOuverts.pertes = pertesDetails.open; });
+    $('matin-toggle').addEventListener('click', () => {
+      const replie = $('matin').classList.toggle('replie');
+      majAriaMatin();
+      try { localStorage.setItem('stovo_matin_replie', replie ? '1' : '0'); } catch (_e) { /* stockage indispo */ }
+    });
+    // Memoriser l'etat ouvert/ferme des groupes d'inventaire, sinon le
+    // rafraichissement toutes les 30 s les refermerait. L'evenement "toggle" ne
+    // bouillonne pas -> ecoute en phase de capture.
+    $('inv-grid').addEventListener('toggle', (e) => {
+      const d = e.target;
+      if (d.tagName === 'DETAILS' && d.dataset.groupe) invGroupesOuverts[d.dataset.groupe] = d.open;
+    }, true);
+    // Chantier C1 : le <details> de la demarque vit hors de #inv-grid (voir
+    // index.html), donc il lui faut son propre listener. Purement documentaire
+    // (voir la note sur invGroupesOuverts.pertes plus haut) : ce <details>
+    // n'etant jamais recree par charger(), son etat visuel survit deja tout
+    // seul, ce listener ne fait que garder invGroupesOuverts a jour par
+    // coherence avec les 3 groupes d'inventaire.
+    const pertesDetails = $('pertes-groupe');
+    if (pertesDetails) {
+      pertesDetails.addEventListener('toggle', () => { invGroupesOuverts.pertes = pertesDetails.open; });
+    }
+    // Chantier C2 (lot C2-3) : câblage des deux boutons d'export. Comme
+    // #pertes-groupe ci-dessus, #export-groupe vit hors de #inv-grid, n'est
+    // jamais recréé par charger() et n'a donc pas besoin d'être suivi dans
+    // invGroupesOuverts : son état ouvert/fermé survit tout seul au
+    // rafraîchissement toutes les 30 s.
+    majExport();
+    setInterval(charger, 30000);
   }
-  // Chantier C2 (lot C2-3) : câblage des deux boutons d'export. Comme
-  // #pertes-groupe ci-dessus, #export-groupe vit hors de #inv-grid, n'est
-  // jamais recréé par charger() et n'a donc pas besoin d'être suivi dans
-  // invGroupesOuverts : son état ouvert/fermé survit tout seul au
-  // rafraîchissement toutes les 30 s.
-  majExport();
-  setInterval(charger, 30000);
+  // Un seul charger() par ouverture reelle de session, zero sur un simple
+  // echo d'evenement d'auth (voir le commentaire au-dessus de `demarre`).
+  if (donneesACharger) {
+    donneesACharger = false;
+    charger();
+  }
+}
+
+// =========================================================================
+// Lot "sortie de session propre" (25/08/2026)
+// =========================================================================
+// Vide tous les puits d'affichage du dashboard AVANT que #app-shell ne
+// redevienne visible pour un eventuel prochain compte (appele par
+// afficherLogin(), voir ecran_session.js). Remet chaque zone dans l'etat
+// qu'elle a au chargement de la page (meme texte, meme "Chargement..." que
+// l'inventaire/l'historique avant le tout premier charger()), plutot que de
+// se contenter de les cacher : un attribut `hidden`/`display:none` n'empeche
+// pas un futur bug d'affichage (ou une inspection du DOM) de les rendre
+// visibles avec les donnees de l'ancien compte encore dedans.
+export function viderDashboard() {
+  // Reautorise le PROCHAIN charger() (voir le commentaire au-dessus de
+  // `demarre`/`donneesACharger`) : la session qui vient de se fermer avait
+  // deja consomme le drapeau, la prochaine ouverture doit pouvoir le
+  // reconsommer une fois.
+  donneesACharger = true;
+  texteListeCourses = '';
+
+  const matin = $('matin');
+  if (matin) matin.style.display = 'none'; // etat au chargement (index.html : style="display:none")
+  const matinResume = $('matin-resume');
+  if (matinResume) matinResume.textContent = '';
+  const matinListe = $('matin-liste');
+  if (matinListe) matinListe.innerHTML = '';
+  const matinCopier = $('matin-copier');
+  if (matinCopier) matinCopier.hidden = true;
+
+  $('kpi-commander').textContent = '—';
+  $('kpi-rupture').textContent = '—';
+  $('kpi-produits').textContent = '—';
+  $('kpi-mouvements').textContent = '—';
+  $('kpi-valeur').textContent = '—';
+  $('kpi-valeur-sub').textContent = '';
+  $('updated').textContent = '—';
+
+  const dormant = $('dormant-resume');
+  if (dormant) { dormant.style.display = 'none'; dormant.textContent = ''; }
+
+  const verdict = $('verdict');
+  if (verdict) { verdict.style.display = 'none'; verdict.textContent = ''; verdict.className = 'verdict'; }
+
+  const bandeau = $('bandeau-pilotage');
+  if (bandeau) { bandeau.style.display = 'none'; bandeau.innerHTML = ''; }
+
+  const reorderBloc = $('reorder-bloc');
+  if (reorderBloc) reorderBloc.style.display = 'none';
+  const reorderCount = $('reorder-count');
+  if (reorderCount) reorderCount.textContent = '';
+  const reorderList = $('reorder-list');
+  if (reorderList) reorderList.innerHTML = '';
+
+  const pertesContenu = $('pertes-contenu');
+  if (pertesContenu) pertesContenu.innerHTML = '';
+
+  $('inv-count').textContent = '';
+  $('inv-grid').innerHTML = `<div class="state">Chargement de l'inventaire…</div>`; // meme texte que l'etat initial d'index.html
+
+  $('mvt-body').innerHTML = `<tr><td colspan="4" class="state">Chargement…</td></tr>`; // idem
+
+  // Export CSV (chantier C2) : meme fonction que le vrai etat de repos
+  // (aucun export en cours), reutilisee plutot que recopiee.
+  afficherEtatExport('', false);
+
+  // Onglet « Stock » (QW-C) et tout autre ecouteur de 'stovo:donnees' : un
+  // tableau de produits vide leur suffit pour se vider a leur tour (voir
+  // stock.js, qui affiche "Ton catalogue est vide..." pour un tableau []).
+  // C'est un etat legerement different du VRAI etat initial de stock.js
+  // (produitsCourants === null -> "Chargement..."), assume : republier un
+  // tableau vide est plus simple qu'exporter un 3e etat depuis dashboard.js,
+  // et le texte reste juste (aucune donnee de l'ancien compte n'y figure).
+  document.dispatchEvent(new CustomEvent('stovo:donnees', {
+    detail: { produits: [], gesteVivant: false, derniereSortieLe: null, compteursEtat: null },
+  }));
 }
 
 // Formateurs partages avec l'onglet « Stock » (QW-C) : exportes tels quels
