@@ -44,6 +44,24 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Stovo" />
 
+  <!-- Lot A15 (R-2, 25/08/2026) : pose data-couleur AVANT le premier rendu
+       (donc AVANT la feuille de style), sinon l'app clignote en flamme une
+       fraction de seconde a chaque ouverture (le temps que reglages.js se
+       charge et lise localStorage). Minuscule et AUTONOME : aucun import,
+       aucune dependance a couleur_logique.js qui n'est pas encore charge a
+       ce stade. La liste des quatre teintes non-flamme est DUPLIQUEE ici,
+       comme TEINTES dans couleur_logique.js : un changement de teinte se
+       fait aux DEUX endroits (chacun renvoie a l'autre). "flamme" n'a pas
+       besoin d'etre dans cette liste : c'est la valeur par defaut, elle ne
+       pose aucun attribut (voir calculerAttribut, couleur_logique.js). -->
+  <script>
+    try {
+      var stovoTeinte = localStorage.getItem('stovo_couleur');
+      if (['bleu', 'prune', 'framboise', 'encre'].indexOf(stovoTeinte) !== -1) {
+        document.documentElement.setAttribute('data-couleur', stovoTeinte);
+      }
+    } catch (e) {}
+  </script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -631,12 +649,12 @@
     </main>
   </div>
 
-  <!-- ================= Écran « Réglages » (lot A4, 24/08/2026) =================
+  <!-- ================= Écran « Réglages » (lot A4, 24/08/2026 ; carte
+       « Couleur de Stovo » ajoutée au lot A15, R-2, 25/08/2026) =================
        Ouvert par l'engrenage de l'en-tête (#btn-reglages). PAS un 5e onglet
        (la nav plus bas n'a aucun bouton data-onglet="reglages") : géré comme
        les 4 écrans ci-dessus par app.js (ECRANS map + 'stovo:onglet'), câblé
-       par reglages.js. La carte « Couleur de Stovo » de la planche Main est
-       HORS PÉRIMÈTRE de ce lot (lot A15, R-2) : volontairement absente. -->
+       par reglages.js. -->
   <div id="ecran-reglages" class="ecran">
     <main class="reglages-page wrap">
       <div class="login-retour">
@@ -646,6 +664,23 @@
         </a>
       </div>
       <h1 class="section-title">Réglages</h1>
+
+      <!-- Carte « Couleur de Stovo » (planche ReglagesPrune.dc.html) : le
+           nuancier (#reglages-nuancier) est RENDU par reglages.js via
+           couleur_logique.js (module pur, testé), ce markup ne pose que le
+           conteneur et l'aperçu du bouton "Oui". -->
+      <section class="card reglages-couleur">
+        <span class="reglages-soustitre">Couleur de Stovo</span>
+        <p class="reglages-couleur-texte">La couleur des boutons et de ce qu’on peut toucher. Le reste ne change pas.</p>
+        <div class="reglages-nuancier" id="reglages-nuancier"></div>
+        <div class="reglages-apercu">
+          <span class="btn-confirmation btn-oui reglages-apercu-bouton" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Oui
+          </span>
+          <p class="reglages-apercu-texte">Le bouton Oui, tel qu’il sera. Appliqué tout de suite, sur cet appareil.</p>
+        </div>
+      </section>
 
       <section class="card reglages-carte">
         <span class="reglages-soustitre">Mon compte</span>

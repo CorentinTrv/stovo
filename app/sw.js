@@ -172,7 +172,18 @@
 // aide-contenu.js (section "Mon compte et contact"), index.html (4 nouveaux
 // ecrans + l'engrenage remplace la deconnexion dans l'en-tete), styles.css
 // (leurs styles). pwa-api INCHANGEE : tout passe par l'API Auth de Supabase.
-const CACHE_NAME = 'stovo-app-v32';
+// v33 (lot A15, R-2, 25/08/2026) : la couleur d'action au choix, cinq
+// teintes (Flamme, Bleu, Prune, Framboise, Encre), memorisee SUR L'APPAREIL
+// (localStorage, jamais par compte, jamais d'appel reseau). NOUVEAU fichier
+// couleur_logique.js (module pur : normalisation, decision d'attribut,
+// liste des teintes et leurs valeurs, rendu du nuancier) ajoute au
+// precache. Fichiers modifies : styles.css (jetons --action/--action-sombre
+// + cinq blocs html[data-couleur], remplacent --flamme sur tout ce qui est
+// touchable ; --flamme reste sur le logotype "Stovo" et le decor),
+// reglages.js (carte "Couleur de Stovo" en tete de l'ecran), index.html
+// (script en tete qui pose data-couleur AVANT le premier rendu, markup de
+// la carte), aide-contenu.js (une ligne dans "Mon compte et contact").
+const CACHE_NAME = 'stovo-app-v33';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -195,6 +206,7 @@ const FICHIERS_COQUILLE = [
   './recuperation_logique.js',
   './recuperation.js',
   './contact.js',
+  './couleur_logique.js',
   './reglages.js',
   './parler.js',
   './parler_logique.js',

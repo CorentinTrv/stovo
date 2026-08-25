@@ -387,6 +387,10 @@ export const CONTENU = [
       },
       {
         type: 'texte',
+        texte: 'Tu peux changer la couleur de Stovo dans Réglages : cinq teintes au choix, appliquée tout de suite, sur cet appareil.',
+      },
+      {
+        type: 'texte',
         texte: 'Mot de passe oublié ? Sur l\'écran de connexion, tape « Mot de passe oublié&nbsp;? ». Stovo t\'envoie un <b>code à 6 chiffres</b> par e-mail, jamais un lien à cliquer : tu le saisis dans Stovo avec ton nouveau mot de passe, et c\'est fait.',
       },
       {

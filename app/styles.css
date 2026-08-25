@@ -53,11 +53,34 @@
   --flamme-sombre: #C94A00;
   --fond-chaud: #FFF1E4;
 
+  /* Lot A15 (R-2, 25/08/2026) : la couleur d'action au choix, cinq
+     teintes (regle 10 de DESIGN.md, teal et vert exclus). --action et
+     --action-sombre remplacent --flamme/--flamme-sombre sur tout ce qui
+     est TOUCHABLE (boutons, liens, micro, onglet actif) ; --flamme reste
+     reserve a l'identite (logotype "Stovo") et au decor (--fond-chaud,
+     --shadow-chaude, INCHANGES par ce lot). Valeur par defaut = flamme,
+     comme si aucun choix n'avait ete fait. */
+  --action: #FA5D00;
+  --action-sombre: #C94A00;
+
   --shadow-sm: 0 1px 2px rgba(29,30,28,.06);
   --shadow: 0 1px 2px rgba(29,30,28,.06);
   --shadow-chaude: rgba(250,166,0,.22) 6px 4px 24px, rgba(29,30,28,.05) 0 1px 2px;
   --radius: 20px;
 }
+
+/* Les cinq teintes de --action (lot A15, R-2). Un attribut data-couleur
+   sur <html>, pose par reglages.js (choix immediat, memorise dans
+   localStorage) ou par le script en tete d'index.html (avant le premier
+   rendu, pour eviter le clignotement en flamme). "flamme" est explicite
+   ici bien qu'identique au defaut de :root : un choix EXPLICITE de
+   l'utilisateur doit pouvoir se relire dans la feuille de style, meme
+   s'il ne change rien visuellement. */
+html[data-couleur="flamme"] { --action: #FA5D00; --action-sombre: #C94A00; }
+html[data-couleur="bleu"] { --action: #1D4ED8; --action-sombre: #1E40AF; }
+html[data-couleur="prune"] { --action: #7E22CE; --action-sombre: #6B21A8; }
+html[data-couleur="framboise"] { --action: #BE185D; --action-sombre: #9D174D; }
+html[data-couleur="encre"] { --action: #1D1E1C; --action-sombre: #000000; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -85,6 +108,9 @@ header {
 }
 .header-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
 .brand { display: flex; align-items: center; gap: 13px; }
+/* Lot A15 (R-2, 25/08/2026) : le logotype reste en --flamme, JAMAIS en
+   --action. C'est l'identite de Stovo (comme le mot "Stovo" en tete de la
+   vitrine), pas un element touchable, il ne suit pas le choix de couleur. */
 .brand h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; line-height: 44px; color: var(--flamme); }
 .brand p { font-size: 13.5px; opacity: .88; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
@@ -289,11 +315,11 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    c'est l'action de l'écran, au même titre que .matin-copier ou
    .btn-reception-primaire. */
 .btn-micro:not(:disabled) {
-  background: var(--flamme); border-color: var(--flamme); color: #fff;
+  background: var(--action); border-color: var(--action); color: #fff;
   box-shadow: 0 1px 4px rgba(250,93,0,.25);
   cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s;
 }
-.btn-micro:not(:disabled):hover { background: var(--flamme-sombre); border-color: var(--flamme-sombre); }
+.btn-micro:not(:disabled):hover { background: var(--action-sombre); border-color: var(--action-sombre); }
 .btn-micro:not(:disabled):active { transform: translateY(1px); }
 
 /* État "en écoute" : pulsation discrète pour montrer que le micro capte.
@@ -339,8 +365,8 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .btn-confirmation svg { flex: 0 0 auto; }
 .btn-confirmation:active { transform: translateY(1px); }
 .btn-confirmation:disabled { opacity: .6; cursor: wait; }
-.btn-oui { background: var(--flamme); border: none; color: #fff; box-shadow: 0 1px 4px rgba(250,93,0,.25); }
-.btn-oui:hover { background: var(--flamme-sombre); }
+.btn-oui { background: var(--action); border: none; color: #fff; box-shadow: 0 1px 4px rgba(250,93,0,.25); }
+.btn-oui:hover { background: var(--action-sombre); }
 .btn-non { background: var(--card); border: 1.5px solid var(--border); color: var(--text); font-size: 17px; }
 .btn-non:hover { background: var(--fond-chaud); }
 
@@ -589,11 +615,11 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   flex: 1; display: inline-flex; align-items: center; justify-content: center;
   font-family: inherit; font-size: 19px; font-weight: 700; white-space: nowrap;
   min-height: 46px; padding: 0 16px; border: none; border-radius: 14px;
-  background: var(--flamme); color: #fff; cursor: pointer;
+  background: var(--action); color: #fff; cursor: pointer;
   box-shadow: 0 1px 4px rgba(250,93,0,.25);
   transition: background .15s, transform .1s, opacity .15s;
 }
-.btn-reception-primaire:hover { background: var(--flamme-sombre); }
+.btn-reception-primaire:hover { background: var(--action-sombre); }
 .btn-reception-primaire:active { transform: translateY(1px); }
 .btn-reception-primaire:disabled { opacity: .5; cursor: not-allowed; }
 .btn-reception-secondaire {
@@ -638,10 +664,12 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   font-size: 11px; font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
-/* Reprise du 23/08 : la flamme reste sur l'icone (decorative, hors seuil de
-   contraste) ; le libelle actif passe en encre pour rester lisible (la
-   flamme sur blanc a 11px gras ne fait que ~3,17:1, sous le seuil AA). */
-.nav-item.actif .nav-icone { color: var(--flamme); }
+/* Reprise du 23/08 : la couleur d'action reste sur l'icone (decorative, hors
+   seuil de contraste) ; le libelle actif passe en encre pour rester lisible
+   (la flamme sur blanc a 11px gras ne fait que ~3,17:1, sous le seuil AA).
+   Lot A15 (R-2, 25/08) : --flamme -> --action, c'est "l'onglet qu'on peut
+   toucher" au sens du brief, donc suit le choix de couleur. */
+.nav-item.actif .nav-icone { color: var(--action); }
 .nav-item.actif .nav-label { color: var(--text); font-weight: 700; }
 .nav-item:active { transform: translateY(1px); }
 
@@ -692,7 +720,8 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 }
 /* Le mot Stovo, logotype flamme, posé AU-DESSUS de la carte (pas de
    pictogramme) : même gabarit que .brand h1 de l'en-tête et .logo de la
-   vitrine (DM Sans 700, 22px, -.02em). */
+   vitrine (DM Sans 700, 22px, -.02em). Lot A15 (R-2, 25/08/2026) : reste en
+   --flamme comme .brand h1 ci-dessus, c'est l'identité, pas --action. */
 .login-logo {
   font-size: 22px; font-weight: 700; letter-spacing: -.02em; line-height: 44px;
   color: var(--flamme); margin-bottom: 4px;
@@ -737,11 +766,11 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   margin-top: 20px; width: 100%;
   font-family: inherit; font-size: 19px; font-weight: 700;
   min-height: 46px; padding: 0 16px; border: none; border-radius: 14px;
-  background: var(--flamme); color: #fff; cursor: pointer;
+  background: var(--action); color: #fff; cursor: pointer;
   box-shadow: 0 1px 4px rgba(250,93,0,.25);
   transition: background .15s, transform .1s;
 }
-.btn-login:hover { background: var(--flamme-sombre); }
+.btn-login:hover { background: var(--action-sombre); }
 .btn-login:active { transform: translateY(1px); }
 .btn-login:disabled { opacity: .7; cursor: wait; }
 
@@ -802,12 +831,12 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   display: inline-flex; align-items: center; justify-content: center;
   font-family: inherit; font-size: 19px; font-weight: 700; white-space: nowrap;
   padding: 0 18px; border-radius: 14px; border: none;
-  background: var(--flamme); color: #fff; cursor: pointer;
+  background: var(--action); color: #fff; cursor: pointer;
   box-shadow: 0 1px 4px rgba(250,93,0,.25);
   transition: background .15s, transform .1s;
   min-height: 46px;
 }
-.matin-copier:hover { background: var(--flamme-sombre); }
+.matin-copier:hover { background: var(--action-sombre); }
 .matin-copier:active { transform: translateY(1px); }
 
 .matin-resume { grid-area: resume; font-size: 14.5px; font-weight: 600; margin-top: 5px; }
@@ -1219,7 +1248,8 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
   .nav-item:active,
   .btn-micro:not(:disabled):active,
   .btn-reglages:active,
-  .reglages-btn-mailto:active {
+  .reglages-btn-mailto:active,
+  .reglages-pastille:active {
     transform: none;
   }
 }
@@ -1325,7 +1355,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .reglages-ligne-icone {
   flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
   width: 36px; height: 36px; border-radius: 999px;
-  background: var(--fond-chaud); color: var(--flamme);
+  background: var(--fond-chaud); color: var(--action);
 }
 .reglages-ligne-texte { flex: 1 1 auto; }
 .reglages-chevron { flex: 0 0 auto; color: var(--muted-light); }
@@ -1347,12 +1377,12 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .reglages-btn-mailto {
   display: flex; align-items: center; justify-content: center; gap: 10px;
   width: 100%; min-height: 50px; padding: 12px 20px;
-  background: var(--flamme); color: #fff; text-decoration: none;
+  background: var(--action); color: #fff; text-decoration: none;
   font-family: inherit; font-size: 19px; font-weight: 700; border-radius: 14px;
   box-shadow: 0 1px 4px rgba(250,93,0,.25);
   transition: background .15s, transform .1s;
 }
-.reglages-btn-mailto:hover { background: var(--flamme-sombre); }
+.reglages-btn-mailto:hover { background: var(--action-sombre); }
 .reglages-btn-mailto:active { transform: translateY(1px); }
 .reglages-adresse-ligne { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .reglages-adresse { font-size: 15px; color: var(--text); word-break: break-all; }
@@ -1371,3 +1401,64 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .changer-mdp-message.est-erreur {
   color: var(--danger-text); background: var(--danger-bg); border-color: var(--danger-border);
 }
+
+/* =====================================================================
+   Lot A15 (R-2, 25/08/2026) : la carte « Couleur de Stovo », en tête de
+   l'écran Réglages (au-dessus de « Mon compte »). Planche source :
+   maquettes/compte-et-reglages/ReglagesPrune.dc.html. Le nuancier et
+   l'aperçu sont RENDUS par reglages.js (via app/couleur_logique.js,
+   module pur), ce fichier ne pose que leur style.
+   ===================================================================== */
+
+/* Même gabarit que .reglages-carte (padding 22px 20px, marge du haut
+   18px, comme la planche), mais un gap plus large (14px au lieu de 4px) :
+   cette carte empile 4 blocs distincts (étiquette, texte, nuancier,
+   aperçu) plutôt que des lignes de compte serrées. */
+.reglages-couleur { padding: 22px 20px; display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+.reglages-couleur-texte { font-size: 15px; line-height: 1.5; color: var(--muted); }
+
+.reglages-nuancier { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+/* Vrai <button> (accessibilité, brief §6) : cible 44px, libellé toujours
+   visible sous le disque (jamais la pastille seule). */
+.reglages-pastille {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  min-height: 44px; padding: 6px 0;
+  font-family: inherit; font-size: 13px; font-weight: 500; color: var(--muted);
+  background: none; border: none; cursor: pointer;
+  transition: color .15s, transform .1s;
+}
+.reglages-pastille-disque {
+  width: 44px; height: 44px; border-radius: 999px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+}
+/* Les CINQ couleurs du nuancier sont FIXES (chaque pastille montre
+   toujours sa propre teinte, contrairement à --action qui n'en active
+   qu'une à la fois sur <html>) : mêmes valeurs que les cinq blocs
+   html[data-couleur] plus haut (section :root), dupliquées ici avec la
+   même raison — un changement de teinte se fait aux DEUX endroits. */
+.reglages-pastille[data-teinte="flamme"] .reglages-pastille-disque { background: #FA5D00; }
+.reglages-pastille[data-teinte="bleu"] .reglages-pastille-disque { background: #1D4ED8; }
+.reglages-pastille[data-teinte="prune"] .reglages-pastille-disque { background: #7E22CE; }
+.reglages-pastille[data-teinte="framboise"] .reglages-pastille-disque { background: #BE185D; }
+.reglages-pastille[data-teinte="encre"] .reglages-pastille-disque { background: #1D1E1C; }
+/* Sélection : anneau blanc + encre autour du disque (planche), libellé en
+   gras + encre (comme .nav-item.actif .nav-label, même logique). La coche
+   SVG (rendue par couleur_logique.js) est blanche sur les cinq teintes :
+   flamme ne tient que 3,17:1 en blanc, mais c'est un pictogramme, pas du
+   texte courant (DESIGN.md, règle 10) ; les quatre autres teintes tiennent
+   toutes le 4,5:1 (balayé au rapport de passation). */
+.reglages-pastille.est-choisi { color: var(--text); font-weight: 700; }
+.reglages-pastille.est-choisi .reglages-pastille-disque {
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px var(--text);
+}
+.reglages-pastille:active { transform: translateY(1px); }
+
+/* L'aperçu : le bouton Oui « tel qu'il sera », dans la teinte courante —
+   il réutilise .btn-confirmation.btn-oui déjà stylé plus haut (donc suit
+   --action automatiquement, aucune couleur à dupliquer ici). C'est un
+   <span>, pas un <button> : aria-hidden (brief §5), pointer-events:none
+   en renfort pour qu'aucun clic ne lui donne l'air actif, et la légende
+   à côté porte tout le sens pour un lecteur d'écran. */
+.reglages-apercu { display: flex; align-items: center; gap: 10px; padding-top: 4px; flex-wrap: wrap; }
+.reglages-apercu-bouton { flex: 0 0 auto; pointer-events: none; }
+.reglages-apercu-texte { font-size: 14px; line-height: 1.5; color: var(--muted); margin: 0; flex: 1 1 200px; min-width: 0; }

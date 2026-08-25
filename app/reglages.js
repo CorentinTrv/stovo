@@ -15,8 +15,55 @@
 
 import { changerMotDePasse, getSessionActuelle, seDeconnecter } from './auth.js';
 import { construireLienMailto, DESTINATAIRE_CONTACT, extraireNumeroVersion } from './contact.js';
+import { CLE_STOCKAGE, calculerAttribut, normaliserTeinte, rendreNuancier } from './couleur_logique.js';
 
 const $ = (id) => document.getElementById(id);
+
+// --- Couleur de Stovo (lot A15, R-2, 25/08/2026) ----------------------
+// Mémorisée sur l'appareil (localStorage), jamais par compte : appliquée
+// IMMÉDIATEMENT au tap, pas de bouton Enregistrer (brief §4). Lecture et
+// écriture sous try/catch : Safari en navigation privée peut lever une
+// exception (quota à 0) — dans ce cas le choix reste appliqué à l'écran
+// (data-couleur posé quand même), simplement pas mémorisé pour la
+// prochaine ouverture.
+
+function lireTeinteStockee() {
+  try {
+    return normaliserTeinte(localStorage.getItem(CLE_STOCKAGE));
+  } catch (_e) {
+    return normaliserTeinte(undefined);
+  }
+}
+
+function ecrireTeinteStockee(teinte) {
+  try {
+    localStorage.setItem(CLE_STOCKAGE, teinte);
+  } catch (_e) {
+    // Volontairement silencieux : voir le commentaire au-dessus.
+  }
+}
+
+function appliquerTeinte(teinte) {
+  const attribut = calculerAttribut(teinte);
+  if (attribut) document.documentElement.setAttribute('data-couleur', attribut);
+  else document.documentElement.removeAttribute('data-couleur');
+}
+
+// Reconstruit le nuancier (rendreNuancier, module pur) et cable un clic
+// par pastille. Rappelee a chaque tap (pas seulement au premier rendu) :
+// c'est ce qui fait apparaitre/disparaitre la coche sur la bonne pastille.
+function rafraichirNuancier(teinteActive) {
+  const zone = $('reglages-nuancier');
+  zone.innerHTML = rendreNuancier(teinteActive);
+  zone.querySelectorAll('.reglages-pastille').forEach((bouton) => {
+    bouton.addEventListener('click', () => {
+      const teinte = bouton.dataset.teinte;
+      ecrireTeinteStockee(teinte);
+      appliquerTeinte(teinte);
+      rafraichirNuancier(teinte);
+    });
+  });
+}
 
 function demanderOnglet(nom) {
   document.dispatchEvent(new CustomEvent('stovo:onglet', { detail: { onglet: nom } }));
@@ -45,6 +92,8 @@ async function lireVersion() {
 // le lien mailto doivent rester à jour même si la page vit longtemps).
 
 async function remplirReglages() {
+  rafraichirNuancier(lireTeinteStockee());
+
   const session = await getSessionActuelle();
   const email = session?.user?.email || '';
   $('reglages-email').textContent = email;
