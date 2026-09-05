@@ -360,14 +360,19 @@ Deno.test("extraireBase64DepuisDataUrl : isole la partie apres la virgule d'une 
   assertEquals(extraireBase64DepuisDataUrl("data:application/xlsx;base64,QUJD"), "QUJD");
 });
 
-Deno.test("extraireBase64DepuisDataUrl : sans virgule, renvoie la chaine ENTIERE (comportement d'origine, different de photo.js)", () => {
-  assertEquals(extraireBase64DepuisDataUrl("QUJD"), "QUJD");
+Deno.test("extraireBase64DepuisDataUrl : sans virgule, renvoie une chaine vide (fusion avec photo.js, 27/08/2026)", () => {
+  assertEquals(extraireBase64DepuisDataUrl("QUJD"), "");
 });
 
 Deno.test("extraireBase64DepuisDataUrl : entree vide/absente ne leve jamais, renvoie une chaine vide", () => {
   assertEquals(extraireBase64DepuisDataUrl(""), "");
   assertEquals(extraireBase64DepuisDataUrl(null), "");
   assertEquals(extraireBase64DepuisDataUrl(undefined), "");
+});
+
+Deno.test("extraireBase64DepuisDataUrl : entree non chaine (nombre, objet) renvoie une chaine vide, jamais d'exception", () => {
+  assertEquals(extraireBase64DepuisDataUrl(1234), "");
+  assertEquals(extraireBase64DepuisDataUrl({ toString: () => "data:x;base64,QUJD" }), "");
 });
 
 // ---------------------------------------------------------------------------

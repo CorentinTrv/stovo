@@ -23,6 +23,8 @@
 // repli via <img> (les navigateurs appliquent l'orientation EXIF nativement au
 // rendu d'une balise img depuis 2020).
 
+import { extraireBase64DepuisDataUrl } from './parler_logique.js';
+
 // Grand côté maximal de l'image envoyée, en pixels.
 export const MAX_COTE = 2000;
 
@@ -61,14 +63,18 @@ export function calculerDimensions(largeur, hauteur, maxCote = MAX_COTE) {
 }
 
 // extraireBase64 : isole la charge utile d'une data URL ("data:image/jpeg;base64,XXXX").
-// Fonction PURE. Retourne '' si l'entrée n'a pas la forme attendue, jamais une
-// exception (même doctrine que le backend : une entrée douteuse ne casse rien).
-export function extraireBase64(dataUrl) {
-  if (typeof dataUrl !== 'string') return '';
-  const virgule = dataUrl.indexOf(',');
-  if (virgule === -1) return '';
-  return dataUrl.slice(virgule + 1);
-}
+//
+// FUSIONNÉE le 27/08/2026 (lot "après S-6, D6") avec extraireBase64DepuisDataUrl
+// (app/parler_logique.js) : les deux fonctions faisaient le même découpage
+// avec un comportement différent sur le cas "sans virgule", écart signalé au
+// lot A11 sans être corrigé. Ce module n'a plus sa propre copie : il importe
+// celle de parler_logique.js (module pur, déjà testée par Deno, voir l'import
+// en tête de fichier) et l'utilise sous son ancien nom local, en alias, pour
+// ne rien changer à l'usage plus bas (`extraireBase64(dataUrl)`). Aucun autre
+// fichier n'importait `extraireBase64` depuis ce module (vérifié au grep :
+// seul parler.js importe `creerReducteurPhoto` d'ici), donc plus rien n'est
+// réexporté ici.
+const extraireBase64 = extraireBase64DepuisDataUrl;
 
 // creerReducteurPhoto : fabrique la fonction de réduction, avec ses dépendances
 // navigateur injectées (même esprit que reception.js / stock.js : le module reste

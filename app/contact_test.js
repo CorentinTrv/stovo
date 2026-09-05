@@ -26,7 +26,9 @@ const UA_WINDOWS_FIREFOX = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) 
 // --- Constantes ------------------------------------------------------------
 
 Deno.test("contact : destinataire et sujet, mot pour mot (planche MailPrerempli)", () => {
-  assertStrictEquals(DESTINATAIRE_CONTACT, 'bonjour.stovo@outlook.com');
+  // Adresse changee le 27/08/2026 (lot "apres S-6") : voir le commentaire
+  // au-dessus de DESTINATAIRE_CONTACT dans contact.js.
+  assertStrictEquals(DESTINATAIRE_CONTACT, 'bonjour@stovo.fr');
   assertStrictEquals(SUJET_CONTACT, 'Stovo : une question');
 });
 
@@ -109,7 +111,7 @@ Deno.test("construireCorpsMail : la ligne d'envoi retombe sur Android/Chrome", (
 
 Deno.test("construireLienMailto : commence par mailto: suivi du destinataire exact", () => {
   const lien = construireLienMailto({ version: '32', email: 'c@c.fr', userAgent: UA_IPHONE_SAFARI });
-  assertMatch(lien, /^mailto:bonjour\.stovo@outlook\.com\?/);
+  assertMatch(lien, /^mailto:bonjour@stovo\.fr\?/);
 });
 
 Deno.test("construireLienMailto : le sujet encodé apparaît dans l'URL", () => {

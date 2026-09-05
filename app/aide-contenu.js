@@ -63,6 +63,26 @@
 // d'ecrire cette section ("seul", "sauf", "Deconnexion", "en-tete", "mot de
 // passe") : aucune astuce ne mentionnait ni l'en-tete ni la deconnexion,
 // rien a corriger ailleurs dans ce fichier.
+//
+// LOT "apres S-6, D22" (27/08/2026) : l'astuce "Deux produits qui se
+// ressemblent ? Precise" mentait sur son propre exemple. "Lait" et "Lait
+// entier" ne declenchent JAMAIS le choix numerote : _shared/matching.ts
+// (chercherProduit, passe 1, depart des candidats inclus) fait gagner un nom
+// STRICTEMENT EGAL au mot dit sur ceux qui le contiennent seulement - "lait"
+// designe donc "Lait" directement, sans question. Le choix numerote
+// n'apparait que si AUCUN nom n'est egal au mot dit et que plusieurs le
+// contiennent. Exemple corrige : "Lait entier" / "Lait demi-ecreme", aucun
+// des deux n'egale "lait", donc ambiguite reelle. Preuve executee (script
+// jetable important classerDeterministe + analyserCandidatMouvement tels
+// quels) : voir le rapport de passation du 27/08/2026. Ordre alphabetique
+// (lot D17, chargerCatalogue trie par nom) : "Lait demi-ecreme" avant "Lait
+// entier". Phrase inverse ajoutee en positif pour que l'astuce explique
+// aussi pourquoi dire "lait" tout court marche quand un seul produit
+// s'appelle exactement "Lait".
+//
+// LOT "apres S-6, contact" (27/08/2026) : l'adresse de "Ecrire a Corentin"
+// (section "Mon compte et contact") passe de bonjour.stovo@outlook.com a
+// bonjour@stovo.fr, meme decision et meme date que app/contact.js.
 
 // ====================================================================
 // LE CONTENU
@@ -314,7 +334,7 @@ export const CONTENU = [
       {
         type: 'astuce',
         titre: 'Deux produits qui se ressemblent ? Précise',
-        texte: 'Si tu as « Lait » et « Lait entier » et que tu dis juste « lait », Stovo <b>ne choisit pas au hasard</b> : il te propose une liste numérotée, du genre « 1) Lait ou 2) Lait entier ? ». Dis le numéro ou touche le bouton correspondant. Au-delà de quatre produits qui se ressemblent, il te redemande le nom complet.',
+        texte: 'Si tu as « Lait entier » et « Lait demi-écrémé » et que tu dis juste « lait », Stovo <b>ne choisit pas au hasard</b> : il te propose une liste numérotée, du genre « 1) Lait demi-écrémé ou 2) Lait entier ? ». Dis le numéro ou touche le bouton correspondant. <b>À l\'inverse, si un produit s\'appelle exactement ce que tu dis, Stovo le prend directement, sans poser de question</b> : c\'est fait pour que tu puisses dire « lait » tout court dès que ton catalogue a un produit qui s\'appelle juste « Lait ». Au-delà de quatre produits qui se ressemblent, il te redemande le nom complet.',
       },
       {
         type: 'astuce',
@@ -399,7 +419,7 @@ export const CONTENU = [
       },
       {
         type: 'texte',
-        texte: '« Écrire à Corentin » ouvre ton application de mail avec l\'adresse déjà remplie (<b>bonjour.stovo@outlook.com</b>, aussi copiable d\'un bouton) : un simple mail, il répond lui-même.',
+        texte: '« Écrire à Corentin » ouvre ton application de mail avec l\'adresse déjà remplie (<b>bonjour@stovo.fr</b>, aussi copiable d\'un bouton) : un simple mail, il répond lui-même.',
       },
     ],
   },

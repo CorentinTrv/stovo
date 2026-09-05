@@ -215,7 +215,27 @@
 // une reconnexion (seule porte de sortie du compte) : ecran_session.js
 // (afficherLogin()) emet desormais 'stovo:onglet' -> 'dashboard' (evenement
 // deja ecoute par app.js, aucune ligne changee la-bas).
-const CACHE_NAME = 'stovo-app-v34';
+// v35 (lot "apres S-6, premiere brique", 27/08/2026) : PREMIER FRONT PREVU
+// APRES LE GEL DU 07-13/09 (verdict S-6), code des maintenant mais garde sur
+// le disque, non deploye tant que le verdict n'est pas tombe. Trois
+// corrections, zero fichier nouveau : (1) D22 -- l'astuce "Deux produits qui
+// se ressemblent ? Precise" (aide-contenu.js) mentait sur son propre
+// exemple ("Lait"/"Lait entier" ne declenchent JAMAIS le choix numerote,
+// verifie contre _shared/matching.ts et prouve par un script jetable, voir
+// le rapport de passation) -- corrigee avec un exemple reel ("Lait entier"/
+// "Lait demi-ecreme") et une phrase positive sur la regle inverse. (2)
+// l'adresse de contact bonjour.stovo@outlook.com devient bonjour@stovo.fr
+// (boite OVH qui recoit et envoie, prouve le 27/08) -- contact.js,
+// aide-contenu.js, et un dernier endroit trouve au grep : le texte statique
+// de index.html (#reglages-adresse) qui ne suivait pas DESTINATAIRE_CONTACT.
+// (3) D6 -- extraireBase64 (photo.js) et extraireBase64DepuisDataUrl
+// (parler_logique.js) divergeaient sur le cas "sans virgule" (ecart signale
+// au lot A11, jamais corrige) -- fusionnees en UNE fonction dans
+// parler_logique.js, que photo.js importe desormais (plus de copie locale).
+// Fichiers modifies : aide-contenu.js, contact.js, contact_test.js,
+// parler_logique.js, parler_logique_test.js, photo.js, index.html, sw.js
+// (ce fichier).
+const CACHE_NAME = 'stovo-app-v35';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,

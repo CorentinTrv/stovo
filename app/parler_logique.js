@@ -234,15 +234,24 @@ export function corpsImport(nomFichier, contenuBase64) {
 // partie apres la virgule), copie exacte de la logique qui vivait dans
 // lireFichierEnBase64 (parler.js).
 //
-// Piege signale (pas corrige, voir le rapport de passation) : cette fonction
-// N'EST PAS identique a extraireBase64 (app/photo.js), qui renvoie '' quand
-// aucune virgule n'est trouvee. Ici, en l'absence de virgule, on renvoie la
-// chaine ENTIERE telle quelle (comportement d'origine de parler.js). Fusionner
-// les deux changerait un comportement existant, donc on ne le fait pas.
+// FUSION avec extraireBase64 (app/photo.js) le 27/08/2026 (lot "apres S-6,
+// D6") : avant cette date, les deux fonctions divergeaient sur le cas "pas de
+// virgule dans l'entree" (celle-ci renvoyait la chaine ENTIERE, photo.js
+// renvoyait ''), ecart signale sans etre corrige au lot A11 (23/08/2026) pour
+// ne pas changer un comportement existant sans decision explicite. Decision
+// prise le 27/08 : les deux appelants passent par FileReader.readAsDataURL,
+// qui produit TOUJOURS "data:...;base64,XXXX" avec sa virgule, donc le cas
+// "sans virgule" n'arrive pas en usage reel ; et s'il arrivait, envoyer au
+// backend une chaine qui n'est pas du base64 est pire que d'envoyer '' (meme
+// doctrine que le backend : une entree douteuse ne casse rien). Cette fonction
+// adopte donc le comportement de photo.js : chaine vide des que l'entree
+// n'est pas une chaine, ou n'a pas de virgule. photo.js importe desormais
+// cette fonction au lieu de garder sa propre copie (voir photo.js).
 export function extraireBase64DepuisDataUrl(resultatFileReader) {
-  const texte = String(resultatFileReader || '');
-  const virgule = texte.indexOf(',');
-  return virgule === -1 ? texte : texte.slice(virgule + 1);
+  if (typeof resultatFileReader !== 'string') return '';
+  const virgule = resultatFileReader.indexOf(',');
+  if (virgule === -1) return '';
+  return resultatFileReader.slice(virgule + 1);
 }
 
 // ---------------------------------------------------------------------------

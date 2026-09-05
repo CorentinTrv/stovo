@@ -6,7 +6,11 @@
 // export.js. Un lien `mailto:`, rien d'autre (§3.1 de l'analyse) : pas de
 // formulaire, pas d'Edge Function, pas d'envoi depuis un serveur.
 
-export const DESTINATAIRE_CONTACT = 'bonjour.stovo@outlook.com';
+// Adresse changee le 27/08/2026 (lot "apres S-6, D22/contact/D6") : la boite
+// bonjour@stovo.fr existe chez OVH (recoit et envoie, prouve le 27/08), la
+// vitrine et les mails d'Auth l'utilisent deja. L'app etait le dernier
+// endroit qui pointait sur l'ancienne adresse Outlook.
+export const DESTINATAIRE_CONTACT = 'bonjour@stovo.fr';
 export const SUJET_CONTACT = 'Stovo : une question';
 
 // Résumé de l'appareil en UN mot (§3.1 de l'analyse), pour la ligne de pied
