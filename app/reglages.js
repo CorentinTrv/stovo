@@ -16,6 +16,15 @@
 import { changerMotDePasse, getSessionActuelle, seDeconnecter } from './auth.js';
 import { construireLienMailto, DESTINATAIRE_CONTACT, extraireNumeroVersion } from './contact.js';
 import { CLE_STOCKAGE, calculerAttribut, normaliserTeinte, rendreNuancier } from './couleur_logique.js';
+// Lot D28 (05/09/2026) : carte "Diagnostic micro" -- lecture seule du
+// journal ecrit par parler.js (localStorage, survit a un rechargement
+// complet de l'app, voir parler_logique.js pour le detail de la decision).
+import {
+  analyserJournalMicro,
+  CLE_JOURNAL_MICRO,
+  formaterEnvironnementMicro,
+  formaterJournalMicroPourAffichage,
+} from './parler_logique.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -87,12 +96,42 @@ async function lireVersion() {
   }
 }
 
+// --- Diagnostic micro (lot D28, 05/09/2026) --------------------------------
+// Lecture seule du journal écrit par parler.js (localStorage). Rejoué à
+// chaque ouverture de l'écran (comme le reste de remplirReglages()) : un
+// échec peut survenir pendant qu'on est sur un autre onglet.
+
+// PWA installée ou simple onglet de navigateur ? `display-mode: standalone`
+// couvre la plupart des navigateurs modernes ; `navigator.standalone` est le
+// repli historique de Safari iOS pour le même usage. Les deux sont lus en
+// lecture seule, jamais assignés : aucun risque de casser autre chose.
+function estAppInstallee() {
+  const parMediaQuery = typeof globalThis.matchMedia === 'function'
+    && globalThis.matchMedia('(display-mode: standalone)').matches;
+  return Boolean(parMediaQuery || navigator.standalone);
+}
+
+function lireJournalMicroStocke() {
+  try {
+    return analyserJournalMicro(localStorage.getItem(CLE_JOURNAL_MICRO));
+  } catch (_e) {
+    return [];
+  }
+}
+
+function rafraichirDiagnosticMicro() {
+  const journal = lireJournalMicroStocke();
+  const environnement = formaterEnvironnementMicro(navigator.userAgent, estAppInstallee());
+  $('reglages-diagnostic-journal').textContent = formaterJournalMicroPourAffichage(journal, environnement);
+}
+
 // --- Remplissage de l'écran Réglages, à chaque fois qu'il s'affiche --------
 // (et non une seule fois au chargement : l'e-mail de session, la version et
 // le lien mailto doivent rester à jour même si la page vit longtemps).
 
 async function remplirReglages() {
   rafraichirNuancier(lireTeinteStockee());
+  rafraichirDiagnosticMicro();
 
   const session = await getSessionActuelle();
   const email = session?.user?.email || '';
@@ -140,6 +179,38 @@ $('reglages-copier').addEventListener('click', async () => {
   } catch (_e) {
     globalThis.prompt('Copie cette adresse (Ctrl+C) :', DESTINATAIRE_CONTACT);
   }
+});
+
+// --- Diagnostic micro (lot D28, 05/09/2026) : Copier / Effacer -------------
+// Même filet que "reglages-copier" juste au-dessus (navigator.clipboard peut
+// échouer, repli par une invite). Le texte copié est EXACTEMENT celui
+// affiché à l'écran (formaterJournalMicroPourAffichage) : ce que Corentin
+// lit et ce qu'il colle dans WhatsApp sont identiques.
+$('reglages-diagnostic-copier').addEventListener('click', async () => {
+  const bouton = $('reglages-diagnostic-copier');
+  const libelle = bouton.querySelector('.btn-libelle');
+  const texte = $('reglages-diagnostic-journal').textContent;
+  try {
+    await navigator.clipboard.writeText(texte);
+    const origine = libelle.textContent;
+    libelle.textContent = 'Copié';
+    setTimeout(() => { libelle.textContent = origine; }, 1500);
+  } catch (_e) {
+    globalThis.prompt('Copie ce texte (Ctrl+C) :', texte);
+  }
+});
+
+// Efface le journal stocké (pas l'environnement affiché, qui est recalculé
+// à chaque rendu) puis rafraîchit l'affichage : redevient immédiatement
+// "Aucun événement enregistré pour le moment.".
+$('reglages-diagnostic-effacer').addEventListener('click', () => {
+  try {
+    localStorage.removeItem(CLE_JOURNAL_MICRO);
+  } catch (_e) {
+    // Volontairement silencieux : même filet que le reste de ce fichier
+    // (localStorage peut échouer en navigation privée).
+  }
+  rafraichirDiagnosticMicro();
 });
 
 // --- Écran « Changer mon mot de passe » -------------------------------------

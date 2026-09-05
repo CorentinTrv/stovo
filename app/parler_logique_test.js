@@ -10,6 +10,8 @@
 
 import { assertEquals } from "jsr:@std/assert";
 import {
+  ajouterAuJournalMicro,
+  analyserJournalMicro,
   calculerPliChoix,
   calculerVisibiliteAutresDemarrer,
   choisirBranche,
@@ -18,8 +20,13 @@ import {
   corpsDeclaration,
   corpsErreurExploitable,
   corpsImport,
+  creerEntreeJournalMicro,
+  creerMachineMicro,
   creerVerrouDeMode,
   extraireBase64DepuisDataUrl,
+  formaterEnvironnementMicro,
+  formaterHeureLocale,
+  formaterJournalMicroPourAffichage,
   interpreterReponsePwaApi,
   lireCorpsReponse,
   normaliserChoix,
@@ -389,4 +396,166 @@ Deno.test("texteErreurMicro : un message clair par code d'erreur connu", () => {
 Deno.test("texteErreurMicro : message generique pour un code inconnu", () => {
   assertEquals(texteErreurMicro("aborted"), "Problème avec le micro, réessaie ou utilise le clavier.");
   assertEquals(texteErreurMicro(undefined), "Problème avec le micro, réessaie ou utilise le clavier.");
+});
+
+// ---------------------------------------------------------------------------
+// Lot D28 (05/09/2026) : creerMachineMicro
+// ---------------------------------------------------------------------------
+// Rejoue les transitions decrites dans l'analyse du 30/08 : c'est cette
+// machine qui remplace le "enEcoute = true pose juste apres start()" qui
+// causait le verrou definitif (un appui pendant l'attente appelait stop()
+// sur une instance jamais demarree et sortait sans jamais retenter).
+
+Deno.test("creerMachineMicro : etat initial 'inactif', un premier appui demande le demarrage", () => {
+  const m = creerMachineMicro();
+  assertEquals(m.etat(), "inactif");
+  assertEquals(m.appui(), "demarrer");
+  assertEquals(m.etat(), "attente");
+});
+
+Deno.test("creerMachineMicro : un appui pendant l'attente ANNULE et repasse a 'inactif' (au lieu du verrou d'origine)", () => {
+  const m = creerMachineMicro();
+  m.appui(); // inactif -> attente
+  assertEquals(m.appui(), "annuler");
+  assertEquals(m.etat(), "inactif");
+  // Preuve que ce n'est pas mort : un nouvel appui redemande normalement un demarrage.
+  assertEquals(m.appui(), "demarrer");
+});
+
+Deno.test("creerMachineMicro : confirmerDemarrage() (onstart) ne fait passer a 'ecoute' que depuis 'attente'", () => {
+  const m = creerMachineMicro();
+  assertEquals(m.confirmerDemarrage(), false); // onstart tardif, rien n'etait en attente
+  assertEquals(m.etat(), "inactif");
+  m.appui();
+  assertEquals(m.confirmerDemarrage(), true);
+  assertEquals(m.etat(), "ecoute");
+  assertEquals(m.confirmerDemarrage(), false); // deja confirme, un second onstart ne rejoue rien
+});
+
+Deno.test("creerMachineMicro : expirerGarde() (delai de 2s ecoule) ne joue qu'en 'attente'", () => {
+  const m = creerMachineMicro();
+  assertEquals(m.expirerGarde(), false); // rien en attente
+  m.appui();
+  assertEquals(m.expirerGarde(), true);
+  assertEquals(m.etat(), "inactif");
+  m.appui();
+  m.confirmerDemarrage(); // deja en 'ecoute'
+  assertEquals(m.expirerGarde(), false); // la garde n'a plus cours une fois l'ecoute confirmee
+  assertEquals(m.etat(), "ecoute");
+});
+
+Deno.test("creerMachineMicro : un appui en 'ecoute' demande l'arret (toggle), sans changer l'etat tout de suite", () => {
+  const m = creerMachineMicro();
+  m.appui();
+  m.confirmerDemarrage();
+  assertEquals(m.appui(), "arreter");
+  // L'etat ne redevient 'inactif' qu'au vrai onend() (terminer()), jamais au moment de l'appui.
+  assertEquals(m.etat(), "ecoute");
+});
+
+Deno.test("creerMachineMicro : terminer() (onerror/onend) remet toujours a 'inactif', idempotent", () => {
+  const m = creerMachineMicro();
+  assertEquals(m.terminer(), false); // deja inactif, rien a faire
+  m.appui();
+  m.confirmerDemarrage();
+  assertEquals(m.terminer(), true);
+  assertEquals(m.etat(), "inactif");
+  assertEquals(m.terminer(), false); // rappele deux fois (onerror puis onend) : sans effet la 2e fois
+});
+
+// ---------------------------------------------------------------------------
+// Lot D28 : formaterHeureLocale / creerEntreeJournalMicro
+// ---------------------------------------------------------------------------
+
+Deno.test("formaterHeureLocale : heure locale a deux chiffres, zero en tete si besoin", () => {
+  assertEquals(formaterHeureLocale(new Date(2026, 8, 5, 9, 3, 7)), "09:03:07");
+  assertEquals(formaterHeureLocale(new Date(2026, 8, 5, 23, 59, 0)), "23:59:00");
+});
+
+Deno.test("creerEntreeJournalMicro : associe l'evenement a l'heure locale exacte", () => {
+  const date = new Date(2026, 8, 5, 14, 7, 32);
+  assertEquals(creerEntreeJournalMicro("start", date), { heure: "14:07:32", evenement: "start" });
+});
+
+// ---------------------------------------------------------------------------
+// Lot D28 : ajouterAuJournalMicro
+// ---------------------------------------------------------------------------
+
+Deno.test("ajouterAuJournalMicro : ajoute a la fin d'un journal vide", () => {
+  const journal = ajouterAuJournalMicro([], { heure: "10:00:00", evenement: "start" });
+  assertEquals(journal, [{ heure: "10:00:00", evenement: "start" }]);
+});
+
+Deno.test("ajouterAuJournalMicro : plafonne, les entrees les plus anciennes tombent en premier", () => {
+  let journal = [];
+  for (let i = 0; i < 25; i++) {
+    journal = ajouterAuJournalMicro(journal, { heure: String(i), evenement: "e" + i }, 20);
+  }
+  assertEquals(journal.length, 20);
+  assertEquals(journal[0].evenement, "e5"); // e0..e4 sont tombees
+  assertEquals(journal[19].evenement, "e24");
+});
+
+Deno.test("ajouterAuJournalMicro : un journal corrompu (pas un tableau) redemarre a zero plutot que de planter", () => {
+  const journal = ajouterAuJournalMicro("pas un tableau", { heure: "1", evenement: "x" });
+  assertEquals(journal, [{ heure: "1", evenement: "x" }]);
+});
+
+// ---------------------------------------------------------------------------
+// Lot D28 : analyserJournalMicro
+// ---------------------------------------------------------------------------
+
+Deno.test("analyserJournalMicro : lit un JSON de tableau valide", () => {
+  const brut = JSON.stringify([{ heure: "10:00:00", evenement: "start" }]);
+  assertEquals(analyserJournalMicro(brut), [{ heure: "10:00:00", evenement: "start" }]);
+});
+
+Deno.test("analyserJournalMicro : renvoie [] si absent, corrompu, ou pas un tableau", () => {
+  assertEquals(analyserJournalMicro(null), []);
+  assertEquals(analyserJournalMicro(undefined), []);
+  assertEquals(analyserJournalMicro("{pas du json valide"), []);
+  assertEquals(analyserJournalMicro(JSON.stringify({ pas: "un tableau" })), []);
+});
+
+Deno.test("analyserJournalMicro : filtre les entrees mal formees (localStorage modifie a la main)", () => {
+  const brut = JSON.stringify([
+    { heure: "10:00:00", evenement: "start" },
+    { heure: "10:00:01" },
+    "pas un objet",
+    null,
+    { evenement: "end" },
+  ]);
+  assertEquals(analyserJournalMicro(brut), [{ heure: "10:00:00", evenement: "start" }]);
+});
+
+// ---------------------------------------------------------------------------
+// Lot D28 : formaterEnvironnementMicro / formaterJournalMicroPourAffichage
+// ---------------------------------------------------------------------------
+
+Deno.test("formaterEnvironnementMicro : mentionne le mode PWA installee ou navigateur", () => {
+  assertEquals(formaterEnvironnementMicro("Mozilla/5.0 iPhone", true), "Mozilla/5.0 iPhone — PWA installée");
+  assertEquals(formaterEnvironnementMicro("Mozilla/5.0 iPhone", false), "Mozilla/5.0 iPhone — navigateur (onglet)");
+});
+
+Deno.test("formaterEnvironnementMicro : repli si le user-agent est absent", () => {
+  assertEquals(formaterEnvironnementMicro("", true), "user-agent inconnu — PWA installée");
+  assertEquals(formaterEnvironnementMicro(undefined, false), "user-agent inconnu — navigateur (onglet)");
+});
+
+Deno.test("formaterJournalMicroPourAffichage : environnement en tete, evenements du plus recent au plus ancien", () => {
+  const journal = [
+    { heure: "10:00:00", evenement: "demande-start" },
+    { heure: "10:00:02", evenement: "garde-2s-sans-start" },
+  ];
+  const texte = formaterJournalMicroPourAffichage(journal, "Mozilla/5.0 — navigateur (onglet)");
+  const lignes = texte.split("\n");
+  assertEquals(lignes[0], "Mozilla/5.0 — navigateur (onglet)");
+  assertEquals(lignes[1], "");
+  assertEquals(lignes[2], "10:00:02 — garde-2s-sans-start");
+  assertEquals(lignes[3], "10:00:00 — demande-start");
+});
+
+Deno.test("formaterJournalMicroPourAffichage : journal vide, message explicite plutot qu'une liste blanche", () => {
+  const texte = formaterJournalMicroPourAffichage([], "env");
+  assertEquals(texte, "env\n\nAucun événement enregistré pour le moment.");
 });

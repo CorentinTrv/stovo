@@ -83,6 +83,13 @@
 // LOT "apres S-6, contact" (27/08/2026) : l'adresse de "Ecrire a Corentin"
 // (section "Mon compte et contact") passe de bonjour.stovo@outlook.com a
 // bonjour@stovo.fr, meme decision et meme date que app/contact.js.
+//
+// LOT D28 (05/09/2026) : un dernier bloc ajoute a "Mon compte et contact",
+// qui pointe vers la nouvelle carte "Diagnostic micro" de Reglages (le
+// micro ne demarrait pas un lancement sur deux, voir parler_logique.js et
+// le rapport de passation). Grep "micro" avant d'ecrire : la seule mention
+// existante (section "Parler") dit que le micro remplit le champ sans
+// envoyer, rien a corriger la, aucune promesse fausse trouvee.
 
 // ====================================================================
 // LE CONTENU
@@ -420,6 +427,10 @@ export const CONTENU = [
       {
         type: 'texte',
         texte: '« Écrire à Corentin » ouvre ton application de mail avec l\'adresse déjà remplie (<b>bonjour@stovo.fr</b>, aussi copiable d\'un bouton) : un simple mail, il répond lui-même.',
+      },
+      {
+        type: 'texte',
+        texte: 'Le micro te lâche parfois au démarrage&nbsp;? La carte <b>Diagnostic micro</b> de Réglages garde les vingt derniers essais, avec l\'heure de chacun. Copie-le (bouton dédié) et envoie-le à Corentin, ça aide à comprendre.',
       },
     ],
   },

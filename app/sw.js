@@ -235,7 +235,42 @@
 // Fichiers modifies : aide-contenu.js, contact.js, contact_test.js,
 // parler_logique.js, parler_logique_test.js, photo.js, index.html, sw.js
 // (ce fichier).
-const CACHE_NAME = 'stovo-app-v35';
+// v36 (lot D28, 05/09/2026) : le micro qui ne demarrait pas un lancement sur
+// deux (verrou definitif -- voir 2026-08-30_analyse-D28-micro.md et le
+// rapport de passation du 05/09). Etage 1 : l'ecoute ne s'annonce plus qu'a
+// `onstart` (jamais plus juste apres `start()`), un delai de garde de 2 s
+// (DELAI_GARDE_MICRO_MS) remet tout a zero si `onstart` n'arrive jamais, un
+// appui pendant l'attente ANNULE proprement au lieu de rester bloque, et une
+// remise a zero silencieuse joue sur `visibilitychange`/`pagehide`. Toute
+// cette machine d'etat (creerMachineMicro) vit desormais dans
+// parler_logique.js, testee (18 nouveaux tests). Etage 2 : un journal des 20
+// derniers evenements micro, dans localStorage (survit a un rechargement
+// complet -- le contournement que Corentin utilisait), lu par une nouvelle
+// carte "Diagnostic micro" dans Reglages (boutons Copier/Effacer). Fichiers
+// modifies : parler.js, parler_logique.js, parler_logique_test.js,
+// reglages.js, aide-contenu.js, index.html, styles.css, sw.js (ce fichier).
+// Aucun nouveau fichier a precacher (aucun module neuf).
+// Corrections apres relecture du Jarvis (05/09/2026, meme v36, jour meme,
+// rien deploye) : (1) `onresult` (interimResults=true) declenche a CHAQUE
+// mot pendant la dictee -- journaliser a chaque appel saturait le plafond
+// de 20 lignes en une seule phrase, `demande-start`/`start`/`error:...`
+// disparaissaient tous. Un seul evenement `result-1er`, au tout premier
+// resultat de chaque instance, suffit au diagnostic. (2) `onerror` comptait
+// sur `onend` pour remettre la machine a zero ("la spec dit qu'il arrive
+// toujours"), alors que ce lot part du constat inverse (D18, iOS ne tient
+// pas les evenements) -- `onerror` remet desormais l'etat a zero tout de
+// suite (`terminer()` + `abandonnerInstanceEnCours()`), le message reste
+// affiche (`erreurEnCours`). Meme raisonnement ajoute pour l'arret
+// volontaire : `armerGardeArret()`/`annulerGardeArret()`, une garde de 2 s
+// (DELAI_GARDE_MICRO_MS) qui force la remise a zero si `onend` n'arrive
+// jamais apres un `stop()` demande par l'utilisateur. (3) la remise a zero
+// silencieuse sur `visibilitychange`/`pagehide` (`reinitialiserEcouteEn
+// ArrierePlan`, renommee) se limite desormais a l'etat 'ecoute' -- une
+// 'attente' reste couverte par sa propre garde de 2 s, et l'annuler ici
+// aurait pu casser le tout premier demarrage sur un changement de
+// visibilite lie a l'alerte de permission micro d'iOS. Seul parler.js
+// modifie pour ces trois corrections ; 369/369 toujours au vert.
+const CACHE_NAME = 'stovo-app-v36';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,

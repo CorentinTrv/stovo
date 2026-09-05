@@ -1390,6 +1390,24 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .reglages-version { font-size: 13px; color: var(--muted); margin-top: 22px; line-height: 1.5; }
 .reglages-version a { color: var(--muted); }
 
+/* Carte "Diagnostic micro" (lot D28, 05/09/2026) : même gabarit que
+   .reglages-carte (padding 22px 20px, marge du haut 18px), un peu plus
+   d'espace vertical entre ses blocs (soustitre, texte, journal, actions). */
+.reglages-diagnostic { padding: 22px 20px; display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+.reglages-diagnostic-texte { font-size: 15px; line-height: 1.5; color: var(--muted); margin: 0; }
+/* Journal en monospace (lisible chiffre par chiffre, comme un ticket de
+   caisse) : hauteur plafonnée avec défilement interne plutôt que de pousser
+   le reste de l'écran, `white-space: pre-wrap` pour ne jamais couper un
+   user-agent long sans retour à la ligne. */
+.reglages-diagnostic-journal {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+  max-height: 220px; overflow-y: auto; margin: 0;
+  background: var(--fond-chaud); border-radius: 10px; padding: 12px; color: var(--text);
+}
+.reglages-diagnostic-actions { display: flex; gap: 10px; }
+.reglages-diagnostic-actions .btn-export { flex: 1 1 0; }
+
 /* ---------- Écran "Changer mon mot de passe" ---------- */
 /* Un seul élément pour le succès ET l'échec (reglages.js bascule la classe) :
    même patron que .export-etat (dashboard.js/export). */

@@ -718,6 +718,28 @@
         </div>
       </section>
 
+      <!-- Carte « Diagnostic micro » (lot D28, 05/09/2026) : le micro ne
+           démarrait pas un lancement sur deux, et tout ce qu'il savait
+           partait dans console.error, illisible sur un iPhone sans Mac
+           branché. Le journal (20 derniers événements, localStorage, câblé
+           par reglages.js/parler_logique.js) rend la séquence lisible et
+           copiable. Lecture seule : rien ici n'écrit vers pwa-api. -->
+      <section class="card reglages-carte reglages-diagnostic">
+        <span class="reglages-soustitre">Diagnostic micro</span>
+        <p class="reglages-diagnostic-texte">Le micro te lâche parfois au démarrage&nbsp;? Ce journal garde les vingt derniers essais, avec l’heure de chacun. Copie-le et envoie-le à Corentin, ça aide à comprendre.</p>
+        <pre class="reglages-diagnostic-journal" id="reglages-diagnostic-journal"></pre>
+        <div class="reglages-diagnostic-actions">
+          <button type="button" class="btn-export" id="reglages-diagnostic-copier">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <span class="btn-libelle">Copier</span>
+          </button>
+          <button type="button" class="btn-export" id="reglages-diagnostic-effacer">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 6h12M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6M6 6l.7 9.1a1.5 1.5 0 0 0 1.5 1.4h3.6a1.5 1.5 0 0 0 1.5-1.4L14 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="btn-libelle">Effacer</span>
+          </button>
+        </div>
+      </section>
+
       <p class="reglages-version">Stovo, version <span id="reglages-version-num">—</span> · <a href="../fonctions.html">Tout ce que Stovo sait faire</a></p>
     </main>
   </div>

@@ -41,15 +41,20 @@ import { getSessionActuelle } from './auth.js';
 // et au vrai Supabase, comme reception.js/sortie.js le font deja pour leur
 // propre logique.
 import {
+  ajouterAuJournalMicro,
   calculerPliChoix,
   calculerVisibiliteAutresDemarrer,
   choisirBranche,
+  CLE_JOURNAL_MICRO,
   corpsChoix,
   corpsConfirmation,
   corpsDeclaration,
   corpsErreurExploitable,
   corpsImport,
+  creerEntreeJournalMicro,
+  creerMachineMicro,
   creerVerrouDeMode,
+  DELAI_GARDE_MICRO_MS,
   extraireBase64DepuisDataUrl,
   interpreterReponsePwaApi,
   lireCorpsReponse,
@@ -716,18 +721,31 @@ champImport.addEventListener('change', async () => {
   }
 });
 
-// --- Micro on-device (lot 11a) ---
+// --- Micro on-device (lot 11a, corrigé au lot D28, 05/09/2026) ---
 // Entrée externe (le navigateur / l'appareil) : on ne suppose jamais qu'un
 // résultat arrive. onerror ET onend sont gérés systématiquement, et
 // l'absence totale de l'API ne doit jamais empêcher d'utiliser le clavier.
+//
+// Lot D28 : l'analyse du 30/08 (2026-08-30_analyse-D28-micro.md) a prouvé
+// que l'app posait `enEcoute = true` juste après `start()`, SANS attendre
+// `onstart` (jamais écouté nulle part avant ce lot). Si le moteur ne
+// démarrait pas vraiment, l'état restait "en écoute" pour toujours : un
+// appui suivant appelait stop() sur une instance morte et sortait sans
+// jamais retenter (verrou définitif, contournement trouvé par Corentin :
+// quitter et rouvrir l'app). `etatMicro` (creerMachineMicro,
+// parler_logique.js) porte maintenant TOUTE cette décision sous forme pure
+// et testée ; ce fichier ne fait plus qu'exécuter les effets de bord que la
+// machine demande.
 
 // Certains navigateurs (Chrome, Safari) exposent encore l'API sous le
 // préfixe "webkit" : on prend ce qui existe, sinon SR reste undefined.
 const SR = globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition;
 
-let enEcoute = false;
+const etatMicro = creerMachineMicro();
 let erreurEnCours = false;
 let instanceEnCours = null;
+let idGardeDemarrage = null;
+let idGardeArret = null;
 
 // Affiche ou efface le message d'état sous le micro (écoute / erreur /
 // indisponibilité). Un texte vide masque la zone (attribut hidden).
@@ -741,9 +759,96 @@ function afficherEtatMicro(texte) {
   zoneEtat.textContent = texte;
 }
 
-// Messages clairs par code d'erreur SpeechRecognition (voir la spec Web
-// Speech API pour la liste des valeurs possibles de event.error). Lot A11-2 :
-// la table et le repli vivent dans texteErreurMicro (parler_logique.js).
+// --- Journal de diagnostic (lot D28, étage 2) --------------------------
+// Tout ce que le micro sait partait dans console.error, illisible sur un
+// iPhone sans Mac branché (analyse §4). Chaque événement significatif est
+// aussi écrit dans localStorage (carte "Diagnostic micro" de Réglages,
+// câblée dans reglages.js), pour SURVIVRE à un rechargement complet de
+// l'app — c'est justement le contournement que Corentin utilisait.
+// try/catch : localStorage peut échouer (navigation privée, quota plein),
+// et un échec d'écriture du journal ne doit jamais faire planter le micro
+// lui-même, qui continue de fonctionner normalement dans ce cas.
+function journaliser(evenement) {
+  try {
+    const brut = localStorage.getItem(CLE_JOURNAL_MICRO);
+    const journal = brut ? JSON.parse(brut) : [];
+    const entree = creerEntreeJournalMicro(evenement, new Date());
+    const journalMisAJour = ajouterAuJournalMicro(journal, entree);
+    localStorage.setItem(CLE_JOURNAL_MICRO, JSON.stringify(journalMisAJour));
+  } catch (_erreur) {
+    // Volontairement silencieux : voir le commentaire ci-dessus.
+  }
+}
+
+function armerGardeDemarrage() {
+  idGardeDemarrage = setTimeout(() => {
+    idGardeDemarrage = null;
+    if (!etatMicro.expirerGarde()) return; // onstart/onerror/onend est déjà passé entre-temps
+    journaliser('garde-2s-sans-start');
+    abandonnerInstanceEnCours();
+    btnMicro.classList.remove('ecoute');
+    afficherEtatMicro('Le micro n\'a pas démarré, réessaie.');
+  }, DELAI_GARDE_MICRO_MS);
+}
+
+function annulerGardeDemarrage() {
+  if (idGardeDemarrage === null) return;
+  clearTimeout(idGardeDemarrage);
+  idGardeDemarrage = null;
+}
+
+// Correction après relecture du Jarvis (05/09/2026, point 2, second volet) :
+// après un `stop()` DEMANDÉ PAR L'UTILISATEUR (état 'ecoute'), rien ne
+// garantissait qu'`onend` arrive un jour — D18 a déjà prouvé que les
+// événements de la Web Speech API ne sont pas tenus sur iOS (`continuous`
+// mal respecté). Sans cette garde, un `onend` manquant laissait l'état
+// bloqué en 'ecoute' pour toujours : l'appui suivant retombait sur
+// `instanceEnCours?.stop()` (une instance déjà morte), sans jamais
+// retenter — exactement le verrou que ce lot devait supprimer, un cran plus
+// loin dans la séquence. Même durée que la garde de démarrage (2 s), pour
+// rester cohérent : ni trop court (un `onend` normal a le temps d'arriver),
+// ni assez long pour que l'utilisateur ait l'impression que le bouton ne
+// répond pas.
+function armerGardeArret() {
+  annulerGardeArret(); // un seul minuteur actif, même si l'utilisateur retape sur "arrêter"
+  idGardeArret = setTimeout(() => {
+    idGardeArret = null;
+    if (!etatMicro.terminer()) return; // onend a fini par arriver entre-temps, rien à faire
+    journaliser('garde-2s-sans-end');
+    abandonnerInstanceEnCours();
+    btnMicro.classList.remove('ecoute');
+    if (!erreurEnCours) afficherEtatMicro('');
+  }, DELAI_GARDE_MICRO_MS);
+}
+
+function annulerGardeArret() {
+  if (idGardeArret === null) return;
+  clearTimeout(idGardeArret);
+  idGardeArret = null;
+}
+
+// Coupe proprement l'instance en attente/en cours et marque son propre
+// gestionnaire comme abandonnés (voir `reconnaissance.abandonnee` plus bas) :
+// si le moteur finit quand même par répondre en retard, ses événements sont
+// encore journalisés (utile au diagnostic : "elle a fini par démarrer, trop
+// tard"), mais ne touchent plus jamais l'écran ni l'état de la machine.
+function abandonnerInstanceEnCours() {
+  const instance = instanceEnCours;
+  instanceEnCours = null;
+  if (!instance) return;
+  instance.abandonnee = true;
+  try {
+    // abort() coupe net, sans attendre un résultat final : plus adapté que
+    // stop() pour une instance dont on ne sait pas si elle a réellement
+    // démarré (repli sur stop() pour les très vieux navigateurs qui
+    // n'exposent pas abort()).
+    if (typeof instance.abort === 'function') instance.abort();
+    else instance.stop();
+  } catch (_erreur) {
+    // Une instance déjà morte peut lever ici : sans conséquence, la
+    // référence est déjà coupée au-dessus.
+  }
+}
 
 // Construit une instance fraîche à chaque écoute (une instance ne se
 // réutilise pas après avoir terminé, c'est l'usage recommandé de l'API).
@@ -753,10 +858,53 @@ function creerReconnaissance() {
   reconnaissance.continuous = false;
   reconnaissance.interimResults = true;
   reconnaissance.maxAlternatives = 1;
+  reconnaissance.abandonnee = false;
+  // Correction après relecture du Jarvis (05/09/2026, point 1) : voir
+  // `onresult` plus bas, un seul événement journalisé par instance.
+  reconnaissance.premierResultatJournalise = false;
+
+  // Lot D28 : c'est désormais le SEUL endroit qui déclare l'écoute réelle
+  // (classe CSS + message), plus jamais juste après `start()`. Si l'appui
+  // qui a demandé ce démarrage a déjà été annulé (garde expirée, ou appui
+  // d'annulation pendant l'attente), `confirmerDemarrage()` renvoie false et
+  // on ne touche à rien : cette instance est abandonnée, un onstart tardif
+  // ne doit pas rallumer un bouton que l'utilisateur croit déjà au repos.
+  reconnaissance.onstart = () => {
+    journaliser('start');
+    if (reconnaissance.abandonnee) return;
+    if (!etatMicro.confirmerDemarrage()) return;
+    annulerGardeDemarrage();
+    btnMicro.classList.add('ecoute');
+    afficherEtatMicro("J'écoute…");
+  };
+
+  // audiostart/speechstart n'entraînent aucun changement d'état (onstart a
+  // déjà fait foi) : ils n'existent ici que pour enrichir le diagnostic —
+  // savoir jusqu'où la séquence est allée avant un échec (analyse §2).
+  reconnaissance.onaudiostart = () => journaliser('audiostart');
+  reconnaissance.onspeechstart = () => journaliser('speechstart');
 
   // Dépose le transcript (interim puis final) dans le champ texte : c'est
   // tout ce que fait le micro ici (option A), l'envoi reste manuel.
+  //
+  // Correction après relecture du Jarvis (05/09/2026, point 1, LE PLUS
+  // GRAVE) : `interimResults = true` fait déclencher `onresult` À CHAQUE MOT
+  // pendant la dictée. Journaliser à chaque appel (version d'origine de ce
+  // lot) saturait le plafond de 20 lignes en une seule phrase dictée
+  // normalement : `demande-start`/`start`/`error:...` disparaissaient tous,
+  // remplacés par des `result` répétés — exactement l'inverse de l'objectif
+  // du lot (rendre la séquence lisible). Décision tranchée : un seul
+  // événement `result-1er`, au tout premier résultat de chaque instance
+  // (drapeau `premierResultatJournalise`, posé à la création). Il suffit au
+  // diagnostic (il prouve que le moteur a bien capté de l'audio et produit
+  // un résultat) ; les résultats suivants de la même phrase n'apportent
+  // rien de plus et ne sont plus journalisés.
   reconnaissance.onresult = (evenement) => {
+    if (!reconnaissance.premierResultatJournalise) {
+      reconnaissance.premierResultatJournalise = true;
+      journaliser('result-1er');
+    }
+    if (reconnaissance.abandonnee) return;
     let transcript = '';
     for (let i = 0; i < evenement.results.length; i++) {
       transcript += evenement.results[i][0].transcript;
@@ -767,14 +915,44 @@ function creerReconnaissance() {
 
   reconnaissance.onerror = (evenement) => {
     console.error('Erreur reconnaissance vocale Stovo :', evenement.error);
+    journaliser('error:' + evenement.error);
+    if (reconnaissance.abandonnee) return;
     erreurEnCours = true;
     afficherEtatMicro(texteErreurMicro(evenement.error));
+    // Correction après relecture du Jarvis (05/09/2026, point 2) : NE PLUS
+    // compter sur `onend` pour sortir de l'état. Ce lot part justement du
+    // constat inverse (D18) : sur iOS, les événements de la Web Speech API
+    // ne sont pas tenus. Si `onend` n'arrivait jamais après cette erreur,
+    // l'état restait bloqué en 'ecoute' pour toujours, et l'appui suivant
+    // appelait `stop()` sur une instance déjà morte sans jamais retenter —
+    // le même verrou que ce lot devait supprimer, un cran plus loin.
+    // `terminer()` est idempotent : si `onend` arrive quand même ensuite,
+    // il ne fera rien de plus (voir plus bas), et le message d'erreur reste
+    // affiché (`erreurEnCours` protège déjà ce cas). Renforcement ajouté au
+    // passage (pas demandé explicitement, dans le droit fil du point 2) :
+    // `abandonnerInstanceEnCours()` plutôt qu'un simple `instanceEnCours =
+    // null` — sans ça, un `onresult` tardif sur cette même instance après
+    // l'erreur (D18 : rien ne garantit l'ordre des événements sur iOS)
+    // aurait encore écrit dans le champ texte malgré l'écran déjà revenu au
+    // repos.
+    annulerGardeDemarrage();
+    etatMicro.terminer();
+    abandonnerInstanceEnCours();
+    btnMicro.classList.remove('ecoute');
   };
 
-  // onend arrive toujours (fin normale, arrêt manuel, ou juste après une
-  // erreur) : c'est le seul endroit sûr pour sortir de l'état "écoute".
+  // onend peut arriver (fin normale, arrêt manuel, ou juste après une
+  // erreur), mais ce lot ne suppose PLUS qu'il arrive toujours (voir
+  // onerror et armerGardeArret ci-dessus) : c'est un filet supplémentaire,
+  // pas le seul endroit qui sort de l'état "écoute". `annulerGardeArret()`
+  // coupe la garde de 2 s posée après un arrêt volontaire, si elle est
+  // encore active.
   reconnaissance.onend = () => {
-    enEcoute = false;
+    journaliser('end');
+    if (reconnaissance.abandonnee) return;
+    annulerGardeDemarrage();
+    annulerGardeArret();
+    etatMicro.terminer();
     instanceEnCours = null;
     btnMicro.classList.remove('ecoute');
     if (!erreurEnCours) afficherEtatMicro('');
@@ -785,18 +963,44 @@ function creerReconnaissance() {
 
 function demarrerEcoute() {
   erreurEnCours = false;
+  annulerGardeArret(); // garde défensive : aucune ne devrait rester active ici, voir onend/armerGardeArret
   const reconnaissance = creerReconnaissance();
+  journaliser('demande-start');
   try {
     reconnaissance.start();
   } catch (erreur) {
     console.error('Impossible de démarrer le micro Stovo :', erreur);
+    journaliser('error:' + (erreur && erreur.name ? erreur.name : 'exception-start'));
     afficherEtatMicro('Impossible de démarrer le micro, réessaie ou utilise le clavier.');
+    etatMicro.terminer(); // l'appui() avait déjà posé 'attente', on la relâche tout de suite
     return;
   }
   instanceEnCours = reconnaissance;
-  enEcoute = true;
-  btnMicro.classList.add('ecoute');
-  afficherEtatMicro("J'écoute…");
+  armerGardeDemarrage();
+}
+
+// Remise à zéro silencieuse (lot D28, §"remise à zéro au retour sur l'app") :
+// si l'app a été mise en arrière-plan (ou fermée) pendant une VRAIE écoute
+// (état 'ecoute', `onstart` déjà reçu), il n'y a plus aucune garantie que le
+// moteur vit encore côté système — sur iOS en particulier, rien ne garantit
+// qu'onend arrivera un jour dans ce cas. Sans message d'erreur : ce n'est
+// pas un échec à signaler, juste un état qui n'a plus de sens à l'écran.
+//
+// Correction après relecture du Jarvis (05/09/2026, point 3) : restreint à
+// 'ecoute' SEULEMENT, jamais 'attente'. Avant cette correction, un
+// changement de visibilité pendant l'attente de `onstart` (par exemple
+// l'alerte de permission micro d'iOS qui s'affiche ou se referme) aurait pu
+// annuler le tout premier démarrage — précisément le geste que ce lot
+// répare. Une 'attente' reste déjà couverte par sa propre garde de 2 s
+// (armerGardeDemarrage), qui joue avec ou sans arrière-plan : rien à ajouter
+// ici pour elle.
+function reinitialiserEcouteEnArrierePlan() {
+  if (etatMicro.etat() !== 'ecoute') return;
+  annulerGardeArret();
+  abandonnerInstanceEnCours();
+  etatMicro.terminer();
+  btnMicro.classList.remove('ecoute');
+  afficherEtatMicro('');
 }
 
 if (!SR) {
@@ -805,14 +1009,40 @@ if (!SR) {
   afficherEtatMicro('Reconnaissance vocale non disponible sur cet appareil, utilise le clavier (le vocal serveur arrive bientôt).');
 } else {
   btnMicro.disabled = false;
-  // Toggle : un clic pendant l'écoute arrête la reconnaissance en cours.
   btnMicro.addEventListener('click', () => {
-    if (enEcoute) {
-      instanceEnCours?.stop();
+    const action = etatMicro.appui();
+    if (action === 'demarrer') {
+      demarrerEcoute();
       return;
     }
-    demarrerEcoute();
+    if (action === 'annuler') {
+      // Appui pendant l'attente de démarrage (comportement tranché au lot
+      // D28, voir le rapport de passation) : on annule proprement l'instance
+      // en attente et on rend la main tout de suite, sans relancer un
+      // démarrage dans la foulée. Un second appui explicite relance un essai
+      // propre — plus fiable qu'un enchaînement immédiat abort()+start(),
+      // dont le navigateur ne garantit pas le timing.
+      annulerGardeDemarrage();
+      abandonnerInstanceEnCours();
+      afficherEtatMicro('');
+      return;
+    }
+    // 'arreter' : écoute réellement en cours (onstart déjà reçu), toggle
+    // inchangé — l'appui arrête la reconnaissance en cours. Correction après
+    // relecture du Jarvis (05/09/2026, point 2) : arme aussi la garde de
+    // 2 s qui force la remise à zéro si `onend` n'arrive jamais après ce
+    // `stop()` volontaire (armerGardeArret, voir plus haut).
+    instanceEnCours?.stop();
+    armerGardeArret();
   });
+
+  // Remise à zéro sur visibilitychange (retour sur l'onglet) et pagehide
+  // (app fermée/mise en arrière-plan) : voir reinitialiserEcouteEnArrierePlan()
+  // ci-dessus (restreinte à l'état 'ecoute' depuis la correction du 05/09).
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') reinitialiserEcouteEnArrierePlan();
+  });
+  globalThis.addEventListener('pagehide', reinitialiserEcouteEnArrierePlan);
 }
 
 // --- Aide aux captures d'écran locales (lot A10-6, 23/08/2026) ---

@@ -268,3 +268,173 @@ const MESSAGES_ERREUR_MICRO = {
 export function texteErreurMicro(code) {
   return MESSAGES_ERREUR_MICRO[code] || 'Problème avec le micro, réessaie ou utilise le clavier.';
 }
+
+// ---------------------------------------------------------------------------
+// Lot D28 (05/09/2026) : le micro qui ne demarre pas un lancement sur deux.
+// ---------------------------------------------------------------------------
+// Cause instruite le 30/08 (2026-08-30_analyse-D28-micro.md) : l'app posait
+// `enEcoute = true` juste apres `start()`, sans jamais attendre la preuve
+// que le moteur a reellement demarre (`onstart`, jamais ecoute nulle part).
+// Si le moteur ne demarrait pas, l'etat restait "en ecoute" pour le reste de
+// la vie de la page : un appui suivant appelait stop() sur une instance
+// morte et sortait sans jamais retenter (verrou definitif).
+//
+// La machine ci-dessous porte TOUTE la decision "que fait un appui / un
+// evenement du moteur" sous forme pure, testable sans navigateur. parler.js
+// ne fait plus que lire son etat et executer les effets de bord (classe CSS,
+// message, minuteur, instance SpeechRecognition).
+
+export const DELAI_GARDE_MICRO_MS = 2000;
+
+// Trois etats seulement :
+//  - 'inactif'  : rien en cours, un appui peut demarrer une ecoute.
+//  - 'attente'  : start() a ete demande, mais `onstart` n'est pas encore
+//                 arrive (c'est le nouvel etat qui n'existait pas avant ce
+//                 lot -- avant, l'app sautait direct sur un "enEcoute=true"
+//                 sans preuve).
+//  - 'ecoute'   : `onstart` est arrive, le moteur ecoute reellement.
+export function creerMachineMicro() {
+  let etat = 'inactif';
+
+  return {
+    etat: () => etat,
+
+    // Appui sur le bouton micro. Renvoie l'action que l'appelant doit
+    // executer, cote effets de bord :
+    //  - 'demarrer' : rien n'etait en cours -> on peut appeler start().
+    //  - 'annuler'  : une attente de demarrage etait en cours. Decision
+    //    tranchee pour ce lot (voir le rapport de passation, §"comportement
+    //    tranche") : on ANNULE proprement l'instance en attente et on rend
+    //    la main tout de suite, plutot que de relancer un start() dans la
+    //    foulee. Un second `start()` immediatement apres un `abort()` sur la
+    //    meme "famille" d'instance n'a aucune garantie de timing cote
+    //    navigateur (l'annulation est asynchrone) : mieux vaut un etat
+    //    "inactif" fiable, avec un second appui explicite pour reessayer,
+    //    qu'un retour automatique qui pourrait echouer en silence.
+    //  - 'arreter'  : une ecoute reelle est en cours (`onstart` deja recu) --
+    //    comportement toggle inchange, l'appui arrete l'ecoute en cours.
+    appui() {
+      if (etat === 'inactif') { etat = 'attente'; return 'demarrer'; }
+      if (etat === 'attente') { etat = 'inactif'; return 'annuler'; }
+      return 'arreter';
+    },
+
+    // `onstart` recu : confirme le demarrage REEL (c'est desormais le SEUL
+    // endroit qui fait passer l'etat a 'ecoute', jamais juste apres
+    // `start()`). Ne joue que si on etait bien en attente : un `onstart`
+    // tardif apres une annulation ou une garde deja expiree ne doit rien
+    // changer (l'appelant doit alors ignorer l'evenement cote effets de
+    // bord aussi, voir le rapport).
+    confirmerDemarrage() {
+      if (etat !== 'attente') return false;
+      etat = 'ecoute';
+      return true;
+    },
+
+    // Le delai de garde (DELAI_GARDE_MICRO_MS) s'est ecoule sans `onstart` :
+    // c'est la sortie de secours qui empeche le verrou definitif decrit dans
+    // l'analyse. Ne joue que si on est encore en attente (si `onstart` ou un
+    // `onerror`/`onend` est deja arrive entre-temps, le minuteur cote
+    // parler.js a deja ete annule et cette methode n'est jamais appelee ;
+    // cette garde reste une deuxieme protection, au cas ou).
+    expirerGarde() {
+      if (etat !== 'attente') return false;
+      etat = 'inactif';
+      return true;
+    },
+
+    // `onerror` ou `onend` : remise a zero inconditionnelle, quel que soit
+    // l'etat de depart (idempotent : rappeler `terminer()` alors qu'on est
+    // deja 'inactif' ne fait rien et renvoie false). C'est aussi la fonction
+    // utilisee pour la remise a zero silencieuse sur `visibilitychange`/
+    // `pagehide` (§ "remise a zero au retour sur l'app" de la consigne).
+    terminer() {
+      const changement = etat !== 'inactif';
+      etat = 'inactif';
+      return changement;
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Lot D28, etage 2 : le journal des vingt derniers evenements micro.
+// ---------------------------------------------------------------------------
+// Objectif du lot (analyse §4) : tout ce que le code sait partait dans
+// `console.error`, illisible sur un iPhone sans Mac branche. Ce journal
+// rend la sequence reellement recue lisible a l'ecran (carte "Diagnostic
+// micro" de Reglages), et SURVIT a un rechargement complet de l'app
+// (localStorage, cote parler.js/reglages.js -- ce module reste pur, il ne
+// touche jamais lui-meme au stockage).
+
+export const CLE_JOURNAL_MICRO = 'stovo-diagnostic-micro';
+export const PLAFOND_JOURNAL_MICRO = 20;
+
+// Heure locale courte (ex. "14:07:32"), zero en tete si besoin. Pure : prend
+// un objet Date en parametre plutot que d'appeler `new Date()` elle-meme,
+// pour rester testable sans dependre de l'horloge reelle.
+export function formaterHeureLocale(date) {
+  const deuxChiffres = (n) => String(n).padStart(2, '0');
+  return `${deuxChiffres(date.getHours())}:${deuxChiffres(date.getMinutes())}:${deuxChiffres(date.getSeconds())}`;
+}
+
+// Construit une entree de journal ({ heure, evenement }) pour un evenement
+// micro donne (ex. "start", "error:not-allowed", "garde-2s-sans-start").
+export function creerEntreeJournalMicro(evenement, date) {
+  return { heure: formaterHeureLocale(date), evenement };
+}
+
+// Ajoute une entree en fin de journal et plafonne a `plafond` entrees (les
+// plus anciennes tombent en premier). Defensif : un journal qui n'est pas un
+// tableau (stockage corrompu, format d'une version anterieure) redemarre a
+// zero plutot que de faire planter l'ecriture -- meme doctrine que le reste
+// de l'app pour une entree suspecte.
+export function ajouterAuJournalMicro(journal, entree, plafond = PLAFOND_JOURNAL_MICRO) {
+  const base = Array.isArray(journal) ? journal : [];
+  return [...base, entree].slice(-plafond);
+}
+
+// Lit le contenu brut de `localStorage.getItem(CLE_JOURNAL_MICRO)` (une
+// chaine, ou null/undefined si jamais ecrit) et renvoie toujours un tableau
+// d'entrees valides. Ni JSON invalide, ni un format inattendu (pas un
+// tableau, entrees sans `heure`/`evenement` chaine) ne doit faire planter
+// l'ecran Reglages : dans tous ces cas, repli sur un journal vide plutot que
+// de laisser remonter une exception.
+export function analyserJournalMicro(brut) {
+  if (typeof brut !== 'string') return [];
+  let valeur;
+  try {
+    valeur = JSON.parse(brut);
+  } catch (_erreur) {
+    return [];
+  }
+  if (!Array.isArray(valeur)) return [];
+  return valeur.filter((e) => e && typeof e.heure === 'string' && typeof e.evenement === 'string');
+}
+
+// Ligne d'environnement affichee UNE FOIS en tete du journal (jamais
+// repetee sur chaque entree, et jamais comptee dans le plafond de 20) :
+// le user-agent et le mode d'affichage (PWA installee ou simple onglet de
+// navigateur), les deux infos qui permettent de savoir sur quel appareil
+// et dans quel contexte un echec a ete observe.
+export function formaterEnvironnementMicro(userAgent, estStandalone) {
+  const agent = userAgent || 'user-agent inconnu';
+  const mode = estStandalone ? 'PWA installée' : 'navigateur (onglet)';
+  return `${agent} — ${mode}`;
+}
+
+// Assemble le texte affiche dans la carte "Diagnostic micro" (et copie tel
+// quel par le bouton "Copier") : la ligne d'environnement, une ligne vide,
+// puis les evenements du PLUS RECENT au plus ancien (le plus utile a lire
+// en premier sur un ecran de telephone, juste apres un echec, sans avoir a
+// faire defiler jusqu'en bas).
+export function formaterJournalMicroPourAffichage(journal, environnement) {
+  const lignes = [environnement, ''];
+  if (journal.length === 0) {
+    lignes.push('Aucun événement enregistré pour le moment.');
+  } else {
+    for (let i = journal.length - 1; i >= 0; i--) {
+      lignes.push(`${journal[i].heure} — ${journal[i].evenement}`);
+    }
+  }
+  return lignes.join('\n');
+}
