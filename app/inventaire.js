@@ -17,6 +17,12 @@
 // C'est une règle d'inventaire classique : voir le stock attendu biaise le
 // comptage ("j'ai dû mal compter, ça doit être 38"). Case décochée par défaut.
 
+// Lot D24 (06/09/2026) : l'unite enfin accordee (singulier/pluriel). Import
+// d'un module pur (aucun DOM, aucun reseau), meme precedent que photo.js qui
+// importe deja extraireBase64DepuisDataUrl de parler_logique.js : ca ne casse
+// pas l'isolation "ne connaît NI Supabase NI le DOM réel" de ce fichier.
+import { accorderUnite } from './unite.js';
+
 // Libellé pluriel, même style que reception.js.
 function libelleProduits(n) {
   return n > 1 ? `${n} produits` : `${n} produit`;
@@ -76,7 +82,7 @@ export function creerModeInventaire({ elements, appeler, chargerProduits, confir
       const aveugle = el.aveugle && el.aveugle.checked;
       el.stockTheorique.textContent = aveugle
         ? 'Stock masqué (comptage à l\'aveugle)'
-        : `Stock attendu : ${p.stock_actuel} ${p.unite}`;
+        : `Stock attendu : ${p.stock_actuel} ${accorderUnite(p.unite, p.stock_actuel)}`;
     }
     // Rappel de ce qui a déjà été compté pour ce produit (si on revient dessus).
     if (el.dejaCompte) {

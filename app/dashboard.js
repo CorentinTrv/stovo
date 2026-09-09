@@ -46,6 +46,12 @@ import {
 // formateurs injectés), sur le même modèle que pilotage.js : aucune donnée
 // nouvelle à lire, il calcule sur les mvts déjà chargés par charger().
 import { calculerDemarque, rendreDemarque } from './pertes.js';
+// Lot D24 (06/09/2026) : l'unite enfin accordee (singulier/pluriel), extraite
+// dans son propre module pur pour etre importee aussi par stock.js et
+// inventaire.js. Remplace l'ancien accorderUnite local (correctif du
+// 01/08/2026, qui ne savait que retirer un "s" et supposait a tort les
+// unites stockees au pluriel).
+import { accorderUnite } from './unite.js';
 // Chantier C2 « les exports » (lot C2-3, 22/08/2026) : les deux fichiers
 // CSV téléchargeables (état de stock + journal des mouvements), voir
 // majExport() plus bas. Module PUR et déjà testé (81/81, lots C2-1/C2-2) :
@@ -139,7 +145,10 @@ const carteProduit = (p) => {
   // 0 € trompeur, et pas de valeur affichée dans ce cas. Calculé AVANT
   // consoTxt : la ligne de détail de l'état "dormant" en a besoin (LOT P-3).
   const aPrix = (p.prix_achat !== null && p.prix_achat !== undefined);
-  const prixTxt = aPrix ? `<b>${fmtEuro(p.prix_achat)}</b> / ${p.unite}` : 'non renseigné';
+  // "0,80 € / rouleau" : un prix UNITAIRE, toujours au singulier quel que
+  // soit le prix (comme "€/kg"), jamais au pluriel meme si l'unite est
+  // stockee au pluriel par l'ancienne convention (lot D24, 06/09/2026).
+  const prixTxt = aPrix ? `<b>${fmtEuro(p.prix_achat)}</b> / ${accorderUnite(p.unite, 1)}` : 'non renseigné';
   const valeurTxt = aPrix ? ` · Valeur : <b>${fmtEuro(p._valeur)}</b>` : '';
   // Ligne de détail (LOT P-3, plan §3 Q2 niveau 2) : "mesure" inchangée,
   // "insuffisant" montre le geste qui répare, "dormant" chiffre l'argent
@@ -166,12 +175,12 @@ const carteProduit = (p) => {
     : p._etat === 'dormant'
       ? `Rien n'est sorti depuis ${SEUIL_DORMANT_JOURS} jours`
       : `Pas assez de sorties pour estimer`;
-  const commanderTxt = pdc > 0 ? `Commande quand il en reste <b>${fmtNombre(pdc)} ${p.unite}</b> ${tagPdc}` : '';
+  const commanderTxt = pdc > 0 ? `Commande quand il en reste <b>${fmtNombre(pdc)} ${accorderUnite(p.unite, pdc)}</b> ${tagPdc}` : '';
   return `
     <div class="card">
       <div class="c-top"><div class="c-name">${p.nom}</div>${badge}</div>
       <div class="c-hero ${heroClass}">${heroTxt}</div>
-      <div class="c-stockline"><b>${fmtNombre(stock)} ${p.unite}</b> en stock</div>
+      <div class="c-stockline"><b>${fmtNombre(stock)} ${accorderUnite(p.unite, stock)}</b> en stock</div>
       <div class="jauge">
         <div class="jauge-fill ${alerte ? 'is-low' : ''}" style="width:${largeur}%"></div>
         ${pdc > 0 ? '<div class="jauge-seuil" style="left:50%"></div>' : ''}
@@ -188,15 +197,15 @@ const ligneReappro = (p) => {
   const delai = Number(p.delai_repro_jours) || 0;
   const autonomie = p._couverture;
   const ruptureAvantLivraison = (autonomie !== null && autonomie < delai);
-  const detail = `Stock : ${fmtNombre(p.stock_actuel)} ${p.unite}&nbsp;&nbsp;·&nbsp;&nbsp;Autonomie : ${txtCouverture(autonomie)}&nbsp;&nbsp;·&nbsp;&nbsp;Livraison : ${fmtNombre(delai)} j`;
+  const detail = `Stock : ${fmtNombre(p.stock_actuel)} ${accorderUnite(p.unite, p.stock_actuel)}&nbsp;&nbsp;·&nbsp;&nbsp;Autonomie : ${txtCouverture(autonomie)}&nbsp;&nbsp;·&nbsp;&nbsp;Livraison : ${fmtNombre(delai)} j`;
   const alerteLivr = ruptureAvantLivraison
     ? `<div class="ri-warning">▲ Rupture probable avant la livraison</div>` : '';
   // Détail du calcul, visible au survol du chiffre
   const calcul = (p._qteCommander && p._consoJour > 0)
-    ? `${p._consoJour.toFixed(1)} ${p.unite}/jour × (${fmtNombre(delai)} j livraison + ${COUVERTURE_CIBLE_JOURS} j d'avance) − ${fmtNombre(p.stock_actuel)} en stock`
+    ? `${p._consoJour.toFixed(1)} ${accorderUnite(p.unite, p._consoJour)}/jour × (${fmtNombre(delai)} j livraison + ${COUVERTURE_CIBLE_JOURS} j d'avance) − ${fmtNombre(p.stock_actuel)} en stock`
     : '';
   const droite = (p._qteCommander !== null && p._qteCommander > 0)
-    ? `<div class="ri-coverlabel">à commander</div><div class="ri-qty" title="${calcul}">${fmtNombre(p._qteCommander)} ${p.unite}</div>`
+    ? `<div class="ri-coverlabel">à commander</div><div class="ri-qty" title="${calcul}">${fmtNombre(p._qteCommander)} ${accorderUnite(p.unite, p._qteCommander)}</div>`
     : `<div class="ri-coverlabel">autonomie</div><div class="ri-qty">${txtCouverture(autonomie)}</div>`;
   return `
     <div class="reorder-item">
@@ -361,14 +370,12 @@ function majEcranDuMatin(produits, aCommander, ruptureImminente) {
     const cb = b._couverture === null ? Infinity : b._couverture;
     return ca - cb;
   });
-  // Accord simple de l'unite (correctif du 01/08/2026) : les unites sont
-  // stockees au pluriel en base ("pieces", "cartons"...). Sous 2, on retire
-  // le "s" final s'il y en a un ; les unites qui n'en portent pas (kg, L...)
-  // ne sont jamais touchees. Pas une vraie grammaire, juste la regle
-  // deterministe qui couvre le cas reel (principe n2 : IA reduite a
-  // l'indispensable, une regle suffit ici).
-  const accorderUnite = (unite, quantite) => (quantite < 2 && unite.endsWith('s'))
-    ? unite.slice(0, -1) : unite;
+  // Accord de l'unite (lot D24, 06/09/2026) : accorderUnite est desormais
+  // importee depuis unite.js (voir l'en-tete de ce fichier), elle accorde
+  // dans les deux sens, sans supposer la forme stockee en base. L'ancienne
+  // version locale (correctif du 01/08/2026, singulier seulement, supposait
+  // les unites stockees au pluriel) est retiree : elle masquait l'import
+  // ci-dessus par effet de bloc (shadowing), avec le meme nom.
   // Quantite a commander = _qteCommander (deja calcule). Null si aucune vente
   // recente pour l'estimer : on affiche alors "a commander" sans quantite.
   // Version texte brut, pour le copier-coller (jamais inseree en HTML) : pas
@@ -756,7 +763,8 @@ async function charger() {
     $('mvt-body').innerHTML = mvts.slice(0, 15).map(m => {
       const entree = m.type === 'entree';
       const nom = m.produits ? m.produits.nom : '(supprimé)';
-      const unite = m.produits ? m.produits.unite : '';
+      // Lot D24 : l'unite s'accorde sur la quantite de CE mouvement.
+      const unite = m.produits ? accorderUnite(m.produits.unite, m.quantite) : '';
       // étiquette si c'est une régularisation/perte (motif renseigné), pour la distinguer d'une vente
       const motifTag = m.motif ? ` <span class="tag-motif">${motifLabel[m.motif] || m.motif}</span>` : '';
       return `<tr>

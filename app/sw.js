@@ -270,7 +270,15 @@
 // aurait pu casser le tout premier demarrage sur un changement de
 // visibilite lie a l'alerte de permission micro d'iOS. Seul parler.js
 // modifie pour ces trois corrections ; 369/369 toujours au vert.
-const CACHE_NAME = 'stovo-app-v36';
+// v37 (lot D24, 06/09/2026) : l'unite ne s'accordait jamais dans les textes de
+// l'app ("Stock : 11 rouleau", "Il te reste 11 rouleau de Papier toilette.").
+// NOUVEAU fichier `unite.js` (module pur, accord singulier/pluriel dans les
+// DEUX sens -- l'ancien accorderUnite de dashboard.js, retire, supposait a
+// tort les unites stockees au pluriel) ajoute au precache ; dashboard.js,
+// stock.js, inventaire.js modifies (branches sur le nouveau module). Le
+// jumeau backend (_shared/unite.ts) n'est pas precache ici, seul le front
+// l'est. Aucun changement de comportement hors accord de l'unite.
+const CACHE_NAME = 'stovo-app-v37';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -281,6 +289,7 @@ const FICHIERS_COQUILLE = [
   './styles.css',
   './app.js',
   './dashboard.js',
+  './unite.js',
   './pilotage.js',
   './pertes.js',
   './stock.js',

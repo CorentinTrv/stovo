@@ -21,6 +21,8 @@
 
 import { fmtEuro, fmtNombre, txtCouverture, urgence } from './dashboard.js';
 import { SEUIL_DORMANT_JOURS } from './pilotage.js';
+// Lot D24 (06/09/2026) : l'unite enfin accordee (singulier/pluriel).
+import { accorderUnite } from './unite.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -63,15 +65,17 @@ function ligneStock(p) {
       ? `Rien n'est sorti depuis ${SEUIL_DORMANT_JOURS} jours`
       : `Pas assez de sorties pour estimer`;
   const aPrix = (p.prix_achat !== null && p.prix_achat !== undefined);
-  const prixTxt = aPrix ? `<b>${fmtEuro(p.prix_achat)}</b> / ${p.unite}` : 'non renseigné';
+  // "0,80 € / rouleau" : prix UNITAIRE, toujours au singulier (comme
+  // "€/kg"), meme raison qu'a l'identique dans carteProduit (dashboard.js).
+  const prixTxt = aPrix ? `<b>${fmtEuro(p.prix_achat)}</b> / ${accorderUnite(p.unite, 1)}` : 'non renseigné';
   const valeurTxt = (aPrix && p._valeur !== null) ? ` · Valeur : <b>${fmtEuro(p._valeur)}</b>` : '';
   const pdc = Number(p._pointCommande) || 0;
-  const commanderTxt = pdc > 0 ? `<br>Commande quand il en reste <b>${fmtNombre(pdc)} ${p.unite}</b>` : '';
+  const commanderTxt = pdc > 0 ? `<br>Commande quand il en reste <b>${fmtNombre(pdc)} ${accorderUnite(p.unite, pdc)}</b>` : '';
   return `
     <details class="stock-ligne" data-id="${p.id}"${lignesOuvertes.has(p.id) ? ' open' : ''}>
       <summary class="stock-sommaire">
         <span class="sl-nom">${p.nom}</span>
-        <span class="sl-stock"><b>${fmtNombre(p.stock_actuel)}</b> ${p.unite}</span>
+        <span class="sl-stock"><b>${fmtNombre(p.stock_actuel)}</b> ${accorderUnite(p.unite, p.stock_actuel)}</span>
         ${badgeDe(p)}
       </summary>
       <div class="stock-detail">
