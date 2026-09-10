@@ -230,7 +230,7 @@ export const CONTENU = [
         titre: 'Créer un produit',
         quoi: 'Ajouter une référence qui n\'existe pas encore au catalogue.',
         exemples: ['ajoute le produit beurre', 'crée le produit farine', 'nouveau produit sucre', 'nouveau produit coca 50 cl'],
-        note: 'Le produit naît avec un stock à 0 et sans prix : tu poses ensuite la quantité et le prix à la voix. Il faut un marqueur explicite (« le produit », « nouveau produit », « référence le », « l\'article »), c\'est ce qui évite de confondre avec une entrée de stock.',
+        note: 'Le produit naît avec un stock à 0 et sans prix : tu poses ensuite la quantité et le prix à la voix. Il faut un marqueur explicite (« le produit », « nouveau produit », « référence le », « l\'article »), c\'est ce qui évite de confondre avec une entrée de stock. Si Stovo te signale un nom proche du tien, ce n\'est pas un refus : réponds oui et la référence est créée.',
       },
       {
         type: 'geste',
@@ -342,6 +342,11 @@ export const CONTENU = [
         type: 'astuce',
         titre: 'Deux produits qui se ressemblent ? Précise',
         texte: 'Si tu as « Lait entier » et « Lait demi-écrémé » et que tu dis juste « lait », Stovo <b>ne choisit pas au hasard</b> : il te propose une liste numérotée, du genre « 1) Lait demi-écrémé ou 2) Lait entier ? ». Dis le numéro ou touche le bouton correspondant. <b>À l\'inverse, si un produit s\'appelle exactement ce que tu dis, Stovo le prend directement, sans poser de question</b> : c\'est fait pour que tu puisses dire « lait » tout court dès que ton catalogue a un produit qui s\'appelle juste « Lait ». Au-delà de quatre produits qui se ressemblent, il te redemande le nom complet.',
+      },
+      {
+        type: 'astuce',
+        titre: 'Un nom proche signalé n\'est pas un refus',
+        texte: 'Quand tu crées une référence, Stovo vérifie d\'abord qu\'un nom voisin n\'existe pas déjà, et il te le dit avant d\'écrire quoi que ce soit. C\'est un garde-fou contre les doublons, pas un refus. Si ton produit est bien nouveau, réponds <b>oui</b> et il est créé. Si tu reconnais le produit qu\'il te cite, réponds <b>non</b> et sers-toi de celui qui existe déjà.',
       },
       {
         type: 'astuce',

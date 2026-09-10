@@ -278,7 +278,13 @@
 // stock.js, inventaire.js modifies (branches sur le nouveau module). Le
 // jumeau backend (_shared/unite.ts) n'est pas precache ici, seul le front
 // l'est. Aucun changement de comportement hors accord de l'unite.
-const CACHE_NAME = 'stovo-app-v37';
+// v38 (lot D39+D40, 10/09/2026) : cote front, seule l'Aide change. La note du
+// geste "Creer un produit" dit qu'un nom proche signale n'est pas un refus, et
+// une astuce nouvelle l'explique (repondre oui cree, repondre non renvoie au
+// produit existant). Le gros du lot est backend (pwa-api v32 : seuil
+// Levenshtein a la convention AUTO:3,6, huit mots-outils, message de nom
+// proche reformule). aide-contenu.js seul modifie ici.
+const CACHE_NAME = 'stovo-app-v38';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
