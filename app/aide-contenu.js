@@ -253,7 +253,7 @@ export const CONTENU = [
         icone: 'interrupteur',
         titre: 'Retirer ou remettre un produit',
         quoi: 'Sortir une référence que tu ne vends plus, sans perdre son historique.',
-        exemples: ['désactive le produit sucre', 'supprime le beurre du catalogue', 'réactive le sucre'],
+        exemples: ['désactive le produit sucre', 'supprime le beurre du catalogue', 'réactive le sucre', 'supprime l\'article sucre'],
         note: 'Rien n\'est jamais effacé : le produit devient invisible dans le tableau de bord et la recherche, mais ses mouvements restent en base et il revient d\'un mot.',
       },
       {
@@ -326,12 +326,17 @@ export const CONTENU = [
       {
         type: 'astuce',
         titre: '« Supprime le dernier » n\'est pas « supprime le produit »',
-        texte: 'Deux gestes très différents avec le même verbe. <b>« supprime le dernier »</b> annule ta dernière déclaration. <b>« supprime le produit X »</b> ou <b>« supprime X du catalogue »</b> retire la référence. C\'est le mot « produit » ou « catalogue » qui fait la différence : sans lui, Stovo comprend une annulation.',
+        texte: 'Deux gestes très différents avec le même verbe. <b>« supprime le dernier »</b> annule ta dernière déclaration. <b>« supprime le produit X »</b>, <b>« supprime l\'article X »</b> ou <b>« supprime X du catalogue »</b> retire la référence. C\'est le mot « dernier » qui bascule vers l\'annulation : dès que tu nommes un produit de ton catalogue, Stovo comprend que tu parles de la référence.',
       },
       {
         type: 'astuce',
         titre: 'Le piège du mot « ajoute »',
         texte: '« <b>j\'ai ajouté 10 pâtes</b> » fait entrer 10 pâtes en stock. « <b>ajoute le produit pâtes</b> » crée une nouvelle référence. Même verbe, deux sens : ce sont des mots comme « le produit » ou « l\'article » qui basculent vers la création. Si tu veux juste du stock, évite ces mots-là.',
+      },
+      {
+        type: 'astuce',
+        titre: 'Une phrase, une action',
+        texte: '« <b>crée le produit jambon et ajoute 3</b> » ne fait pas deux choses : Stovo ne garde que le nom, te le dit, et attend une deuxième phrase pour la quantité. C\'est voulu : un nom de produit peut contenir un chiffre (« Coca 50 cl »), alors Stovo préfère te montrer ce qu\'il retient plutôt que de deviner. Si tu t\'aperçois après coup que le nom créé est faux, dis « <b>supprime le produit X</b> », ou « <b>renomme le produit X en Y</b> » pour le corriger sans le perdre.',
       },
       {
         type: 'astuce',

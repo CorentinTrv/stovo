@@ -284,7 +284,15 @@
 // produit existant). Le gros du lot est backend (pwa-api v32 : seuil
 // Levenshtein a la convention AUTO:3,6, huit mots-outils, message de nom
 // proche reformule). aide-contenu.js seul modifie ici.
-const CACHE_NAME = 'stovo-app-v38';
+// v39 (lot D38, 11/09/2026) : cote front, seule l'Aide change encore. L'astuce
+// "Supprime le dernier n'est pas supprime le produit" est reecrite (c'est le
+// mot "dernier" qui bascule vers l'annulation, plus le mot "produit"), une
+// astuce "Une phrase, une action" explique la coupe des phrases composees, et
+// l'exemple "supprime l'article sucre" est ajoute. Le gros du lot est backend
+// (pwa-api v33 : elision generalisee, desactivation nommee sous cinq gardes,
+// coupe des phrases composees, grammaire sans determinant, 4e instruction de
+// rattrapage apres creation). aide-contenu.js seul modifie ici.
+const CACHE_NAME = 'stovo-app-v39';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
