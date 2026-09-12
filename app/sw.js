@@ -292,7 +292,12 @@
 // (pwa-api v33 : elision generalisee, desactivation nommee sous cinq gardes,
 // coupe des phrases composees, grammaire sans determinant, 4e instruction de
 // rattrapage apres creation). aide-contenu.js seul modifie ici.
-const CACHE_NAME = 'stovo-app-v39';
+// v40 (lot D42, 12/09/2026) : cote front, seule l'Aide change. Le geste
+// "Modifier un produit" gagne l'exemple "le prix du lait c'est 95 centimes".
+// Le gros du lot est backend (pwa-api v34 : un prix dicte en centimes ou en
+// "X euros Y" est lu en euros, "5 centimes" donne 0,05 et non plus 5).
+// aide-contenu.js seul modifie ici.
+const CACHE_NAME = 'stovo-app-v40';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,

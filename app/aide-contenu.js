@@ -237,7 +237,7 @@ export const CONTENU = [
         icone: 'crayon',
         titre: 'Modifier un produit',
         quoi: 'Changer le prix d\'achat, le seuil d\'alerte, le délai de réappro, ou l\'unité.',
-        exemples: ['le prix des pâtes c\'est 1,20', 'le seuil des bières c\'est 6', 'le délai de livraison du riz c\'est 3 jours', 'l\'unité des pâtes c\'est paquet'],
+        exemples: ['le prix des pâtes c\'est 1,20', 'le seuil des bières c\'est 6', 'le délai de livraison du riz c\'est 3 jours', 'l\'unité des pâtes c\'est paquet', 'le prix du lait c\'est 95 centimes'],
         note: 'La virgule française marche (1,20 = 1,20 €). Pour l\'unité, Stovo connaît les unités du commerce : kilo, kg, gramme, litre, centilitre, millilitre, pièce, unité, paquet, boîte, bouteille, carton, sachet, pack. Une unité fantaisiste, il préfère demander.',
       },
       {
