@@ -746,9 +746,11 @@
 
   <!-- ================= Écran « Changer mon mot de passe » (lot A4) =================
        Atteint uniquement depuis Réglages (« Changer mon mot de passe »), pas
-       un 5e onglet non plus. Câblé par reglages.js. Pas de re-saisie de
-       l'ancien mot de passe : l'option Supabase "Secure password change"
-       reste désactivée (son défaut, §1.3 de l'analyse). -->
+       un 5e onglet non plus. Câblé par reglages.js. Depuis le lot D31
+       (13/09/2026) : le mot de passe actuel est demandé et vérifié par le
+       front (contrôle de connexion, changerMotDePasseConnecte dans auth.js)
+       puis par le serveur (réglage de projet
+       security_update_password_require_current_password). -->
   <div id="ecran-changer-mdp" class="ecran">
     <main class="reglages-page wrap reglages-page-etroite">
       <div class="login-retour">
@@ -759,9 +761,12 @@
       </div>
       <div class="login-carte">
         <h1>Changer mon mot de passe</h1>
-        <p class="login-soustitre">Choisis-en un nouveau, c’est tout. Tu restes connecté.</p>
+        <p class="login-soustitre">Ton mot de passe actuel, puis le nouveau deux fois. Tu restes connecté.</p>
 
         <form id="form-changer-mdp" novalidate>
+          <label for="changer-mdp-actuel">Mot de passe actuel</label>
+          <input type="password" id="changer-mdp-actuel" name="current_password" autocomplete="current-password" required />
+
           <label for="changer-mdp-1">Nouveau mot de passe</label>
           <input type="password" id="changer-mdp-1" name="password" autocomplete="new-password" placeholder="8 caractères au moins" required />
 

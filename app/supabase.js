@@ -18,8 +18,8 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const SUPABASE_URL = 'https://hivaawwjrimacfkguauc.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_h-tBhpJfbAP4YUS6OmYsaA_GNAfWkjh';
+export const SUPABASE_URL = 'https://hivaawwjrimacfkguauc.supabase.co';
+export const SUPABASE_KEY = 'sb_publishable_h-tBhpJfbAP4YUS6OmYsaA_GNAfWkjh';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {

@@ -2,10 +2,13 @@
 //
 // Banc offline de la SEULE fonction pure d'auth.js : messageLisible. Les
 // autres exports (getSessionActuelle, seConnecter, seDeconnecter,
-// demanderCodeRecuperation, verifierCode, changerMotDePasse, onAuthChange)
-// appellent tous le vrai client Supabase (supabase.js), donc le réseau : ils
-// ne sont pas testés ici, comme le reste du fichier depuis le lot 9b (aucun
-// auth_test.js n'existait avant ce lot, vérifié par `git log -- app/auth*`).
+// demanderCodeRecuperation, verifierCode, changerMotDePasse,
+// changerMotDePasseConnecte, onAuthChange) appellent tous le vrai client
+// Supabase (supabase.js) ou un fetch réseau direct (changerMotDePasseConnecte,
+// lot D31), donc ils ne sont pas testés ici, comme le reste du fichier depuis
+// le lot 9b (aucun auth_test.js n'existait avant ce lot, vérifié par
+// `git log -- app/auth*`). validerChangementMotDePasse a déménagé dans
+// reglages_logique_test.js (lot D31, après relecture).
 //
 // Les 3 premiers cas (invalid login credentials, email not confirmed, email
 // logins are disabled) existaient déjà au lot 9b, non testés jusqu'ici :
@@ -18,7 +21,10 @@
 import { assertEquals, assertStrictEquals } from "jsr:@std/assert";
 import { messageLisible } from "./auth.js";
 
-const erreur = (message) => ({ message });
+// `code` optionnel : ajouté au lot D31 (13/09/2026), les erreurs de mot de
+// passe actuel ne se distinguent QUE par `error.code`, jamais par le message
+// (le serveur renvoie le même texte pour absent et faux).
+const erreur = (message, code) => (code ? { message, code } : { message });
 
 // --- Les 3 cas d'origine (lot 9b), jamais testés jusqu'ici ---
 
@@ -119,5 +125,30 @@ Deno.test("messageLisible : insensible à la casse (majuscules Supabase varient 
   assertEquals(
     messageLisible(erreur('TOKEN HAS EXPIRED OR IS INVALID')),
     'Ce code est faux ou a expiré. Vérifie les six chiffres, ou demande un nouveau code.',
+  );
+});
+
+// --- Lot D31 (13/09/2026) : mot de passe actuel exigé pour changer de mot de
+// passe. Le serveur renvoie LE MÊME message pour "absent" et "faux" — seul
+// `error.code` distingue les deux, d'où ces tests construits avec un code. ---
+
+Deno.test("messageLisible : mot de passe actuel manquant (code current_password_required)", () => {
+  assertStrictEquals(
+    messageLisible(erreur('Current password required when setting new password.', 'current_password_required')),
+    'Indique ton mot de passe actuel.',
+  );
+});
+
+Deno.test("messageLisible : mot de passe actuel faux (code current_password_invalid, même message que ci-dessus)", () => {
+  assertStrictEquals(
+    messageLisible(erreur('Current password required when setting new password.', 'current_password_invalid')),
+    "Le mot de passe actuel n'est pas le bon.",
+  );
+});
+
+Deno.test("messageLisible : réauthentification exigée par le serveur (code reauthentication_needed, réponse (b) non activée mais à prévoir)", () => {
+  assertStrictEquals(
+    messageLisible(erreur('Password update requires reauthentication', 'reauthentication_needed')),
+    'Par sécurité, déconnecte-toi, reconnecte-toi, puis réessaie.',
   );
 });

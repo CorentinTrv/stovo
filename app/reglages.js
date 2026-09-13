@@ -13,9 +13,10 @@
 //
 // Import pour effet de bord, comme stock.js/aide.js.
 
-import { changerMotDePasse, getSessionActuelle, seDeconnecter } from './auth.js';
+import { changerMotDePasseConnecte, getSessionActuelle, seDeconnecter } from './auth.js';
 import { construireLienMailto, DESTINATAIRE_CONTACT, extraireNumeroVersion } from './contact.js';
 import { CLE_STOCKAGE, calculerAttribut, normaliserTeinte, rendreNuancier } from './couleur_logique.js';
+import { validerChangementMotDePasse } from './reglages_logique.js';
 // Lot D28 (05/09/2026) : carte "Diagnostic micro" -- lecture seule du
 // journal ecrit par parler.js (localStorage, survit a un rechargement
 // complet de l'app, voir parler_logique.js pour le detail de la decision).
@@ -154,8 +155,20 @@ document.addEventListener('stovo:onglet', (evenement) => {
 
 $('btn-reglages').addEventListener('click', () => demanderOnglet('reglages'));
 $('lien-reglages-retour').addEventListener('click', (e) => { e.preventDefault(); demanderOnglet('dashboard'); });
-$('reglages-changer-mdp').addEventListener('click', () => demanderOnglet('changerMdp'));
-$('lien-changer-mdp-retour').addEventListener('click', (e) => { e.preventDefault(); demanderOnglet('reglages'); });
+// Lot D31 (13/09/2026, après relecture) : appareil partagé, le formulaire et
+// son message d'erreur sont remis à zéro à l'ouverture ET au retour, sinon
+// le mot de passe actuel de la personne précédente reste dans le champ.
+$('reglages-changer-mdp').addEventListener('click', () => {
+  formChangerMdp.reset();
+  afficherMessageMdp('', false);
+  demanderOnglet('changerMdp');
+});
+$('lien-changer-mdp-retour').addEventListener('click', (e) => {
+  e.preventDefault();
+  formChangerMdp.reset();
+  afficherMessageMdp('', false);
+  demanderOnglet('reglages');
+});
 
 // --- Se déconnecter ---------------------------------------------------------
 // onAuthChange (app.js) rebascule vers l'écran de connexion, comme avant que
@@ -216,6 +229,7 @@ $('reglages-diagnostic-effacer').addEventListener('click', () => {
 // --- Écran « Changer mon mot de passe » -------------------------------------
 
 const formChangerMdp = $('form-changer-mdp');
+const champMdpActuel = $('changer-mdp-actuel');
 const champMdp1 = $('changer-mdp-1');
 const champMdp2 = $('changer-mdp-2');
 const btnChangerMdp = $('btn-changer-mdp');
@@ -229,27 +243,44 @@ function afficherMessageMdp(texte, estErreur) {
 
 formChangerMdp.addEventListener('submit', async (evenement) => {
   evenement.preventDefault();
+
+  // GitHub Pages propage fichier par fichier (lot D31, 13/09/2026, après
+  // relecture) : un reglages.js neuf peut arriver avant l'index.html qui
+  // porte le champ, `champMdpActuel` serait alors `null`.
+  if (!champMdpActuel) {
+    afficherMessageMdp("L'app se met à jour : ferme-la complètement, puis rouvre-la.", true);
+    return;
+  }
+
   afficherMessageMdp('', false);
 
-  if (champMdp1.value !== champMdp2.value) {
-    afficherMessageMdp('Les deux mots de passe ne correspondent pas.', true);
+  const validation = validerChangementMotDePasse({
+    actuel: champMdpActuel.value,
+    nouveau: champMdp1.value,
+    confirmation: champMdp2.value,
+  });
+  if (!validation.ok) {
+    afficherMessageMdp(validation.message, true);
     return;
   }
 
-  btnChangerMdp.disabled = true;
   const origine = btnChangerMdp.textContent;
-  btnChangerMdp.textContent = 'Enregistrement…';
+  try {
+    btnChangerMdp.disabled = true;
+    btnChangerMdp.textContent = 'Enregistrement…';
 
-  const resultat = await changerMotDePasse(champMdp1.value);
+    const resultat = await changerMotDePasseConnecte(champMdp1.value, champMdpActuel.value);
 
-  btnChangerMdp.disabled = false;
-  btnChangerMdp.textContent = origine;
-
-  if (!resultat.ok) {
-    afficherMessageMdp(resultat.message, true);
-    return;
+    if (!resultat.ok) {
+      afficherMessageMdp(resultat.message, true);
+      return;
+    }
+    champMdpActuel.value = '';
+    champMdp1.value = '';
+    champMdp2.value = '';
+    afficherMessageMdp('Mot de passe changé.', false);
+  } finally {
+    btnChangerMdp.disabled = false;
+    btnChangerMdp.textContent = origine;
   }
-  champMdp1.value = '';
-  champMdp2.value = '';
-  afficherMessageMdp('Mot de passe changé.', false);
 });

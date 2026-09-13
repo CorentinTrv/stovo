@@ -20,7 +20,7 @@
 // vit dans recuperation.js (DOM), PAS ici : ce fichier reste un pur client
 // Auth, sans connaître l'écran qui l'appelle.
 
-import { supabase } from './supabase.js';
+import { supabase, SUPABASE_KEY, SUPABASE_URL } from './supabase.js';
 
 // Traduit les erreurs Supabase les plus courantes en français lisible.
 // Repli sur le message brut si le cas n'est pas prévu : mieux vaut un
@@ -31,6 +31,24 @@ import { supabase } from './supabase.js';
 // d'envoi — les 3 cas d'origine (lot 9b) ne changent pas.
 export function messageLisible(erreur) {
   const brut = erreur?.message || '';
+  const code = erreur?.code;
+  // Le code d'abord (Auth le pose sur chaque erreur), le message ensuite
+  // pour les cas anciens.
+  if (code === 'current_password_required') {
+    return 'Indique ton mot de passe actuel.';
+  }
+  // current_password_invalid : valeur de ErrorCodeCurrentPasswordMismatch,
+  // supabase/auth internal/api/apierrors/errorcode.go.
+  if (code === 'current_password_invalid') {
+    return "Le mot de passe actuel n'est pas le bon.";
+  }
+  // Réponse (b) reportée (§1 du brief D31) mais le serveur peut l'exiger de
+  // lui-même si le réglage "Secure password change" est activé un jour :
+  // ce cas doit rester traduit proprement même si rien ne le déclenche
+  // aujourd'hui côté Stovo.
+  if (code === 'reauthentication_needed') {
+    return 'Par sécurité, déconnecte-toi, reconnecte-toi, puis réessaie.';
+  }
   if (/invalid login credentials/i.test(brut)) {
     return 'Email ou mot de passe incorrect.';
   }
@@ -135,13 +153,61 @@ export async function verifierCode(email, code) {
   return { ok: true };
 }
 
-// Change le mot de passe de la session en cours (connecté normalement, ou en
-// pleine récupération juste après verifierCode). Pas de re-saisie de
-// l'ancien mot de passe : l'option Supabase "Secure password change" reste
-// désactivée (son défaut, §1.3 de l'analyse), c'est un réglage du projet, pas
-// de ce code.
+// Change le mot de passe pendant une récupération (juste après verifierCode).
+// Le serveur lève lui-même l'exigence du mot de passe actuel pour ces sessions
+// (session.IsRecovery()), prouvé sur le bac à sable le 13/09/2026 (Auth v2.196.0, épreuve epreuve-recuperation).
 export async function changerMotDePasse(nouveauMotDePasse) {
   const { error } = await supabase.auth.updateUser({ password: nouveauMotDePasse });
+  if (error) {
+    return { ok: false, message: messageLisible(error) };
+  }
+  return { ok: true };
+}
+
+// Change le mot de passe d'une session connectée normalement (écran
+// Réglages). Lot D31, corrigé le 13/09/2026 après relecture : le contrôle
+// serveur du mot de passe actuel ne joue pas sur une session de récupération
+// persistante (`session.IsRecovery()` reste vrai des jours durant avec
+// `persistSession: true`), donc LE FRONT vérifie lui-même le mot de passe
+// actuel avant de changer quoi que ce soit — que le réglage de projet
+// `security_update_password_require_current_password` soit actif ou non
+// (projet restauré, branche non alignée). Le contrôle de connexion passe par
+// `fetch` brut plutôt que par `supabase.auth.signInWithPassword` : ce dernier
+// remplacerait la session en cours et ferait déclencher `onAuthStateChange`
+// (afficherApp() en pleine session Réglages) ; ici la réponse est jetée sans
+// jamais être posée sur le client partagé.
+export async function changerMotDePasseConnecte(nouveauMotDePasse, motDePasseActuel) {
+  const session = await getSessionActuelle();
+  const email = session?.user?.email;
+  if (!email) {
+    return { ok: false, message: 'Impossible de vérifier ton mot de passe actuel. Réessaie dans un instant.' };
+  }
+
+  let reponse;
+  try {
+    reponse = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: motDePasseActuel }),
+    });
+  } catch (_e) {
+    return { ok: false, message: 'Impossible de vérifier ton mot de passe actuel. Réessaie dans un instant.' };
+  }
+
+  if (reponse.status === 400) {
+    return { ok: false, message: "Le mot de passe actuel n'est pas le bon." };
+  }
+  if (!reponse.ok) {
+    return { ok: false, message: 'Impossible de vérifier ton mot de passe actuel. Réessaie dans un instant.' };
+  }
+  // Mot de passe actuel juste : la session reçue n'est jamais conservée, on
+  // jette simplement le corps de la réponse.
+  await reponse.json().catch(() => {});
+
+  const { error } = await supabase.auth.updateUser({
+    password: nouveauMotDePasse,
+    current_password: motDePasseActuel,
+  });
   if (error) {
     return { ok: false, message: messageLisible(error) };
   }

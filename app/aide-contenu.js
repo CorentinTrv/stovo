@@ -432,7 +432,7 @@ export const CONTENU = [
       },
       {
         type: 'texte',
-        texte: 'Depuis Réglages, « Changer mon mot de passe » t\'en fait choisir un nouveau sans rien redemander d\'autre.',
+        texte: 'Depuis Réglages, « Changer mon mot de passe » te demande ton mot de passe actuel, puis le nouveau deux fois.',
       },
       {
         type: 'texte',

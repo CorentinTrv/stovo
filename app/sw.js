@@ -297,7 +297,10 @@
 // Le gros du lot est backend (pwa-api v34 : un prix dicte en centimes ou en
 // "X euros Y" est lu en euros, "5 centimes" donne 0,05 et non plus 5).
 // aide-contenu.js seul modifie ici.
-const CACHE_NAME = 'stovo-app-v40';
+// v41 (lot D31, 13/09/2026) : changer son mot de passe demande le mot de passe actuel, verifie par le front puis par le serveur.
+// Fichiers modifies : index.html, auth.js, supabase.js, reglages.js, aide-contenu.js.
+// NOUVEAU fichier reglages_logique.js (validation pure) ajoute au precache.
+const CACHE_NAME = 'stovo-app-v41';
 
 // Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
 // Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
@@ -323,6 +326,7 @@ const FICHIERS_COQUILLE = [
   './contact.js',
   './couleur_logique.js',
   './reglages.js',
+  './reglages_logique.js',
   './parler.js',
   './parler_logique.js',
   './reception.js',
