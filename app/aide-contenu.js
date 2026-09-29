@@ -90,20 +90,114 @@
 // le rapport de passation). Grep "micro" avant d'ecrire : la seule mention
 // existante (section "Parler") dit que le micro remplit le champ sans
 // envoyer, rien a corriger la, aucune promesse fausse trouvee.
+//
+// LOT 1a "Saisir" (14/09/2026) : le libelle VISIBLE de l'onglet passe de
+// "Parler" a "Saisir" (les noms internes ne changent pas, cf onglets.js).
+// Les 4 "terme" de la section "comprendre" et les 5 "l'ecran Parler" de la
+// section "phrases" viennent desormais de LIBELLES_ONGLETS (module
+// app/onglets.js), une seule source pour toute l'app. Le texte de la
+// definition de l'onglet Saisir change (valide mot pour mot par Corentin) :
+// il dit maintenant explicitement que Saisir "modifie ton stock", pas
+// seulement qu'il "ecrit en base".
+//
+// LOT 3 "le rayon Apprendre Stovo" (chantier Tutoriels, 18/09/2026) : une
+// section neuve EN TETE de CONTENU, avant "comprendre". Elle ne cree aucun
+// contenu (decision 1 du grilling du 18/09) : elle sert autrement ce qui
+// existe deja, sous forme de parcours nommes. Un seul parcours pour
+// l'instant, "Refaire mes premiers pas" (bloc de type 'tuto', nouveau,
+// rendu par aide.js), qui relance le fil de premiere connexion depuis
+// premiers_pas.js via l'evenement stovo:tuto-lancer. Titre "Apprendre
+// Stovo" (decision 9, pas "Tutoriels") : le mot "tuto" est banni des textes
+// VUS PAR LE CLIENT, un test le verifie sur cette section. L'identifiant
+// interne de section ('tutoriels') et le type de bloc ('tuto') restent : ce
+// sont du code, jamais affiches. Icone 'boussole', en doublon assume avec
+// "Comprendre Stovo" (decision 10, aucune clef d'icones.js ne dit "parcours
+// guide" et ce fichier n'est pas dans le perimetre de ce lot).
+//
+// LOT T1 "les identifiants de blocs" (chantier Tutoriels, 19/09/2026) : un
+// champ `id` optionnel ajoute a CINQ blocs deja existants, choisis dans le
+// tableau du §4.3 du plan de l'Architecte (2026-09-18) -- AUCUN texte
+// modifie, pas un caractere. Ces id sont cites par le futur tutoriel
+// "Comprendre mon Pilotage" (lot T2, pas encore ecrit) pour ouvrir l'Aide au
+// bon bloc, deplie, a la bonne position (voir aide.js, ecouteur de
+// stovo:aide-bloc). Convention : kebab-case, jamais de chiffre d'ordre (une
+// insertion ne doit jamais rendre un renvoi faux) : comprendre-ecrans,
+// comprendre-pastilles, comprendre-chiffres, astuces-pertes, astuces-prix.
+//
+// LOT T2 "le moteur des parcours et Comprendre mon Pilotage" (chantier
+// Tutoriels, 22/09/2026) : un second bloc 'tuto' dans la section
+// 'tutoriels', apres 'premiers-pas'. Le nombre d'etapes ("5 étapes.") est
+// ECRIT EN DUR ici parce que aide.js n'est pas rouvert par ce lot et que ce
+// fichier reste un module de donnees : ce qui le rend exact est un test
+// croise de tutoriels_test.js (test 11) qui lit le nombre dans `quoi` et le
+// compare a nombreEtapes('pilotage') (app/tutoriels_logique.js) -- si
+// quelqu'un ajoute une etape sans toucher ce bloc, le banc rougit. Le
+// parcours lui-meme (registre, textes, logique de navigation) vit dans
+// tutoriels_logique.js, module pur separe, sur le meme principe que ce
+// fichier.
+//
+// LOT RGPD F1 (22/09/2026, audit du 18/09/2026, section 6, lot 13) : une
+// SIXIEME section, "Tes données et la loi", ajoutee EN FIN de CONTENU.
+// Jusqu'ici aucune page legale n'etait accessible depuis l'app alors que
+// trois pages existent sur stovo.fr (vos-donnees.html, confidentialite.html,
+// mentions-legales.html) -- ce lot les rend accessibles, en liens absolus
+// (l'app est servie a deux adresses) qui s'ouvrent dans un nouvel onglet (la
+// vitrine est un autre site, Safari sur iPhone dans la PWA installee).
+// Textes valides par le Jarvis le 22/09/2026, sur le fond de la section
+// "Ce que fait l'intelligence artificielle" de confidentialite.html.
 
 // ====================================================================
 // LE CONTENU
 // ====================================================================
 // Structure volontairement simple pour rester facile a enrichir :
 //   section : { id, icone, titre, blocs: [...] }
-//   bloc    : { type: 'texte'  , texte }
+//   bloc    : { type: 'texte'  , texte, id? }
 //             { type: 'liste'  , items: [ '...' ] }
-//             { type: 'defs'   , items: [ { terme, texte } ] }
+//             { type: 'defs'   , items: [ { terme, texte } ], id? }
 //             { type: 'geste'  , titre, quoi, exemples: [...], note? }
-//             { type: 'astuce' , titre, texte }
-// Les `exemples` sont les seuls elements cliquables (rendus par aide.js).
+//             { type: 'astuce' , titre, texte, id? }
+//             { type: 'tuto'   , id, titre, quoi, libelle } (lot 3, rayon
+//               "Apprendre Stovo" : id stable cite par l'evenement
+//               stovo:tuto-lancer, libelle affiche sur le bouton)
+// `id?` (lot T1, 19/09/2026) : identifiant STABLE optionnel, pose seulement
+// sur les blocs qu'un autre module cite (un tutoriel, par exemple). Rendu en
+// `data-bloc="..."` sur l'element racine par aide.js, jamais affiche au
+// client. Un identifiant est une promesse de stabilite : on ne la pose que
+// la ou elle sert (§4.3 du plan de l'Architecte).
+// Les `exemples` et les boutons `tuto` sont les elements cliquables (rendus
+// par aide.js).
+
+import { LIBELLES_ONGLETS } from './onglets.js';
 
 export const CONTENU = [
+
+  // ---------------- 0. APPRENDRE STOVO (lot 3, chantier Tutoriels, 18/09/2026) ----------------
+  {
+    id: 'tutoriels',
+    icone: 'boussole',
+    titre: 'Apprendre Stovo',
+    ouvertParDefaut: true,
+    blocs: [
+      {
+        type: 'texte',
+        texte: 'Des parcours guidés, à faire quand tu veux. Chacun t\'emmène sur le bon écran et t\'explique ce que tu as sous les yeux.',
+      },
+      {
+        type: 'tuto',
+        id: 'premiers-pas',
+        titre: 'Refaire mes premiers pas',
+        quoi: 'Le parcours d\'accueil en trois gestes : créer un produit, entrer du stock, en sortir. Utile si tu as fermé la bande sans finir.',
+        libelle: 'Relancer',
+      },
+      {
+        type: 'tuto',
+        id: 'pilotage',
+        titre: 'Comprendre mon Pilotage',
+        quoi: 'Ce que cet écran te dit, d\'où viennent ses chiffres, et ce que tes phrases y changent. 5 étapes.',
+        libelle: 'Commencer',
+      },
+    ],
+  },
 
   // ---------------- 1. COMPRENDRE ----------------
   {
@@ -122,11 +216,12 @@ export const CONTENU = [
       },
       {
         type: 'defs',
+        id: 'comprendre-ecrans',
         items: [
-          { icone: 'pilotage', terme: 'Pilotage', texte: 'Ce qu\'il faut faire aujourd\'hui : le bandeau « Ce matin », les indicateurs, ce qui est à commander, l\'inventaire complet et les derniers mouvements.' },
-          { icone: 'stock', terme: 'Stock', texte: 'Trouver un produit. La liste complète avec une recherche à la frappe. Tape sur une ligne pour voir le détail (prix, valeur, autonomie).' },
-          { icone: 'parler', terme: 'Parler', texte: 'Agir. Le micro, le clavier, le mode réception, le mode sortie, la photo du bon de livraison, le parcours d\'inventaire et l\'import de catalogue. C\'est le seul écran qui écrit en base.' },
-          { icone: 'aide', terme: 'Aide', texte: 'Cette page.' },
+          { icone: 'pilotage', terme: LIBELLES_ONGLETS.dashboard, texte: 'Ce qu\'il faut faire aujourd\'hui : le bandeau « Ce matin », les indicateurs, ce qui est à commander, l\'inventaire complet et les derniers mouvements.' },
+          { icone: 'stock', terme: LIBELLES_ONGLETS.stock, texte: 'Trouver un produit. La liste complète avec une recherche à la frappe. Tape sur une ligne pour voir le détail (prix, valeur, autonomie).' },
+          { icone: 'parler', terme: LIBELLES_ONGLETS.parler, texte: 'Agir. C\'est ici que tu déclares ce qui entre, sort ou se perd, au micro ou au clavier, et que tu lances le mode réception, le mode sortie, la photo du bon de livraison, le parcours d\'inventaire ou l\'import de catalogue. C\'est le seul écran qui modifie ton stock.' },
+          { icone: 'aide', terme: LIBELLES_ONGLETS.aide, texte: 'Cette page.' },
         ],
       },
       {
@@ -135,6 +230,7 @@ export const CONTENU = [
       },
       {
         type: 'defs',
+        id: 'comprendre-pastilles',
         items: [
           { terme: '● Vert', texte: 'En stock, rien à faire.' },
           { terme: '▲ Orange', texte: 'Rupture imminente : à ce rythme de vente, il reste moins de 3 jours.' },
@@ -143,6 +239,7 @@ export const CONTENU = [
       },
       {
         type: 'defs',
+        id: 'comprendre-chiffres',
         items: [
           { terme: 'Il te reste ≈ X jours', texte: 'Ton autonomie. Stovo divise le stock qui reste par ta consommation moyenne, mesurée sur tes 30 derniers jours de ventes (7 jours minimum pour un produit tout jeune, le temps qu\'il ait du recul). Selon ce qu\'il sait, la carte affiche : « Il te reste ≈ X jours » quand c\'est mesuré, « Pas assez de sorties pour estimer » quand il manque encore des sorties déclarées, ou « Rien n\'est sorti depuis 30 jours » quand le produit ne bouge plus du tout.' },
           { terme: 'Point de commande', texte: 'Le niveau auquel il faut recommander pour ne pas tomber en rupture pendant le délai de livraison. Marqué <b>auto</b>, il suit ton rythme réel de ventes et bouge tout seul. Marqué <b>fixe</b>, c\'est le seuil que tu as dicté, faute de ventes assez nombreuses pour calculer.' },
@@ -166,7 +263,7 @@ export const CONTENU = [
     blocs: [
       {
         type: 'texte',
-        texte: 'Tape sur un exemple : il se recopie dans l\'écran Parler, prêt à envoyer. <b>Rien n\'est envoyé automatiquement</b>, tu relis d\'abord.',
+        texte: `Tape sur un exemple : il se recopie dans l'écran ${LIBELLES_ONGLETS.parler}, prêt à envoyer. <b>Rien n'est envoyé automatiquement</b>, tu relis d'abord.`,
       },
       {
         type: 'geste',
@@ -268,7 +365,7 @@ export const CONTENU = [
         type: 'geste',
         icone: 'inventaire',
         titre: 'Faire l\'inventaire de tout le magasin',
-        quoi: 'Le bouton « Faire mon inventaire » sur l\'écran Parler. Stovo te présente tes produits un par un : tu comptes, tu dictes juste le chiffre, il passe au suivant. À la fin, il te montre le récapitulatif des écarts et UNE seule validation recale tout.',
+        quoi: `Le bouton « Faire mon inventaire » sur l'écran ${LIBELLES_ONGLETS.parler}. Stovo te présente tes produits un par un : tu comptes, tu dictes juste le chiffre, il passe au suivant. À la fin, il te montre le récapitulatif des écarts et UNE seule validation recale tout.`,
         exemples: [],
         note: 'Tu dis <b>le chiffre seul</b>, rien d\'autre. Tu peux passer un produit, t\'arrêter en cours de route, et cocher le <b>comptage à l\'aveugle</b> pour ne pas voir le stock théorique avant de compter (c\'est la bonne pratique : on compte ce qu\'on voit, pas ce qu\'on s\'attend à voir).',
       },
@@ -276,7 +373,7 @@ export const CONTENU = [
         type: 'geste',
         icone: 'carton',
         titre: 'Ranger toute une livraison d\'un coup',
-        quoi: 'Le bouton « Démarrer une réception » sur l\'écran Parler. Tu dictes les produits un par un, tu vois la liste se remplir à l\'écran, et UNE seule validation écrit tout le lot.',
+        quoi: `Le bouton « Démarrer une réception » sur l'écran ${LIBELLES_ONGLETS.parler}. Tu dictes les produits un par un, tu vois la liste se remplir à l'écran, et UNE seule validation écrit tout le lot.`,
         exemples: ['12 pâtes', 'huit bières', 'vingt-cinq lait'],
         note: 'En réception, tu dis juste <b>la quantité et le produit</b>, sans verbe. Les nombres <b>en lettres</b> sont compris. Il n\'accepte que des entrées : pour une sortie, quitte la réception.',
       },
@@ -284,7 +381,7 @@ export const CONTENU = [
         type: 'geste',
         icone: 'moins-cercle',
         titre: 'Faire sortir toute une vente d\'un coup',
-        quoi: 'Le bouton « Démarrer une sortie » sur l\'écran Parler. Tu dictes les produits vendus un par un, tu vois la liste se remplir à l\'écran avec le signe moins devant chaque quantité, et UNE seule validation écrit tout le lot.',
+        quoi: `Le bouton « Démarrer une sortie » sur l'écran ${LIBELLES_ONGLETS.parler}. Tu dictes les produits vendus un par un, tu vois la liste se remplir à l'écran avec le signe moins devant chaque quantité, et UNE seule validation écrit tout le lot.`,
         exemples: ['3 pâtes', "j'ai vendu 8 bières", 'huit lait'],
         note: 'En sortie, une phrase complète marche (« j\'ai vendu 3 pâtes ») tout comme la phrase nue (« 3 pâtes »). Les nombres <b>en lettres</b> sont compris. Rien n\'est écrit avant la validation finale, et tu peux reprendre une sortie laissée en cours. Pas de raison à donner dans ce mode : pour une casse ou une perte, utilise « j\'ai jeté », « j\'ai cassé »… en dehors de ce mode.',
       },
@@ -294,13 +391,13 @@ export const CONTENU = [
         titre: 'Photographier le bon de livraison',
         quoi: 'Dans une réception, le bouton « Photographier le bon de livraison » ouvre l\'appareil photo. Stovo lit les lignes du bon (quantité et libellé), reconnaît celles qui correspondent à ton catalogue, et les ajoute à la liste de la réception en cours.',
         exemples: [],
-        note: 'Une photo n\'écrit <b>jamais</b> rien toute seule : les lignes lues rejoignent la liste, tout passe par la validation groupée de la réception, comme si tu les avais dictées. Vérifie ce que Stovo a lu dans le journal de lecture avant de valider. Prends la photo bien à plat, bien éclairée et nette, une page à la fois : une ligne mal lue ou un article que Stovo ne reconnaît pas dans ton catalogue est simplement signalé, jamais deviné.',
+        note: 'Une photo n\'écrit <b>jamais</b> rien toute seule : les lignes lues rejoignent la liste, tout passe par la validation groupée de la réception, comme si tu les avais dictées. Vérifie ce que Stovo a lu dans le journal de lecture avant de valider. Prends la photo bien à plat, bien éclairée et nette, une page à la fois : une ligne mal lue ou un article que Stovo ne reconnaît pas dans ton catalogue est simplement signalé, jamais deviné. Si une ligne peut correspondre à plusieurs de tes produits, Stovo te la montre à part : touche le bon, ou dicte-la.',
       },
       {
         type: 'geste',
         icone: 'document-fleche',
         titre: 'Importer un catalogue',
-        quoi: 'Le bouton « Importer un catalogue (.xlsx) » sur l\'écran Parler. Stovo lit ton fichier Excel, reconnaît tout seul tes colonnes (nom, stock, prix…) et te dit ce qu\'il a compris avant d\'écrire.',
+        quoi: `Le bouton « Importer un catalogue (.xlsx) » sur l'écran ${LIBELLES_ONGLETS.parler}. Stovo lit ton fichier Excel, reconnaît tout seul tes colonnes (nom, stock, prix…) et te dit ce qu'il a compris avant d'écrire.`,
         exemples: [],
         note: 'Réimporter le même fichier ne crée pas de doublon : les produits déjà connus sont ignorés. C\'est le moyen le plus rapide de démarrer avec beaucoup de références.',
       },
@@ -375,11 +472,13 @@ export const CONTENU = [
       },
       {
         type: 'astuce',
+        id: 'astuces-pertes',
         titre: 'Déclare tes pertes, elles faussent moins tes prévisions',
         texte: 'Une casse déclarée comme une vente gonfle ta consommation moyenne, donc ton point de commande, donc tu commandes trop. Dire « j\'ai cassé 2 bières » plutôt que « j\'ai vendu 2 bières » garde tes prévisions justes.',
       },
       {
         type: 'astuce',
+        id: 'astuces-prix',
         titre: 'Renseigne les prix, tu débloques la trésorerie',
         texte: 'Sans prix d\'achat, la valeur de ton stock est incomplète et annoncée comme partielle. Dire « le prix des pâtes c\'est 1,20 » une seule fois par produit suffit à voir combien tu as immobilisé dans tes rayons.',
       },
@@ -442,6 +541,17 @@ export const CONTENU = [
         type: 'texte',
         texte: 'Le micro te lâche parfois au démarrage&nbsp;? La carte <b>Diagnostic micro</b> de Réglages garde les vingt derniers essais, avec l\'heure de chacun. Copie-le (bouton dédié) et envoie-le à Corentin, ça aide à comprendre.',
       },
+    ],
+  },
+
+  // ---------------- 6. TES DONNEES ET LA LOI (lot RGPD F1, 22/09/2026) ----------------
+  {
+    id: 'donnees',
+    icone: 'aide',
+    titre: 'Tes données et la loi',
+    blocs: [
+      { type: 'texte', texte: 'Ce que Stovo enregistre, où c\'est hébergé, qui peut le voir, combien de temps, et comment tout récupérer ou fermer ton compte : c\'est écrit noir sur blanc dans <a href="https://stovo.fr/vos-donnees.html" target="_blank" rel="noopener">Vos données</a>, en une page.' },
+      { type: 'texte', texte: 'Le détail, dont ce que fait l\'intelligence artificielle et ce qu\'elle ne fait pas, est dans la <a href="https://stovo.fr/confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>. Qui édite Stovo : les <a href="https://stovo.fr/mentions-legales.html" target="_blank" rel="noopener">mentions légales</a>. Une question ? <b>bonjour@stovo.fr</b>.' },
     ],
   },
 ];

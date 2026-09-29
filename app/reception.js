@@ -50,6 +50,46 @@ function texteInconnus(inconnus) {
 const MSG_PHOTO_ENVOI = 'Je lis ta photo, un instant…';
 const MSG_PHOTO_ILLISIBLE = "Je n'ai pas réussi à préparer cette photo. Reprends-la, ou dicte les lignes.";
 
+// Lot D48-L6 (17/09/2026) : zone « À préciser » d'une photo. Le palier serveur
+// (pwa-api v38) peut renvoyer un champ additif `payload.ambigus` : une ligne du
+// bon dont le libellé correspond à plusieurs produits du catalogue (« COCA
+// COLA » face à Coca 33 cl et Coca 50 cl). Le texte, LUI, vient toujours du
+// serveur (le message affiché par `afficher(payload.reply)`, inchangé) ; cette
+// zone n'ajoute qu'un titre fixe et des boutons, elle ne réécrit jamais le
+// message. Voir §17 du plan D48-declinaisons-photo.
+const TITRE_AMBIGUS = 'À préciser : touche le bon produit, ou dicte la ligne avec son nom exact.';
+
+// Un candidat valide a un identifiant entier et un nom non vide (même filtre
+// que normaliserChoix, parler_logique.js, appliqué ici à `{ produitId, nom }`
+// au lieu de `{ numero, nom }`).
+function candidatAmbiguValide(candidat) {
+  return Boolean(
+    candidat &&
+    Number.isInteger(candidat.produitId) &&
+    typeof candidat.nom === 'string' &&
+    candidat.nom.trim() !== '',
+  );
+}
+
+// Filtre en amont toute entrée mal formée du champ `payload.ambigus` (entrée
+// externe, donc suspecte comme le reste) : libellé non texte, quantité non
+// entière (ou non positive), moins de deux candidats valides une fois les
+// candidats eux-mêmes filtrés. Sur le modèle de normaliserChoix.
+function normaliserAmbigus(ambigusBrut) {
+  if (!Array.isArray(ambigusBrut)) return [];
+  const valides = [];
+  for (const entree of ambigusBrut) {
+    if (!entree || typeof entree.libelle !== 'string' || entree.libelle.trim() === '') continue;
+    if (!Number.isInteger(entree.quantite) || entree.quantite <= 0) continue;
+    const candidats = Array.isArray(entree.candidats)
+      ? entree.candidats.filter(candidatAmbiguValide)
+      : [];
+    if (candidats.length < 2) continue;
+    valides.push({ libelle: entree.libelle, quantite: entree.quantite, candidats });
+  }
+  return valides;
+}
+
 export function creerModeReception({ elements, appeler, confirmer, afficher, doc, prendreVerrou, rendreVerrou, reduirePhoto, afficherChoix }) {
   const document = doc || globalThis.document;
 
@@ -67,6 +107,140 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
 
   let enReception = false;      // état purement front (la session « naît » à la 1re ligne serveur)
   let sessionReprise = null;    // état renvoyé par reception-etat, en attente d'un clic « Reprendre »
+
+  // Lot D48-L6 : dernière liste normalisée affichée dans la zone « À
+  // préciser » (permet de retirer UNE ligne par référence après un toucher
+  // réussi), et les boutons actuellement rendus dans cette zone (permet de
+  // les désactiver/réactiver sans requête DOM, cohérent avec le harnais de
+  // test offline qui n'a pas de querySelectorAll).
+  let ambigusActuels = [];
+  let boutonsAmbigus = [];
+  // Finition (17/09/2026, décision Corentin) : les inconnus d'une photo
+  // vivent comme sa zone « À préciser », jusqu'à la prochaine action faite
+  // ailleurs. Sans cette mémoire, `session.inconnus` revient vide après un
+  // toucher (le serveur ne le reporte pas) et « HUILE OLIVE 1L… » disparaît
+  // de l'écran alors que rien n'a changé pour cette ligne-là.
+  let inconnusPhoto = [];
+
+  // --- Rendu de la zone « À préciser » à partir d'une liste normalisée ---
+  // Jumelle de rendreLecture : reçoit toujours du texte venu de l'extérieur
+  // (le libellé lu sur le bon), donc `textContent` partout, jamais
+  // `innerHTML`. `rendreAmbigus([])` masque la zone (table du §17.1 du plan).
+  function rendreAmbigus(liste) {
+    if (!elements.ambigus) return;
+    ambigusActuels = Array.isArray(liste) ? liste : [];
+    boutonsAmbigus = [];
+    elements.ambigus.innerHTML = '';
+    if (ambigusActuels.length === 0) {
+      elements.ambigus.hidden = true;
+      return;
+    }
+
+    const titre = document.createElement('p');
+    titre.className = 'ambigus-titre';
+    titre.setAttribute('aria-live', 'polite');
+    titre.textContent = TITRE_AMBIGUS;
+    elements.ambigus.appendChild(titre);
+
+    for (const entree of ambigusActuels) {
+      const bloc = document.createElement('div');
+      bloc.className = 'ambigu-ligne';
+
+      const source = document.createElement('p');
+      source.className = 'ambigu-source';
+      source.textContent = `« ${entree.libelle} » (quantité ${entree.quantite})`;
+      bloc.appendChild(source);
+
+      for (const candidat of entree.candidats) {
+        const bouton = document.createElement('button');
+        bouton.type = 'button';
+        bouton.className = 'btn-choix'; // réutilisé (contour, 44px), jamais la pastille numérotée ici
+        const nom = document.createElement('span');
+        nom.className = 'btn-choix__nom';
+        nom.textContent = candidat.nom;
+        bouton.appendChild(nom);
+        // Finition (17/09/2026) : la quantité à droite, dans son propre span
+        // (comme .ri-qte dans la liste), pour que le bouton se lise comme la
+        // ligne qui va la rejoindre. `textContent` toujours (voir plus haut).
+        const qte = document.createElement('span');
+        qte.className = 'ambigu-qte';
+        qte.textContent = `+${entree.quantite}`;
+        bouton.appendChild(qte);
+        bouton.setAttribute('aria-label', `Ajouter ${entree.quantite} ${candidat.nom}`);
+        bouton.addEventListener('click', () => toucherAmbigu(entree, candidat, bouton));
+        bloc.appendChild(bouton);
+        boutonsAmbigus.push(bouton);
+      }
+      elements.ambigus.appendChild(bloc);
+    }
+    elements.ambigus.hidden = false;
+  }
+
+  // --- Toucher un candidat de la zone « À préciser » ---
+  // Route dédiée, additive et PAS idempotente (§17.2 du plan) : la parade est
+  // ici, côté front. N'appelle JAMAIS afficherChoixDepuisPayload : la réponse
+  // de reception-preciser ne porte jamais `choix`, et les deux zones de
+  // boutons ne peuvent pas être visibles ensemble (rappel §3 de la consigne).
+  //
+  // Correctif R1 (17/09/2026, relecture Jarvis + /code-review) : passe par
+  // `executer()`, comme tous les autres appels de ce module — pas seulement
+  // les boutons de la zone. Scénario corrigé : réseau lent, toucher, puis
+  // Valider avant la réponse aurait validé le lot SANS la ligne touchée,
+  // pendant que l'écran affichait déjà « Ajoute : … » (la ligne serait
+  // ensuite retombée dans une réception orpheline). `elements.valider`,
+  // `elements.abandon`, `elements.champ`, `elements.boutonEnvoyer` et
+  // `elements.boutonPhoto` sont donc désactivés pour la durée de l'appel, en
+  // plus des boutons de la zone elle-même (§17.5 du plan).
+  async function toucherAmbigu(entree, candidat, boutonClique) {
+    boutonClique.classList.add('est-choisi');
+    boutonClique.setAttribute('aria-pressed', 'true');
+    const controles = [
+      ...boutonsAmbigus,
+      elements.boutonEnvoyer,
+      elements.champ,
+      elements.valider,
+      elements.abandon,
+      elements.boutonPhoto,
+    ];
+    try {
+      const payload = await executer({
+        kind: 'reception-preciser',
+        produitId: candidat.produitId,
+        quantite: entree.quantite,
+      }, controles);
+      if (!payload) { afficher(MSG_ERREUR); return; }
+      if (payload.reply) afficher(payload.reply);
+      // Finition (décision Corentin) : les inconnus de la photo (mémorisés
+      // par envoyerPhoto) survivent au toucher, que le serveur les reporte
+      // ou non dans `payload.session.inconnus` (il ne le fait pas).
+      if (payload.session) rendre({ ...payload.session, inconnus: inconnusPhoto });
+      // Le journal de lecture N'EST PAS périmé par un toucher (il prolonge la
+      // photo) : rendreLecture n'est volontairement pas appelé ici.
+      if (payload.ajoute === true) {
+        const restants = ambigusActuels.filter((e) => e !== entree);
+        rendreAmbigus(restants);
+        if (boutonsAmbigus.length > 0) {
+          boutonsAmbigus[0].focus();
+        } else if (elements.titreTotal) {
+          // Finition (17/09/2026) : plus jamais le champ de saisie (contour
+          // noir visible sur téléphone, risque d'ouvrir le clavier). Le
+          // titre du total n'est pas focusable nativement (un <span>) :
+          // `tabindex="-1"` posé seulement s'il manque encore.
+          if (typeof elements.titreTotal.hasAttribute === 'function'
+            && !elements.titreTotal.hasAttribute('tabindex')) {
+            elements.titreTotal.setAttribute('tabindex', '-1');
+          }
+          elements.titreTotal.focus();
+        }
+      }
+    } finally {
+      // `executer()` a déjà réactivé tous les `controles` (donc les boutons
+      // de la zone, neufs ou anciens selon le cas). Ici on ne retire plus que
+      // l'état visuel posé sur le bouton précisément touché.
+      boutonClique.classList.remove('est-choisi');
+      boutonClique.removeAttribute('aria-pressed');
+    }
+  }
 
   // --- Rendu de la liste vivante à partir de `session` ---
   function rendre(session) {
@@ -138,6 +312,8 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     if (elements.boutonImport) elements.boutonImport.hidden = true;
     if (elements.confirmation) elements.confirmation.hidden = true; // R3 : pas de Oui/Non normal en session
     afficherChoixMode([], null); // R3 (lot A10-6) : même règle pour un choix orphelin d'avant la session
+    rendreAmbigus([]); // Lot D48-L6 (table §17.1) : une entrée en réception vide la zone « À préciser »
+    inconnusPhoto = []; // Finition : la mémoire des inconnus d'une photo ne survit pas à une (re)entrée
     elements.boutonEnvoyer.textContent = 'Ajouter';
     elements.champ.placeholder = PLACEHOLDER_RECEPTION;
     elements.champ.value = '';
@@ -154,6 +330,8 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     // visent un mode désormais fermé). Appelé APRÈS verrouRendre pour que le
     // pli d'écran (parler.js) se calcule avec modeCourant déjà à null.
     afficherChoixMode([], null);
+    rendreAmbigus([]); // Lot D48-L6 : valider, abandonner, sortie de session, reinitialiser passent tous par sortir()
+    inconnusPhoto = []; // Finition : même règle, la mémoire ne survit pas à la sortie de la réception
     elements.panneau.hidden = true;
     elements.actions.hidden = true;
     elements.demarrer.hidden = false;
@@ -180,7 +358,13 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
 
   // --- Ajouter une ligne (appelé par le submit du formulaire de parler.js) ---
   async function ajouterLigne(texte) {
-    const payload = await executer({ kind: 'reception-ligne', texte }, [elements.boutonEnvoyer, elements.champ]);
+    // Correctif R1 : les boutons de la zone « À préciser » (le cas échéant)
+    // sont désactivés eux aussi pendant cet appel, comme le reste des
+    // contrôles de la réception.
+    const payload = await executer(
+      { kind: 'reception-ligne', texte },
+      [elements.boutonEnvoyer, elements.champ, ...boutonsAmbigus],
+    );
     if (!payload) { afficher(MSG_ERREUR); return; }
     if (payload.reply) afficher(payload.reply);
     if (payload.session) {
@@ -214,6 +398,15 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     } else {
       afficherChoixMode([], null);
     }
+    // Lot D48-L6 (table §17.1) : dicter/taper une ligne OU répondre à un choix
+    // numéroté (les deux appelants de cette fonction commune) vide la zone
+    // « À préciser » d'une photo précédente, même règle que le journal de
+    // lecture (rendreLecture, appelé juste avant par les deux appelants).
+    rendreAmbigus([]);
+    // Finition : même règle pour la mémoire des inconnus d'une photo — les
+    // deux appelants (ajouterLigne, envoyerChoix) gardent leur comportement
+    // actuel, ils affichent les inconnus que rend le serveur pour LEUR appel.
+    inconnusPhoto = [];
   }
 
   // Rappel du bouton de choix (ou de la réponse dictée/tapée équivalente,
@@ -221,7 +414,11 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
   // traite la réponse EXACTEMENT comme une ligne normale (même rendu de
   // liste, mêmes messages, même gestion du null réseau).
   async function envoyerChoix(numero) {
-    const payload = await executer({ kind: 'choix', numero }, [elements.boutonEnvoyer, elements.champ]);
+    // Correctif R1 : même règle que ajouterLigne (voir son commentaire).
+    const payload = await executer(
+      { kind: 'choix', numero },
+      [elements.boutonEnvoyer, elements.champ, ...boutonsAmbigus],
+    );
     if (!payload) { afficher(MSG_ERREUR); return; }
     if (payload.reply) afficher(payload.reply);
     if (payload.session) rendre(payload.session);
@@ -251,14 +448,31 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
     }
     if (!reduite || !reduite.base64) { afficher(MSG_PHOTO_ILLISIBLE); return; }
 
+    // Lot D48-L6 : pendant de L4 côté front (serveur, pwa-api v38, vide déjà
+    // choix_en_attente avant de lire la photo). Un choix numéroté affiché
+    // avant la photo n'a plus de sens une fois le bon reçu.
+    //
+    // Correctif R1 (17/09/2026) : AVANT l'appel, pas après — sinon les
+    // boutons du choix numéroté restent touchables pendant les secondes de
+    // lecture de la photo par le serveur.
+    afficherChoixMode([], null);
+
     const payload = await executer(
       { kind: 'reception-photo', contenuBase64: reduite.base64, mimeType: reduite.mimeType },
-      [elements.boutonPhoto, elements.boutonEnvoyer, elements.champ, elements.valider, elements.abandon],
+      [elements.boutonPhoto, elements.boutonEnvoyer, elements.champ, elements.valider, elements.abandon, ...boutonsAmbigus],
     );
     if (!payload) { afficher(MSG_ERREUR); return; }
     if (payload.reply) afficher(payload.reply);
-    if (payload.session) rendre(payload.session);
+    if (payload.session) {
+      // Finition (décision Corentin) : mémorisés à CHAQUE photo réussie,
+      // remplacent la mémoire d'une photo précédente (jamais un cumul).
+      inconnusPhoto = Array.isArray(payload.session.inconnus) ? payload.session.inconnus : [];
+      rendre(payload.session);
+    }
     rendreLecture(payload.lecture);
+    // La zone « À préciser » est REMPLACÉE par les ambigus de cette photo
+    // (masquée s'il n'y en a pas) : jamais un ajout aux lignes déjà là.
+    rendreAmbigus(normaliserAmbigus(payload.ambigus));
   }
 
   // Journal de lecture : ce que la photo DISAIT, en face de ce que Stovo en a
@@ -306,23 +520,29 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
 
   // --- Retirer une ligne (croix) ---
   async function retirer(produitId) {
+    // Correctif R1 : même règle que ajouterLigne (voir son commentaire).
     const payload = await executer(
       { kind: 'reception-retirer', produitId },
-      [elements.valider, elements.abandon, elements.boutonEnvoyer],
+      [elements.valider, elements.abandon, elements.boutonEnvoyer, ...boutonsAmbigus],
     );
     if (!payload) { afficher(MSG_ERREUR); return; }
     if (payload.reply) afficher(payload.reply);
     if (payload.session) rendre(payload.session);
     rendreLecture(payload.lecture); // le journal de la photo est périmé (voir ajouterLigne)
+    rendreAmbigus([]); // Lot D48-L6 (table §17.1) : retirer une ligne (croix) vide aussi la zone « À préciser »
+    inconnusPhoto = []; // Finition : même règle pour la mémoire des inconnus d'une photo
     // On reste en réception même si la liste devient vide : l'utilisateur peut
     // redicter ou abandonner.
   }
 
   // --- Valider tout le lot (frontière idempotente : rejeu = 0 écriture) ---
   async function valider() {
+    // Correctif R1 : même règle que ajouterLigne (voir son commentaire) —
+    // c'est exactement le scénario retenu par la relecture (toucher en cours
+    // + Valider avant la réponse).
     const payload = await executer(
       { kind: 'reception-valider' },
-      [elements.valider, elements.abandon, elements.boutonEnvoyer, elements.champ],
+      [elements.valider, elements.abandon, elements.boutonEnvoyer, elements.champ, ...boutonsAmbigus],
     );
     if (!payload) { afficher(MSG_ERREUR); return; } // échec réseau : on RESTE en réception pour réessayer
     if (payload.reply) afficher(payload.reply);
@@ -332,9 +552,13 @@ export function creerModeReception({ elements, appeler, confirmer, afficher, doc
   // --- Abandonner (bouton en session OU bouton de la bannière de reprise) ---
   async function abandonner() {
     if (!confirmer('Abandonner cette réception ? Rien ne sera enregistré.')) return;
+    // Correctif R1 : même règle que ajouterLigne (voir son commentaire).
     const payload = await executer(
       { kind: 'reception-abandon' },
-      [elements.valider, elements.abandon, elements.boutonEnvoyer, elements.champ, elements.reprendre, elements.repriseAbandon],
+      [
+        elements.valider, elements.abandon, elements.boutonEnvoyer, elements.champ,
+        elements.reprendre, elements.repriseAbandon, ...boutonsAmbigus,
+      ],
     );
     if (!payload) { afficher(MSG_ERREUR); return; }
     if (payload.reply) afficher(payload.reply);

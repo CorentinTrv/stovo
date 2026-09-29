@@ -42,9 +42,11 @@ import { getSessionActuelle } from './auth.js';
 // propre logique.
 import {
   ajouterAuJournalMicro,
+  analyserJournalMicro,
   calculerPliChoix,
   calculerVisibiliteAutresDemarrer,
   choisirBranche,
+  choisirDelaiGardeDemarrage,
   CLE_JOURNAL_MICRO,
   corpsChoix,
   corpsConfirmation,
@@ -55,10 +57,12 @@ import {
   creerMachineMicro,
   creerVerrouDeMode,
   DELAI_GARDE_MICRO_MS,
+  DELAI_GARDE_MICRO_PREMIER_MS,
   extraireBase64DepuisDataUrl,
   interpreterReponsePwaApi,
   lireCorpsReponse,
   normaliserChoix,
+  optionsInvokePwaApi,
   texteErreurMicro,
   texteRefusVerrou,
   toucheEnvoie,
@@ -327,6 +331,7 @@ function afficherReponse(texte, enAttente, choix) {
       if (premier) premier.focus();
     }
   }
+  document.dispatchEvent(new CustomEvent('stovo:reponse', { detail: { texte, enAttente, choix: choix || [] } }));
 }
 
 // Appel générique à pwa-api. Désactive les contrôles pendant l'appel
@@ -335,7 +340,7 @@ function afficherReponse(texte, enAttente, choix) {
 async function appelerPwaApi(corps, controlesADesactiver) {
   controlesADesactiver.forEach((element) => { element.disabled = true; });
   try {
-    const { data, error } = await supabase.functions.invoke('pwa-api', { body: corps });
+    const { data, error } = await supabase.functions.invoke('pwa-api', optionsInvokePwaApi(corps));
     if (error) {
       console.error('Erreur pwa-api Stovo :', error.message || error);
       afficherReponse('Désolé, une erreur est survenue. Réessaie dans quelques instants.', false, []);
@@ -483,7 +488,7 @@ btnNon.addEventListener('click', async () => {
 // reception.js qui décide quoi afficher.
 async function appelerReceptionApi(corps) {
   try {
-    const { data, error } = await supabase.functions.invoke('pwa-api', { body: corps });
+    const { data, error } = await supabase.functions.invoke('pwa-api', optionsInvokePwaApi(corps));
     if (error) {
       const corpsErreur = await lireCorpsReponse(error);
       if (corpsErreurExploitable(corpsErreur)) return corpsErreur;
@@ -519,6 +524,8 @@ const modeReception = creerModeReception({
     boutonPhoto: document.getElementById('btn-photo-bl'),
     champPhoto: document.getElementById('champ-photo-bl'),
     lecture: document.getElementById('reception-lecture'),
+    // Lot D48-L6 (17/09/2026) : zone « À préciser » d'une photo ambiguë.
+    ambigus: document.getElementById('reception-ambigus'),
   },
   appeler: appelerReceptionApi,
   confirmer: (message) => globalThis.confirm(message),
@@ -778,17 +785,43 @@ function journaliser(evenement) {
   } catch (_erreur) {
     // Volontairement silencieux : voir le commentaire ci-dessus.
   }
+  // Lot 5 (20/09/2026, chantier "Premiers pas") : hors du try/catch, exprès.
+  // Un `localStorage` en échec (navigation privée, quota plein) ne doit pas
+  // avaler l'événement : le fil doit parler même quand le journal ne
+  // s'écrit pas. `detail.evenement` porte la même chaîne brute que celle
+  // écrite au journal ci-dessus, sans transformation (consigne §3).
+  document.dispatchEvent(new CustomEvent('stovo:micro', { detail: { evenement } }));
 }
 
+// Correction après l'analyse D28-suite (17/09/2026) : l'alerte de permission
+// micro d'iOS reste affichée bien plus de deux secondes le temps que le
+// client la lise et tape « Autoriser ». Avec une garde fixe à 2 s, le
+// `onstart` qui finissait par arriver était déjà ignoré (instance abandonnée
+// entre-temps) : le client autorisait le micro et Stovo lui répondait que le
+// micro n'avait pas démarré, sur le tout premier geste. La garde dure donc
+// 8 s tant que le journal micro (D28) ne contient encore aucun `start`
+// réel sur cet appareil, et repasse à 2 s dès qu'il y en a eu un.
 function armerGardeDemarrage() {
+  // Lecture du journal en `try/catch` silencieux, même doctrine que
+  // `journaliser` ci-dessus : un `localStorage` en échec (navigation privée,
+  // quota plein) ne doit jamais empêcher le micro de démarrer. En cas
+  // d'échec de lecture, on prend le délai long : mieux vaut attendre deux
+  // secondes de trop qu'annoncer un échec au tout premier geste.
+  let delai = DELAI_GARDE_MICRO_PREMIER_MS;
+  try {
+    const brut = localStorage.getItem(CLE_JOURNAL_MICRO);
+    delai = choisirDelaiGardeDemarrage(analyserJournalMicro(brut));
+  } catch (_erreur) {
+    // Volontairement silencieux : voir le commentaire ci-dessus.
+  }
   idGardeDemarrage = setTimeout(() => {
     idGardeDemarrage = null;
     if (!etatMicro.expirerGarde()) return; // onstart/onerror/onend est déjà passé entre-temps
-    journaliser('garde-2s-sans-start');
+    journaliser(delai === DELAI_GARDE_MICRO_PREMIER_MS ? 'garde-8s-sans-start' : 'garde-2s-sans-start');
     abandonnerInstanceEnCours();
     btnMicro.classList.remove('ecoute');
     afficherEtatMicro('Le micro n\'a pas démarré, réessaie.');
-  }, DELAI_GARDE_MICRO_MS);
+  }, delai);
 }
 
 function annulerGardeDemarrage() {

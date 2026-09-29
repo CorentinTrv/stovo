@@ -89,6 +89,11 @@
       <!-- Lot A4 (24/08/2026) : mot de passe perdu, PAR CODE (jamais par
            lien, voir recuperation.js). Câblé par recuperation.js. -->
       <div class="login-lien-centre"><a href="#" id="lien-mdp-oublie">Mot de passe oublié&nbsp;?</a></div>
+
+      <!-- Lot RGPD F1 (22/09/2026, audit du 18/09, lot 13) : les pages légales
+           à portée de main avant même la session. Liens absolus, l'app est
+           servie à deux adresses ; nouvel onglet, la vitrine est un autre site. -->
+      <p class="login-legal"><a href="https://stovo.fr/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <a href="https://stovo.fr/mentions-legales.html" target="_blank" rel="noopener">Mentions légales</a></p>
     </div>
   </div>
 
@@ -187,6 +192,28 @@
     <button class="btn-reception-primaire maj-bouton" type="button" id="maj-bouton">Recharger</button>
   </div>
 
+  <!-- ================= Bandeau pas-à-pas d'un parcours (chantier « Tutoriels »,
+       lot T2, 22/09/2026) =================
+       Décisions 5 à 8 du grilling du 21/09/2026 : une seule instance, hors des
+       écrans (comme .maj-bandeau juste au-dessus, en z-index inférieur), le
+       retour est porté par « Suivant »/« Précédent » (stovo:onglet réémis à
+       chaque rendu d'étape), la croix ferme sur place sans rebasculer, « J'ai
+       terminé » rebascule puis ferme. AUCUN aria-live (§3.4 du plan de
+       l'Architecte du 18/09 : l'écran Saisir en a déjà deux, un bandeau hors
+       des écrans annoncerait par-dessus) : le focus se pose sur le titre de
+       l'étape à chaque rendu à la place. Masqué par défaut (hidden, jamais
+       style.display), rempli et câblé par app/tutoriels.js. -->
+  <section class="tuto-bandeau" id="tuto-bandeau" hidden aria-labelledby="tuto-titre">
+    <div class="tuto-entete">
+      <h2 class="tuto-titre" id="tuto-titre"></h2>
+      <span class="tuto-progression" id="tuto-progression" aria-hidden="true"></span>
+      <span class="sr-only" id="tuto-progression-sr"></span>
+      <button class="tuto-fermer" type="button" id="tuto-fermer" aria-label="Fermer le parcours">✕</button>
+    </div>
+    <div class="tuto-corps" id="tuto-corps"></div>
+    <div class="tuto-actions" id="tuto-actions"></div>
+  </section>
+
   <!-- ================= Écran « Tableau de bord » (par défaut) ================= -->
   <div id="ecran-dashboard" class="ecran ecran-actif">
 
@@ -263,7 +290,11 @@
       </section>
 
       <!-- 4 indicateurs de pilotage -->
-      <section class="kpis">
+      <!-- L'id posé sur cette section (lot T2, chantier Tutoriels,
+           22/09/2026) est l'ancre nommée par l'étape 2 du parcours
+           "Comprendre mon Pilotage" (app/tutoriels_logique.js), decision 7
+           du grilling du 21/09. -->
+      <section class="kpis" id="kpis">
         <div class="kpi danger">
           <div class="k-label">■ À commander</div>
           <div class="k-value" id="kpi-commander">—</div>
@@ -287,7 +318,10 @@
       </section>
 
       <!-- Valeur du stock (trésorerie immobilisée), en bandeau dédié pour bien la mettre en avant -->
-      <section class="stock-value">
+      <!-- L'id posé sur cette section (lot T2, chantier Tutoriels,
+           22/09/2026) est l'ancre nommée par l'étape 3 du parcours
+           "Comprendre mon Pilotage". -->
+      <section class="stock-value" id="stock-value">
         <div class="sv-label">Valeur du stock <span class="sv-note">au prix d'achat</span></div>
         <div class="sv-amount" id="kpi-valeur">—</div>
         <div class="sv-sub" id="kpi-valeur-sub"></div>
@@ -383,7 +417,24 @@
   <div id="ecran-parler" class="ecran">
     <div class="parler-page">
       <main class="parler-centre">
-        <h1 class="sr-only">Parler à Stovo</h1>
+        <h1 class="sr-only">Saisir</h1>
+
+        <!-- Chantier "Premiers pas", lot 2 (18/09/2026) : le fil de première
+             connexion, paliers 1 à 3. Section gérée entièrement par
+             premiers_pas.js (glu DOM) + premiers_pas_logique.js (module pur,
+             banc Deno). hidden par défaut : stovo:donnees décide si elle
+             s'affiche, tant qu'aucun événement n'est arrivé rien ne
+             clignote. -->
+        <section class="premiers-pas" id="premiers-pas" hidden aria-labelledby="pp-titre">
+          <div class="pp-entete">
+            <h2 class="pp-titre" id="pp-titre">Premiers pas</h2>
+            <span class="pp-jalons" id="pp-jalons"></span>
+            <button class="pp-fermer" type="button" id="pp-fermer" aria-label="Fermer les premiers pas">✕</button>
+          </div>
+          <div class="pp-corps" id="pp-corps" aria-live="polite"></div>
+          <div class="pp-secours" id="pp-secours" hidden></div>
+          <div class="pp-actions" id="pp-actions"></div>
+        </section>
 
         <!-- Message du bot (dernière réponse de pwa-api, ou message d'accueil par défaut) -->
         <div class="parler-reponse" id="parler-reponse" aria-live="polite" aria-atomic="true">Écris ce que tu as fait, par exemple : j'ai reçu 10 pâtes.</div>
@@ -437,6 +488,16 @@
           <p class="reception-inconnus" id="reception-inconnus" aria-live="polite" hidden></p>
 
           <!--
+            Lot D48-L6 (17/09/2026) : zone « À préciser », une ligne du bon
+            de livraison dont le libellé correspond à plusieurs produits du
+            catalogue (« COCA COLA » face à Coca 33 cl et Coca 50 cl). Le
+            contenu (titre, phrase source, boutons) est construit par
+            reception.js (rendreAmbigus) ; masquée tant qu'il n'y a rien à
+            préciser. Transitoire, jamais persistée.
+          -->
+          <div class="reception-ambigus" id="reception-ambigus" hidden></div>
+
+          <!--
             Lot P-3 (25/07/2026) : lire le bon de livraison en le PHOTOGRAPHIANT.
             `capture="environment"` ouvre directement l'appareil photo arrière sur
             mobile (la galerie reste accessible). L'image est réduite dans le
@@ -450,6 +511,7 @@
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 8a1.5 1.5 0 0 1 1.5-1.5h1L7.5 5h5l1 1.5h1A1.5 1.5 0 0 1 16 8v7a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 4 15z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="11" r="2.6" stroke="currentColor" stroke-width="1.8"/></svg>
             <span class="btn-libelle">Photographier le bon de livraison</span>
           </button>
+          <p class="parler-texte reception-ia">La photo est lue par une intelligence artificielle (Gemini, de Google). Tu relis chaque ligne avant de valider.</p>
 
           <!--
             Journal de lecture (lot P-3) : ce que la photo DISAIT en face de ce
@@ -607,6 +669,10 @@
         <!-- Etat du micro (ecoute / erreur / indisponible), rempli par parler.js -->
         <p id="parler-etat" class="parler-etat" aria-live="assertive" hidden></p>
         <p class="parler-texte">Appuie sur le micro et parle, ou écris au clavier.</p>
+        <!-- Lot RGPD F1 (22/09/2026, audit du 18/09, lot 14, art. 50 du règlement
+             IA) : dire où l'IA intervient, en une phrase, au seul écran qui la
+             déclenche (phrase inconnue, photo, fichier importé). -->
+        <p class="parler-texte parler-ia">Tes phrases sont comprises par des règles fixes. Une intelligence artificielle (Gemini, de Google) n'intervient que si aucune règle ne comprend, ou pour lire une photo ou un fichier, et rien ne s'enregistre sans ton « Oui ».</p>
       </main>
     </div>
   </div>
@@ -796,7 +862,7 @@
     </button>
     <button class="nav-item" type="button" data-onglet="parler">
       <span class="nav-icone" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 3a2.5 2.5 0 0 0-2.5 2.5v4a2.5 2.5 0 0 0 5 0v-4A2.5 2.5 0 0 0 10 3zM5 9.5a5 5 0 0 0 10 0M10 14.5V17M7.5 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <span class="nav-label">Parler</span>
+      <span class="nav-label">Saisir</span>
     </button>
     <button class="nav-item" type="button" data-onglet="aide">
       <span class="nav-icone" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M7.2 7.6a3 3 0 1 1 4.3 2.7c-.9.4-1.5 1-1.5 2M10 15.5h.01M10 17.5a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -806,6 +872,12 @@
 
   </div><!-- /#app-shell -->
 
+  <!-- Lot RGPD F2 (22/09/2026, audit du 18/09, lot 9) : supabase-js servi
+       par nos soins, epingle en 2.117.0 (la version que le CDN tiers
+       precedent servait le 22/09), au lieu d'un CDN tiers. Script
+       CLASSIQUE, pas un module : la build UMD pose le global `supabase`
+       que lit supabase.js. Empreinte verifiee par supabase_test.js. -->
+  <script src="vendor/supabase-2.117.0.umd.js"></script>
   <script type="module" src="app.js"></script>
 
 </body>

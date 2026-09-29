@@ -300,11 +300,142 @@
 // v41 (lot D31, 13/09/2026) : changer son mot de passe demande le mot de passe actuel, verifie par le front puis par le serveur.
 // Fichiers modifies : index.html, auth.js, supabase.js, reglages.js, aide-contenu.js.
 // NOUVEAU fichier reglages_logique.js (validation pure) ajoute au precache.
-const CACHE_NAME = 'stovo-app-v41';
+// v42 (lot 1a « Saisir », 14/09/2026) : le libelle VISIBLE de l'onglet
+// "Parler" devient "Saisir" (les noms internes ne changent pas). NOUVEAU
+// fichier onglets.js (module pur, libelles des 4 onglets par cle
+// data-onglet) ajoute au precache : aide-contenu.js l'importe desormais, un
+// oubli casserait l'Aide hors ligne. Fichiers modifies : index.html,
+// aide-contenu.js.
+// v43 (lot D48-L6, palier front P2, 17/09/2026) : la zone "A preciser" d'une
+// photo de bon de livraison ambigue (candidats du catalogue en boutons).
+// Palier serveur P1 deja en production (pwa-api v38, champ additif
+// `ambigus` + route reception-preciser). Aucun nouveau fichier a precacher.
+// Fichiers modifies : reception.js, parler.js, index.html, styles.css,
+// aide-contenu.js.
+//
+// v44 (lot D28-suite, 17/09/2026) : garde de demarrage du micro a 8 s tant
+// qu'aucun `start` n'a jamais ete recu sur cet appareil (alerte de
+// permission iOS plus longue que 2 s), 2 s ensuite. Fichiers modifies :
+// parler_logique.js, parler.js. Aucun nouveau fichier a precacher.
+//
+// v45 (chantier "Premiers pas", lot 2, 18/09/2026) : la bande de guidage du
+// fil de premiere connexion (paliers 1 a 3), sur l'ecran "Saisir" d'un
+// compte a catalogue vide. DEUX nouveaux fichiers au precache :
+// premiers_pas_logique.js (module pur : deduction d'etape, textes, escaliers
+// micro/comprehension, deja teste au lot 1 et complete ici) et
+// premiers_pas.js (glu DOM). Fichiers modifies : index.html (la section
+// #premiers-pas), app.js (un import), dashboard.js (mouvements publies dans
+// stovo:donnees + alias rafraichirDonnees), parler.js (un dispatchEvent en
+// fin de afficherReponse), styles.css (bloc .premiers-pas/.pp-* en fin de
+// fichier). pwa-api INCHANGEE : le fil ne lit que ce que dashboard.js
+// publie deja, aucun appel reseau propre, aucune ecriture.
+//
+// v46 (chantier "Tutoriels", lot 3, 18/09/2026) : le rayon "Apprendre
+// Stovo" dans l'onglet Aide, section neuve en tete avec une seule entree
+// pour l'instant, "Refaire mes premiers pas" (referme la dette de la croix
+// irreversible ouverte par le deploiement du lot 2 le matin meme : la bande
+// redevient relancable). Aucun nouveau fichier a precacher (les modules
+// touches sont deja au precache depuis les lots precedents). Fichiers
+// modifies : aide-contenu.js (section 'tutoriels', bloc de type 'tuto'),
+// aide.js (le rendu du bloc 'tuto', l'evenement stovo:tuto-lancer, l'ecoute
+// de stovo:tuto-reponse), premiers_pas.js (ecoute de stovo:tuto-lancer pour
+// l'id 'premiers-pas', rejoue la deduction sur les dernieres donnees
+// connues), premiers_pas_logique.js (messageRelanceImpossible, fonction
+// pure), styles.css (bloc .aide-tuto* en fin de fichier). pwa-api
+// INCHANGEE : zero appel reseau propre a ce lot, zero ecriture en base.
+//
+// v46, lot 4 (chantier "Tutoriels", 18/09/2026, meme cache que le lot 3,
+// deploiement groupe) : l'ouverture automatique sur l'onglet Saisir quand
+// le catalogue est vide, une seule fois par vie de page, jamais si le
+// client a deja touche a la navigation (delegation de clic sur .nav-item,
+// aucun evenement neuf, app.js non touche). Corrige aussi la limite
+// assumee au lot 3 : une relance demandee avant le tout premier
+// stovo:donnees arme une attente au lieu de repondre a tort. Fichiers
+// modifies : premiers_pas.js (creerGardeBascule, creerAttenteRelance,
+// resoudreRelance branches sur la glu), premiers_pas_logique.js (ces trois
+// fonctions pures, neuves). Aucun nouveau fichier a precacher. pwa-api
+// INCHANGEE : zero appel reseau propre, zero ecriture en base, zero
+// localStorage ecrit par ce lot.
+//
+// v46, correctif post-livraison du lot 4 (18/09/2026, meme jour, avant
+// deploiement) : un stovo:donnees arrive pendant qu'#app-shell est masque
+// (viderDashboard() a la deconnexion, AVANT le remise sur Pilotage) ne
+// rend plus la bande ni ne declenche la bascule automatique sur Saisir --
+// sinon chaque deconnexion consommait a tort le droit de bascule d'un
+// compte vide reconnecte ensuite sans recharger la page. Fichier modifie :
+// premiers_pas.js seul (une reference DOM #app-shell en lecture, un `if`
+// autour du rendu de la bande et de la bascule).
+//
+// v47 (chantier "Tutoriels", lot 6, 18/09/2026) : l'escalier de
+// comprehension. Quand Stovo ne comprend pas ce que le client dicte, la
+// bande propose trois marches dans l'ordre : redire plus court (marche 1,
+// reprend la phrase exacte du palier en cours), ecrire la phrase (marche 2,
+// remplit #champ-parler comme un exemple de l'Aide, rien n'est envoye),
+// passer cette etape (marche 3, ferme la bande pour la session en cours
+// SEULEMENT, sans ecrire le drapeau de fermeture -- comportement provisoire,
+// le lot 7 la fera mener au palier 5). Aucun nouveau fichier a precacher.
+// Fichiers modifies : premiers_pas_logique.js (effetMarche3, fonction pure
+// neuve), premiers_pas.js (l'escalier cable : ecoute de stovo:reponse,
+// rendu de #pp-secours, memoire du nom de produit et des options entre deux
+// rendus, nettoyage dans masquerBande), styles.css (bloc .pp-secours-* en
+// fin de fichier). pwa-api INCHANGEE : zero appel reseau propre a ce lot,
+// zero ecriture en base, zero localStorage ecrit par l'escalier.
+//
+// v47, complement du lot 7 (chantier "Tutoriels", 18/09/2026) : le palier
+// d'arrivee. Les paliers 4 (felicitation, deux variantes selon l'alerte
+// Pilotage) et 5 (proposition d'import, "J'ai fini") sont enfin rendus dans
+// #pp-actions, boutons "Voir mon Pilotage" / "Importer mon catalogue" /
+// "J'ai fini". La marche 3 de l'escalier ("Passer cette etape") mene
+// desormais au palier 5 au lieu de fermer la bande pour la session (fin du
+// comportement provisoire du lot 6). Dette D64 : le tap sur "Relancer" qui
+// n'obtient aucune reponse en 8 s affiche un message d'echec au lieu de
+// rester muet. Aucun nouveau fichier a precacher. Fichiers modifies :
+// premiers_pas_logique.js (effetMarche3 change de valeur, messageRelanceEchouee
+// fonction pure neuve), premiers_pas.js (rendu des paliers 4/5, #pp-actions,
+// paliersForces en memoire vive, minuteur de la relance), styles.css (bloc
+// .pp-action-* en fin de fichier). pwa-api INCHANGEE : la lecture du produit
+// du fil pour la regle d'alerte passe par pilotage.js, deja importe par
+// dashboard.js, zero requete de plus.
+//
+// v48 (chantier "Tutoriels", lot T2, 22/09/2026) : le moteur des parcours et
+// le premier parcours complet, "Comprendre mon Pilotage" (5 etapes),
+// lancable depuis le rayon "Apprendre Stovo" (bouton "Commencer", second
+// bloc 'tuto' apres "Refaire mes premiers pas"). Un bandeau fixe hors des
+// ecrans (comme .maj-bandeau, z-index inferieur) affiche titre, progression,
+// paragraphes et actions ("Precedent"/"Suivant"/"J'ai termine"/croix) ; a
+// chaque etape, bascule vers l'ecran qu'elle nomme et scrolle vers son ancre
+// (ou remonte en haut si l'ancre est absente/masquee/inexistante -- decision
+// 7 du grilling du 21/09/2026). DEUX nouveaux fichiers au precache :
+// tutoriels_logique.js (module pur : registre + navigation, teste par
+// tutoriels_test.js) et tutoriels.js (glu DOM). Fichiers modifies :
+// index.html (le bandeau, juste apres #maj-bandeau ; deux id poses sur des
+// sections du Pilotage deja existantes, "kpis" et "stock-value"), app.js (un
+// import), aide-contenu.js (bloc 'tuto' 'pilotage' dans le rayon), styles.css
+// (bloc .tuto-* en fin de fichier). pwa-api INCHANGEE : zero appel reseau
+// propre a ce lot, zero ecriture en base, zero localStorage ecrit -- l'etat
+// d'un parcours vit en memoire vive uniquement (§3.5 du plan de
+// l'Architecte du 18/09/2026).
+// v49 (lot RGPD F1, 22/09/2026) : audit du 18/09, section 6, lots 13/14/10
+// reunis. Aucun nouveau fichier au precache. Fichiers touches : parler_logique.js
+// (REGION_PWA_API, optionsInvokePwaApi), parler.js (les deux appels
+// functions.invoke('pwa-api', ...) passent desormais l'en-tete x-region),
+// aide-contenu.js (sixieme section "Tes données et la loi", les trois pages
+// legales de stovo.fr), index.html (liens legaux sur l'ecran de connexion,
+// phrase IA a l'ecran de dictee et sous le bouton photo du bon de livraison),
+// styles.css (.login-legal). pwa-api CHANGE dans le lot jumeau B1 (x-region
+// ajoute a Access-Control-Allow-Headers), a DEPLOYER AVANT ce front : sans ce
+// prealable serveur, un navigateur refuse l'appel au preflight CORS.
+// v50 (lot RGPD F2, 22/09/2026) : supabase-js quitte le CDN tiers direct,
+// servi desormais par nos soins (vendor/supabase-2.117.0.umd.js, epingle
+// en 2.117.0). UN FICHIER entre au precache. pwa-api INCHANGEE par ce lot.
+const CACHE_NAME = 'stovo-app-v50';
 
-// Coquille locale a precacher : uniquement les fichiers de l'app elle-meme.
-// Les requetes cross-origin (esm.sh, supabase) ne sont JAMAIS precachees ici,
-// elles partent au reseau normalement (voir le handler "fetch" plus bas).
+// Coquille locale a precacher : les fichiers de l'app elle-meme, dont
+// vendor/supabase-2.117.0.umd.js depuis le lot RGPD F2 (supabase-js est
+// desormais servi par nos soins, plus par un CDN tiers en direct). Seule
+// requete cross-origin restante : l'API Supabase elle-meme, JAMAIS
+// precachee ici, elle part au reseau normalement (voir le handler "fetch"
+// plus bas).
 const FICHIERS_COQUILLE = [
   './',
   './index.html',
@@ -317,8 +448,10 @@ const FICHIERS_COQUILLE = [
   './stock.js',
   './aide.js',
   './aide-contenu.js',
+  './onglets.js',
   './icones.js',
   './supabase.js',
+  './vendor/supabase-2.117.0.umd.js',
   './auth.js',
   './ecran_session.js',
   './recuperation_logique.js',
@@ -335,6 +468,10 @@ const FICHIERS_COQUILLE = [
   './photo.js',
   './export.js',
   './maj_worker.js',
+  './premiers_pas_logique.js',
+  './premiers_pas.js',
+  './tutoriels_logique.js',
+  './tutoriels.js',
   './fonts/dm-sans-latin.woff2',
   './manifest.json',
   './icons/icon.svg',
@@ -386,8 +523,10 @@ self.addEventListener('fetch', (event) => {
   const requete = event.request;
   const url = new URL(requete.url);
 
-  // Requetes cross-origin (esm.sh pour supabase-js, l'API Supabase elle-meme,
-  // etc.) : jamais interceptees, elles partent au reseau normalement.
+  // Requetes cross-origin (l'API Supabase elle-meme, *.supabase.co) :
+  // jamais interceptees, elles partent au reseau normalement. supabase-js
+  // est desormais servi localement (vendor/, precache ci-dessus), plus par
+  // un CDN tiers en direct, depuis le lot RGPD F2.
   if (url.origin !== self.location.origin) return;
 
   // Seules les requetes GET sont concernees par le cache (pas de sens a

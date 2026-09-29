@@ -525,6 +525,43 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    ci-dessous. */
 .lecture-cible { font-weight: 700; color: var(--text); }
 
+/* Zone « À préciser » (lot D48-L6, 17/09/2026 ; finition 17/09/2026 après
+   critique du Jarvis validée par Corentin) : une ligne du bon dont le
+   libellé correspond à plusieurs produits du catalogue, avec un bouton par
+   candidat (classe .btn-choix réutilisée, ajustée ICI SEULEMENT pour
+   l'absence de pastille numérotée). Même filet et même fond que
+   .reception-lecture ci-dessus, aucune couleur neuve : tout sélecteur ajouté
+   par la finition est scopé sous `.reception-ambigus`, aucune règle globale
+   (dont `.btn-choix` de base) n'est touchée. */
+.reception-ambigus {
+  display: flex; flex-direction: column; gap: 14px;
+  margin-top: 12px; padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px; background: var(--bg);
+}
+/* Titre : même gabarit que les lignes de la liste (.ri-nom/.ri-qte plus bas),
+   pas la graisse d'un paragraphe de la bulle de réponse. `margin: 0` : sans
+   ça, la marge par défaut du navigateur (1em) s'ajoutait au `gap` du flex
+   parent, d'où les grands vides visibles à 320 px. */
+.reception-ambigus .ambigus-titre {
+  margin: 0; font-size: 14.5px; font-weight: 600; line-height: 1.4; color: var(--text);
+}
+.reception-ambigus .ambigu-ligne { display: flex; flex-direction: column; gap: 8px; }
+/* Phrase source : ce que dit le papier, même traitement que .lecture-source
+   du journal de lecture ci-dessus (13px, --muted). `margin: 0`, même raison
+   que le titre. */
+.reception-ambigus .ambigu-source {
+  margin: 0; font-size: 13px; color: var(--muted); word-break: break-word;
+}
+/* Boutons de CETTE zone seulement : pas de pastille numérotée, donc pas de
+   raison de caler le nom sur sa hauteur (align-items:flex-start + padding
+   asymétrique de .btn-choix de base) ni de garder le padding-top du nom. */
+.reception-ambigus .btn-choix { align-items: center; padding-left: 16px; }
+.reception-ambigus .btn-choix__nom { padding-top: 0; }
+/* La quantité à droite, comme .ri-qte de la liste : le bouton se lit alors
+   comme la ligne qui va la rejoindre. */
+.reception-ambigus .ambigu-qte { margin-left: auto; font-weight: 700; white-space: nowrap; }
+
 /* =====================================================================
    Mode réception multi-produits (N1, lots FR-4 + FR-5) — écran de
    contrôle : bouton d'entrée, liste vivante, actions de clôture,
@@ -1480,3 +1517,227 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .reglages-apercu { display: flex; align-items: center; gap: 10px; padding-top: 4px; flex-wrap: wrap; }
 .reglages-apercu-bouton { flex: 0 0 auto; pointer-events: none; }
 .reglages-apercu-texte { font-size: 14px; line-height: 1.5; color: var(--muted); margin: 0; flex: 1 1 200px; min-width: 0; }
+
+/* =====================================================================
+   Chantier "Premiers pas", lot 2 (18/09/2026) — la bande de guidage du fil
+   de première connexion, paliers 1 à 3 (§7.4 du plan de l'Architecte,
+   2026-09-17_architecte_plan-premiers-pas.md). Carte au-dessus de
+   .parler-reponse sur l'écran "Saisir", masquée par `hidden` par défaut,
+   gérée par premiers_pas.js. Aucune variable de :root touchée ici.
+   ===================================================================== */
+
+/* Carte : mêmes jetons que .parler-reponse (l.348-352) et .bandeau-pilotage
+   (l.1146-1157). L'ombre chaude (--shadow-chaude) est INTERDITE ici
+   (DESIGN.md, règle 4, réservée à l'écran du matin). */
+.premiers-pas {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm); padding: 18px 20px; margin-bottom: 16px;
+  /* Retouche captures (18/09/2026) : .parler-reponse pose text-align: left
+     (l.351), repris partout sauf ici. Sans cette ligne, la bande hérite du
+     text-align: center de .parler-centre (l.292) : au palier 2, la note en
+     trois lignes se lit mal (dernier mot seul au centre) et contredit la
+     carte juste en dessous, alignée à gauche. */
+  text-align: left;
+}
+
+.pp-entete { display: flex; align-items: center; gap: 10px; }
+.pp-titre { font-size: 16px; font-weight: 700; color: var(--text); margin: 0; flex: 1 1 auto; }
+
+/* Trois jalons : trois petits disques, le courant en --action (jamais
+   --flamme en dur, décision A15), les autres en --border. `aria-hidden`
+   côté HTML, doublés du texte lecteur d'écran (.sr-only, déjà défini
+   ailleurs dans ce fichier) posé par premiers_pas.js. */
+.pp-jalons { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.pp-jalon { width: 8px; height: 8px; border-radius: 999px; background: var(--border); display: block; }
+.pp-jalon-actif { background: var(--action); }
+
+/* Croix : 44 px de cible tactile minimum (lots A1 à A4), sans bordure ni
+   fond au repos pour rester discrète dans l'en-tête de la carte. */
+.pp-fermer {
+  flex: 0 0 auto; width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit; font-size: 16px; color: var(--muted);
+  background: none; border: none; border-radius: 14px; cursor: pointer;
+  transition: background .15s, color .15s, transform .1s;
+}
+.pp-fermer:hover { background: var(--fond-chaud); color: var(--text); }
+.pp-fermer:active { transform: translateY(1px); }
+
+/* Corps : une seule zone aria-live (#pp-corps, posée côté HTML), son
+   contenu ne change qu'au changement de palier OU de phrase modèle rendue
+   (premiers_pas.js, correctif du 18/09/2026). Chaque paragraphe reçoit une
+   classe qui traduit son RÔLE (§3.3 de la consigne du lot 2), jamais
+   devinée dans la glu : `corps` (texte courant, --text), `modele` (le
+   marqueur ou la phrase à dire, en gras et tabular-nums, --text) ou `note`
+   (secondaire, --muted — jamais --muted-light, piège documenté de ce
+   monde). Un paragraphe peut se découper en PLUSIEURS segments (palier 1
+   seulement : le marqueur « nouveau produit » en `modele`, le trou
+   « ton article » en `trou`, §7.1 du plan — correctif post-relecture du
+   18/09) : dans ce cas, les mêmes classes s'appliquent à des <span> au lieu
+   d'un <p> entier. */
+.pp-corps { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.pp-corps-ligne, .pp-modele, .pp-note, .pp-trou { margin: 0; font-size: 15px; line-height: 1.5; }
+.pp-corps-ligne { color: var(--text); }
+.pp-modele { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+.pp-note { color: var(--muted); font-size: 13px; }
+/* Le trou à compléter par le client (palier 1) : même gabarit que le
+   marqueur voisin, mais en --muted et sans le gras, pour que l'œil
+   distingue tout de suite ce qui est à remplacer. */
+.pp-trou { color: var(--muted); font-weight: 400; }
+
+/* #pp-secours et #pp-actions : markup déjà en place pour les lots 5 à 7
+   (escaliers micro/comprehension, boutons de fin de fil), non utilisés par
+   ce lot. Styles minimaux pour qu'un futur lot les trouve prêts, sans rien
+   afficher tant qu'ils restent vides. */
+.pp-secours { margin-top: 10px; }
+.pp-actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 10px; }
+/* Retouche captures (18/09/2026) : un conteneur vide ne doit pas creuser la
+   carte. #pp-actions est vide dans ce lot (ses boutons arrivent aux lots 5
+   à 7) mais gardait son margin-top, la carte paraissait plus creuse en bas
+   qu'en haut. `:empty` seul, sans !important et sans toucher à la règle
+   globale [hidden] (l.748) : #pp-secours est déjà `hidden` donc déjà sans
+   effet, cette règle ne fait qu'anticiper le jour où il perdrait sa marge
+   à vide lui aussi. */
+.pp-secours:empty, .pp-actions:empty { display: none; }
+
+/* ---------- Rayon « Apprendre Stovo », onglet Aide (lot 3, chantier
+   Tutoriels, 18/09/2026) ----------
+   Une entree de parcours guide (aujourd'hui : "Refaire mes premiers pas").
+   Meme gabarit que .aide-geste (bordure haute, titre + texte muted, l.1051)
+   pour rester coherent avec le reste de l'Aide, sans creer de nouveau
+   jeton : bouton repris de .btn-export (contour, action secondaire,
+   cible tactile 44 px, l.1221), message de reponse masque par [hidden]
+   (jamais style.display). Aucune variable de :root touchee. */
+.aide-tuto {
+  border-top: 1px solid var(--border);
+  padding: 16px 0 4px;
+}
+.aide-tuto:first-of-type { border-top: none; }
+.aide-tuto-titre { font-size: 14.5px; font-weight: 700; margin-bottom: 5px; }
+.aide-tuto-quoi { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+.aide-tuto-bouton {
+  font-family: inherit; font-size: 14.5px; font-weight: 600;
+  min-height: 44px; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 14px;
+  background: var(--card); color: var(--text); cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.aide-tuto-bouton:hover { background: var(--fond-chaud); }
+.aide-tuto-bouton:active { transform: translateY(1px); }
+/* Le message de reponse (stovo:tuto-reponse, aide.js) : demasque et mis au
+   focus au moment ou premiers_pas.js repond qu'il n'a rien a relancer. */
+.aide-tuto-message {
+  font-size: 13.5px; color: var(--text); line-height: 1.6;
+  margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border);
+}
+
+/* Lot 6 "Premiers pas" (chantier Tutoriels, 18/09/2026) : le secours de
+   l'escalier de comprehension, dans #pp-secours (deja pose en index.html,
+   hidden). Textes secondaires en --muted (DESIGN.md regle 3), bouton a
+   contour repris de .aide-tuto-bouton. */
+.pp-secours-texte { font-size: 14px; color: var(--muted); line-height: 1.5; margin: 0 0 10px; }
+.pp-secours-texte:last-of-type { margin-bottom: 0; }
+.pp-secours-bouton {
+  font-family: inherit; font-size: 14.5px; font-weight: 600;
+  min-height: 44px; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 14px;
+  background: var(--card); color: var(--text); cursor: pointer;
+  margin-top: 10px; transition: background .15s, border-color .15s, transform .1s;
+}
+.pp-secours-bouton:hover { background: var(--fond-chaud); }
+.pp-secours-bouton:active { transform: translateY(1px); }
+
+/* Lot 7 "Premiers pas" (chantier Tutoriels, 18/09/2026) : les boutons de fin
+   de fil, dans #pp-actions (deja pose en index.html, deja stylee au lot 2
+   -- gap, flex-wrap, masquage a vide -- l.1593/1601). Bouton principal :
+   patron du bouton flamme de l'app (.btn-reception-primaire, 19px gras,
+   46px), c'est un ecran d'arrivee, l'action principale merite d'etre
+   nette. Bouton secondaire : patron a contour de .pp-secours-bouton (fond
+   neutre au survol, jamais de rouge : "J'ai fini" n'est pas une action
+   destructive, a la difference d'.btn-reception-secondaire). Aucune
+   variable de :root touchee. */
+.pp-action-principale {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit; font-size: 19px; font-weight: 700; white-space: nowrap;
+  min-height: 46px; padding: 0 16px; border: none; border-radius: 14px;
+  background: var(--action); color: #fff; cursor: pointer;
+  box-shadow: 0 1px 4px rgba(250,93,0,.25);
+  transition: background .15s, transform .1s;
+}
+.pp-action-principale:hover { background: var(--action-sombre); }
+.pp-action-principale:active { transform: translateY(1px); }
+.pp-action-secondaire {
+  font-family: inherit; font-size: 14.5px; font-weight: 600;
+  min-height: 44px; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 14px;
+  background: var(--card); color: var(--text); cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.pp-action-secondaire:hover { background: var(--fond-chaud); }
+.pp-action-secondaire:active { transform: translateY(1px); }
+
+/* =====================================================================
+   Chantier "Tutoriels", lot T2 (22/09/2026) -- le bandeau pas-a-pas et le
+   premier parcours complet, "Comprendre mon Pilotage". Reprend le gabarit
+   de .maj-bandeau (fixed, meme hauteur au-dessus de la nav, meme fond/
+   filet/ombre, l.721) en z-index 54 (SOUS la banniere de mise a jour, rare
+   et prioritaire, §3.3 du plan de l'Architecte du 18/09/2026). Aucune
+   variable de :root touchee, jamais de replace_all.
+   ===================================================================== */
+.tuto-bandeau {
+  position: fixed; left: 0; right: 0; z-index: 54;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column;
+  max-height: 50vh; overflow-y: auto;
+  background: var(--card); border-top: 1px solid var(--border);
+  padding: 14px 16px;
+  box-shadow: 0 -2px 10px rgba(29,30,28,.08);
+}
+.tuto-entete { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.tuto-titre { font-size: 15px; font-weight: 700; color: var(--text); margin: 0; flex: 1 1 auto; }
+/* Progression courte, affichee ("2 / 5") : decorative (aria-hidden cote
+   HTML), doublee du texte lecteur d'ecran #tuto-progression-sr (.sr-only,
+   deja defini l.1313). */
+.tuto-progression { font-size: 13px; font-weight: 600; color: var(--muted); flex: 0 0 auto; }
+/* Croix : meme gabarit que .pp-fermer (44px de cible tactile, l.1556),
+   sans bordure ni fond au repos. */
+.tuto-fermer {
+  flex: 0 0 auto; width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit; font-size: 16px; color: var(--muted);
+  background: none; border: none; border-radius: 14px; cursor: pointer;
+  transition: background .15s, color .15s, transform .1s;
+}
+.tuto-fermer:hover { background: var(--fond-chaud); color: var(--text); }
+.tuto-fermer:active { transform: translateY(1px); }
+
+.tuto-corps { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+/* Titre de l'etape : recoit le focus programmatique a chaque rendu
+   (tutoriels.js, { preventScroll: true }). Rien de plus a poser ici : la
+   regle :focus-visible (l.1304) ne se declenche que sur une interaction
+   clavier, jamais sur un focus() appele depuis le script -- aucun contour
+   disgracieux n'apparait donc sans qu'il faille rien desactiver. */
+.tuto-etape-titre { font-size: 16px; font-weight: 700; color: var(--text); margin: 0; }
+.tuto-corps p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--text); }
+.tuto-corps p.tuto-note { color: var(--muted); font-size: 13px; }
+
+.tuto-actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 10px; flex: 0 0 auto; }
+/* "Precedent" et "En savoir plus" : gabarit d'.aide-exemple (contour,
+   rayon 14px, fond --card, min-height 44px, l.1071) SANS reutiliser la
+   classe elle-meme, dont les ::before/::after ajoutent des guillemets qui
+   n'ont pas de sens sur un bouton d'action. */
+.tuto-secondaire {
+  font-family: inherit; font-size: 14px; font-weight: 600; text-align: left;
+  min-height: 44px; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 14px;
+  background: var(--card); color: var(--muted); cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.tuto-secondaire:hover { background: var(--fond-chaud); border-color: var(--text); }
+.tuto-secondaire:active { transform: translateY(1px); }
+
+/* Lot RGPD F1 (22/09/2026) : les liens legaux de l'ecran de connexion. */
+.login-legal { margin-top: 18px; text-align: center; font-size: 12.5px; color: var(--muted); }
+.login-legal a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* Correctif de relecture (22/09/2026) : les liens de la section "Tes donnees
+   et la loi" de l'Aide (aide-contenu.js) s'affichaient en bleu navigateur
+   par defaut. Meme gabarit que .login-lien-centre a. */
+.aide-texte a { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+.aide-texte a:hover { color: var(--muted); }

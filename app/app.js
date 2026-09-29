@@ -45,6 +45,14 @@ import './stock.js';
 // branche les exemples cliquables, qui remplissent le champ de l'écran
 // « Parler » puis demandent la bascule via l'événement 'stovo:onglet'.
 import './aide.js';
+// Chantier "Premiers pas", lot 2 (18/09/2026) : le fil de première connexion
+// (bande sur l'écran "Saisir"). Import pour effet de bord, comme aide.js et
+// stock.js.
+import './premiers_pas.js';
+// Chantier "Tutoriels", lot T2 (22/09/2026) : le bandeau pas-à-pas et le
+// premier parcours complet, « Comprendre mon Pilotage ». Import pour effet
+// de bord, comme premiers_pas.js juste au-dessus.
+import './tutoriels.js';
 // Lot A4 (24/08/2026) : mot de passe perdu (écrans pré-connexion) et écran
 // Réglages (connecté). `gardeRecuperation` est un import NOMMÉ (pas
 // seulement un effet de bord) : onAuthChange plus bas doit consulter le même

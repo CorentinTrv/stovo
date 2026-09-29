@@ -286,6 +286,15 @@ export function texteErreurMicro(code) {
 
 export const DELAI_GARDE_MICRO_MS = 2000;
 
+// Lot D28-suite (17/09/2026) : sur le tout premier appui d'un appareil,
+// l'alerte de permission d'iOS reste affichee bien plus de deux secondes
+// pendant que le client la lit et tape "Autoriser" -- la garde de 2 s
+// abandonnait l'instance et annoncait un echec pendant que le micro etait en
+// train d'etre accorde. Ce delai long ne joue que tant qu'aucun `start` n'a
+// jamais ete recu sur cet appareil (voir choisirDelaiGardeDemarrage
+// ci-dessous, brancher sur le journal micro du lot D28).
+export const DELAI_GARDE_MICRO_PREMIER_MS = 8000;
+
 // Trois etats seulement :
 //  - 'inactif'  : rien en cours, un appui peut demarrer une ecoute.
 //  - 'attente'  : start() a ete demande, mais `onstart` n'est pas encore
@@ -411,6 +420,23 @@ export function analyserJournalMicro(brut) {
   return valeur.filter((e) => e && typeof e.heure === 'string' && typeof e.evenement === 'string');
 }
 
+// Lot D28-suite (17/09/2026) : choisit la duree de la garde de demarrage
+// d'apres ce journal -- 8 s tant qu'aucun `start` n'a jamais ete recu sur cet
+// appareil, 2 s des qu'il y en a eu un. Piege deja identifie dans l'analyse :
+// 'audiostart', 'speechstart', 'demande-start' et 'garde-2s-sans-start'
+// contiennent tous la sous-chaine "start", d'ou l'egalite stricte ci-dessous
+// (jamais `includes`/`indexOf`/regex non ancree, qui rendraient un faux
+// positif et annuleraient tout le lot). Defensive comme le reste du journal :
+// une entree n'est jamais garantie bien formee (stockage corrompu, version
+// anterieure), donc `journal` non tableau ou une entree sans `evenement` ne
+// doit jamais faire planter -- repli sur la garde longue (8 s), qui coute
+// de l'attente au pire, jamais un faux echec au premier geste.
+export function choisirDelaiGardeDemarrage(journal) {
+  const liste = Array.isArray(journal) ? journal : [];
+  const dejaDemarre = liste.some((entree) => entree && entree.evenement === 'start');
+  return dejaDemarre ? DELAI_GARDE_MICRO_MS : DELAI_GARDE_MICRO_PREMIER_MS;
+}
+
 // Ligne d'environnement affichee UNE FOIS en tete du journal (jamais
 // repetee sur chaque entree, et jamais comptee dans le plafond de 20) :
 // le user-agent et le mode d'affichage (PWA installee ou simple onglet de
@@ -420,6 +446,24 @@ export function formaterEnvironnementMicro(userAgent, estStandalone) {
   const agent = userAgent || 'user-agent inconnu';
   const mode = estStandalone ? 'PWA installée' : 'navigateur (onglet)';
   return `${agent} — ${mode}`;
+}
+
+// ---------------------------------------------------------------------------
+// Lot RGPD F1 (22/09/2026, audit du 18/09, §7.5, lot 10) : fixer a Paris la
+// region d'execution de pwa-api.
+// ---------------------------------------------------------------------------
+// Sans cet en-tete, l'Edge Function s'execute a la region la plus proche du
+// client (edge global), alors que la page publique de Stovo promet la
+// France. `x-region` est l'en-tete qui fixe la region d'execution et
+// `eu-west-3` (Paris) est une valeur admise (doc verifiee,
+// https://supabase.com/docs/guides/functions/regional-invocation). Un lot
+// backend jumeau (B1, meme date) ajoute x-region a
+// Access-Control-Allow-Headers cote pwa-api : sans ce prealable serveur, un
+// navigateur refuse l'appel au preflight CORS, a deployer AVANT ce front.
+export const REGION_PWA_API = 'eu-west-3';
+
+export function optionsInvokePwaApi(corps) {
+  return { body: corps, headers: { 'x-region': REGION_PWA_API } };
 }
 
 // Assemble le texte affiche dans la carte "Diagnostic micro" (et copie tel

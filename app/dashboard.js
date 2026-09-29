@@ -749,8 +749,13 @@ async function charger() {
   // chargement nourrit les deux ecrans : memes chiffres partout. gesteVivant,
   // derniereSortieLe et compteursEtat (LOT P-3) publies aussi, pour qu'un
   // futur lot (P-4, P-5) puisse les reutiliser sans recalculer.
+  // Chantier "Premiers pas", lot 2 (18/09/2026) : `mouvements` publiés en
+  // plus, pour que le fil de première connexion déduise son étape sans une
+  // requête de plus. `|| []` n'est pas décoratif : si la lecture des
+  // mouvements a échoué (errM), mvts est undefined, et le fil doit voir un
+  // tableau vide, jamais une exception.
   document.dispatchEvent(new CustomEvent('stovo:donnees', {
-    detail: { produits, gesteVivant, derniereSortieLe, compteursEtat },
+    detail: { produits, mouvements: mvts || [], gesteVivant, derniereSortieLe, compteursEtat },
   }));
 
   // --- Historique : 15 derniers mouvements ---
@@ -953,8 +958,12 @@ export function viderDashboard() {
   // (produitsCourants === null -> "Chargement..."), assume : republier un
   // tableau vide est plus simple qu'exporter un 3e etat depuis dashboard.js,
   // et le texte reste juste (aucune donnee de l'ancien compte n'y figure).
+  // Chantier "Premiers pas", lot 2 : symétrie avec charger() ci-dessus. Sans
+  // cette clé, le fil verrait `mouvements: undefined` à chaque déconnexion
+  // (calculerEtatDuFil le traite comme vide, donc sans risque, mais la
+  // symétrie évite toute divergence future).
   document.dispatchEvent(new CustomEvent('stovo:donnees', {
-    detail: { produits: [], gesteVivant: false, derniereSortieLe: null, compteursEtat: null },
+    detail: { produits: [], mouvements: [], gesteVivant: false, derniereSortieLe: null, compteursEtat: null },
   }));
 }
 
@@ -968,3 +977,9 @@ export { carteProduit };
 // resumeDormant deja exportee ci-dessus (declaration `export function`, LOT
 // P-5) : listee ici en commentaire pour garder une trace unique de toutes
 // les exports "banc offline" du fichier.
+
+// Chantier "Premiers pas", lot 2 (18/09/2026) : alias pour que le fil de
+// première connexion puisse forcer un rechargement des données sans
+// attendre le prochain tick du setInterval (jusqu'à 30 s, §3.4 du plan de
+// l'Architecte). Aucun changement de comportement : c'est la même fonction.
+export { charger as rafraichirDonnees };
