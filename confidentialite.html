@@ -809,20 +809,23 @@
     <div class="zone">
       <div class="legal">
         <h1>Confidentialité</h1>
-        <p class="legal-intro"><em>Dernière mise à jour&nbsp;: 25 août 2026.</em></p>
+        <p class="legal-intro"><em>Dernière mise à jour&nbsp;: 18 septembre 2026.</em></p>
 
         <h2>Qui est responsable</h2>
         <p>Corentin Trouvé, éditeur de Stovo (voir les <a href="mentions-legales.html">mentions légales</a>), est responsable du traitement de vos données. Pour toute question ou demande&nbsp;: <a href="mailto:bonjour@stovo.fr">bonjour@stovo.fr</a>.</p>
 
         <h2>Ce que Stovo enregistre</h2>
         <p><strong>Votre compte</strong>&nbsp;: votre adresse e-mail, votre mot de passe (haché, jamais lisible, même par nous), les dates de création et de dernière connexion. Les comptes sont créés à la main, il n'y a pas d'inscription libre.</p>
-        <p><strong>Votre stock</strong>&nbsp;: les produits, leurs quantités, seuils, délais et prix d'achat, chaque mouvement horodaté (entrée, sortie, motif), et les façons de nommer que l'application apprend de vous («&nbsp;toma&nbsp;» pour «&nbsp;tomates&nbsp;»). Ce sont les données de votre activité ; elles ne sont rattachées qu'à votre compte.</p>
-        <p><strong>Votre voix</strong>&nbsp;: quand vous dictez, c'est votre téléphone qui transforme la parole en texte (la reconnaissance vocale du navigateur, réglée par Apple ou Google selon l'appareil). Stovo ne reçoit que le texte, jamais le son, et n'en garde que ce qui devient un mouvement ou un produit.</p>
+        <p><strong>Votre stock</strong>&nbsp;: les produits, leurs quantités, seuils, délais et prix d'achat, chaque mouvement horodaté (entrée, sortie, motif), et les façons de nommer que l'application apprend de vous («&nbsp;toma&nbsp;» pour «&nbsp;tomates&nbsp;»). Ce sont les données de votre activité&nbsp;; elles ne sont rattachées qu'à votre compte.</p>
+        <p><strong>Votre voix. Stovo ne reçoit jamais le son</strong>, seulement le texte, et n'en garde que ce qui devient un mouvement ou un produit. Mais nous devons être précis sur le trajet de votre voix, parce qu'il ne dépend pas de nous&nbsp;: c'est la reconnaissance vocale de votre navigateur qui transforme la parole en texte, et selon le téléphone, sa langue et ses réglages, ce travail se fait <strong>sur votre appareil ou sur les serveurs d'Apple ou de Google</strong>. Une page web n'a aucun moyen de choisir, ni même de savoir lequel des deux a eu lieu. Sur un téléphone Android, l'adresse de notre site est transmise à Google avec l'audio. Si ce point vous gêne, le clavier fonctionne partout dans Stovo, à la place de la voix.</p>
         <p><strong>Vos photos et vos tableurs</strong>&nbsp;: quand vous photographiez un bon de livraison ou importez un fichier Excel, l'image ou les premières lignes du fichier sont envoyées à Google (Gemini) pour être lues, puis Stovo ne garde que le résultat (les lignes de réception, les colonnes reconnues). Il en va de même d'une phrase que l'application n'a pas comprise seule. Votre nom, votre e-mail et votre historique ne partent jamais avec.</p>
-        <p><strong>Les journaux techniques</strong>&nbsp;: comme tout service en ligne, nos prestataires enregistrent l'adresse IP et l'heure des connexions, pour la sécurité, pendant une courte durée.</p>
+        <p><strong>Les journaux techniques</strong>&nbsp;: pour comprendre une panne, notre serveur tient un journal de ce qu'il fait. Il n'y écrit ni la phrase que vous venez de dicter, ni votre réponse, ni le nom du fichier que vous venez d'importer&nbsp;: seulement leur longueur et une empreinte technique qui ne permet pas de les reconstituer. Il peut y noter le nom d'un produit tel qu'il l'a compris, pour retrouver une erreur d'interprétation. Ces journaux sont conservés <strong>un jour</strong>, puis effacés. Nos prestataires, eux, enregistrent l'adresse IP et l'heure des connexions pour la sécurité, selon leurs propres durées.</p>
 
         <h2>Pourquoi, et à quel titre</h2>
-        <p>Pour faire fonctionner Stovo (tenir votre stock, vous connecter, vous envoyer un code de connexion)&nbsp;: c'est l'exécution du contrat qui nous lie, ou sa préparation quand vous testez l'application. Pour sauvegarder la base chaque nuit, répondre à vos messages et savoir si l'application vous sert vraiment (le nombre de mouvements par jour, la dernière activité)&nbsp;: c'est notre intérêt légitime à faire tourner un service fiable, et vous pouvez vous y opposer. Aucune décision automatisée, aucun profilage, aucune publicité.</p>
+        <p>Pour faire fonctionner Stovo (tenir votre stock, vous connecter, vous envoyer un code si vous avez perdu votre mot de passe)&nbsp;: c'est l'exécution du contrat qui nous lie, ou sa préparation quand vous testez l'application. Pour sauvegarder la base chaque nuit, répondre à vos messages et savoir si l'application vous sert vraiment (le nombre de mouvements par jour, la dernière activité)&nbsp;: c'est notre intérêt légitime à faire tourner un service fiable, et vous pouvez vous y opposer. Aucune décision automatisée, aucun profilage, aucune publicité.</p>
+
+        <h2>Ce que fait l'intelligence artificielle, et ce qu'elle ne fait pas</h2>
+        <p>Les phrases du quotidien sont comprises par des règles écrites à la main, sans aucun modèle&nbsp;: c'est ce qui fait que Stovo se comporte pareil deux fois de suite. Une intelligence artificielle (Google Gemini) n'intervient que dans <strong>quatre cas</strong>, chacun déclenché par vous&nbsp;: lire la photo d'un bon de livraison, reconnaître les colonnes d'un tableur importé, comprendre une phrase qu'aucune règle n'a reconnue, et rapprocher un nom de produit de ceux de votre catalogue. Vous savez donc quand elle travaille, et rien ne s'enregistre sans votre validation.</p>
 
         <h2>Qui y a accès</h2>
         <p>Dans l'application, <strong>vous seul</strong> voyez votre stock&nbsp;: chaque compte est cloisonné, techniquement, dans la base. Corentin Trouvé peut accéder aux données pour vous aider, corriger une panne ou sauvegarder, jamais pour les vendre ni les partager.</p>
@@ -838,59 +841,70 @@
             </thead>
             <tbody>
               <tr>
-                <td>Supabase, Inc.</td>
+                <td>Supabase Pte. Ltd (Singapour)</td>
                 <td>Base de données, connexion, exécution du service</td>
-                <td>Région Paris (France)</td>
+                <td>Vos données stockées en <strong>région Paris</strong>. La société, elle, est singapourienne</td>
               </tr>
               <tr>
                 <td>OVH SAS</td>
-                <td>Ce site, et la réception des e-mails adressés à <a href="mailto:bonjour@stovo.fr">bonjour@stovo.fr</a></td>
-                <td>Gravelines et Roubaix (France)</td>
+                <td>Ce site, l'application, et la boîte <a href="mailto:bonjour@stovo.fr">bonjour@stovo.fr</a></td>
+                <td>Gravelines, Roubaix, Strasbourg (France)</td>
+              </tr>
+              <tr>
+                <td>Google (Gemini), par Google Cloud France</td>
+                <td>Lecture des photos et des tableurs, phrases non comprises, rapprochement d'un nom de produit</td>
+                <td>Traitement possible dans tout pays où Google a des installations</td>
+              </tr>
+              <tr>
+                <td>Resend (Plus Five Five, Inc.)</td>
+                <td>Envoi des e-mails de service (code de récupération du mot de passe)</td>
+                <td>Envoi depuis l'Irlande&nbsp;; le message et les journaux sont stockés aux États-Unis, 30 jours</td>
               </tr>
               <tr>
                 <td>GitHub, Inc.</td>
-                <td>Livraison des fichiers de l'application</td>
-                <td>États-Unis (aucune donnée d'utilisateur)</td>
-              </tr>
-              <tr>
-                <td>Google (Gemini)</td>
-                <td>Lecture des photos, des tableurs et des phrases non comprises</td>
-                <td>Google, y compris hors Union européenne</td>
-              </tr>
-              <tr>
-                <td>Resend, Inc.</td>
-                <td>Envoi des e-mails de service (codes de connexion)</td>
-                <td>Envoi depuis l'Irlande ; journaux d'envoi aux États-Unis</td>
-              </tr>
-              <tr>
-                <td>Microsoft (Outlook)</td>
-                <td>Boîte de réception de <a href="mailto:bonjour@stovo.fr">bonjour@stovo.fr</a></td>
-                <td>Selon Microsoft</td>
+                <td>Livraison des fichiers de la seconde copie de l'application</td>
+                <td>États-Unis (aucune donnée d'utilisateur, l'adresse IP du navigateur)</td>
               </tr>
             </tbody>
           </table>
         </div>
+        <p><strong>Un point que nous avons corrigé, et que nous préférons écrire.</strong> Avant la version 50 de l'application, à son ouverture, votre navigateur allait chercher une bibliothèque de programmation sur un service de distribution public (esm.sh), qui voyait donc votre adresse IP, sans qu'aucun contrat ne nous lie à lui. Cette bibliothèque est désormais livrée avec l'application, depuis le même hébergement qu'elle&nbsp;: plus aucune requête ne part vers ce service.</p>
 
         <h2>Hors de l'Union européenne</h2>
-        <p>Vos données de compte et de stock restent en France. Trois prestataires traitent certaines informations hors de l'Union européenne&nbsp;: Google (les photos, tableurs et phrases envoyés pour lecture), Resend (les journaux d'envoi des e-mails) et GitHub (l'adresse IP qui charge l'application). Ces transferts s'appuient sur les clauses contractuelles types de la Commission européenne prévues par chacun d'eux. Pour Google, les conditions applicables aux utilisateurs de l'Espace économique européen précisent que les contenus envoyés ne servent pas à améliorer ses produits.</p>
+        <p><strong>Votre stock et votre compte sont stockés en France</strong>, en région Paris, et n'en sortent pas. Trois trajets sortent malgré tout de l'Union européenne, et nous les distinguons parce qu'ils ne reposent pas sur le même cadre.</p>
+        <ul>
+          <li><strong>Vers Singapour</strong>&nbsp;: la société qui exploite la base, Supabase Pte. Ltd, est établie à Singapour, qui ne bénéficie d'aucune décision d'adéquation de la Commission européenne. Ce transfert repose sur les <strong>clauses contractuelles types</strong> de la Commission, dont vous pouvez demander copie à <a href="mailto:bonjour@stovo.fr">bonjour@stovo.fr</a>.</li>
+          <li><strong>Vers les États-Unis</strong>&nbsp;: Google, Resend et GitHub sont couverts par la décision d'adéquation du 10 juillet 2023, qui reconnaît un niveau de protection équivalent pour les organisations certifiées.</li>
+          <li><strong>Vers Apple ou Google, pour la voix</strong>&nbsp;: ce trajet est déclenché par votre navigateur, pas par Stovo, et nous n'avons de contrat avec aucun des deux à ce titre. Voir plus haut.</li>
+        </ul>
+        <p>Sur les contenus envoyés à Google pour lecture, les conditions de l'interface de programmation Gemini, dans leur version du 23 mars 2026, sont explicites&nbsp;: Google ne se sert ni de ce qui est envoyé, ni de ce qui est répondu, <strong>pour améliorer ses produits</strong>. Google conserve toutefois ces échanges pendant une durée qu'il qualifie de limitée sans la chiffrer, dans le seul but de détecter les usages interdits.</p>
+        <p>Une précision technique, dans le même esprit&nbsp;: la partie de notre serveur qui reçoit vos phrases s'exécute, par défaut, dans la région la plus proche de vous, qui n'est pas toujours la France. Depuis la version 49 de l'application, chaque appel demande explicitement son exécution en France, en région Paris, la même que la base où tout est écrit, et chaque réponse indique la région où elle a été produite, ce qui nous permet de le vérifier.</p>
 
         <h2>Combien de temps</h2>
-        <p>Tant que votre compte existe. Quand vous demandez sa fermeture, tout est effacé (compte, produits, mouvements, alias) et une copie subsiste dans notre sauvegarde nocturne pendant <strong>30 jours au plus</strong>, puis disparaît. Les codes de connexion n'ont aucune valeur après usage. Les messages échangés avec <a href="mailto:bonjour@stovo.fr">bonjour@stovo.fr</a> sont conservés le temps de la relation, et supprimés à votre demande.</p>
+        <p>Tant que votre compte existe. Quand vous demandez sa fermeture, tout est effacé (compte, produits, mouvements, alias) et une copie subsiste dans notre sauvegarde nocturne pendant <strong>30 jours au plus</strong>, puis disparaît. Les codes de récupération du mot de passe n'ont aucune valeur après usage. Les messages échangés avec <a href="mailto:bonjour@stovo.fr">bonjour@stovo.fr</a> sont conservés le temps de la relation, et supprimés à votre demande.</p>
 
         <h2>Vos droits</h2>
         <p>Vous pouvez à tout moment accéder à vos données, les corriger, les récupérer, vous opposer à un traitement fondé sur notre intérêt légitime, ou demander l'effacement de votre compte.</p>
         <ul>
-          <li><strong>Récupérer vos données</strong>&nbsp;: vous-même, sans nous demander, dans l'application, onglet Aide, «&nbsp;Sortir mes données&nbsp;»&nbsp;: deux fichiers CSV (votre catalogue, tous vos mouvements), lisibles dans Excel.</li>
+          <li><strong>Récupérer vos données</strong>&nbsp;: vous-même, sans nous demander, dans l'application, onglet <strong>Pilotage</strong>, tout en bas, bloc «&nbsp;Exporter mes données&nbsp;»&nbsp;: deux fichiers CSV (votre catalogue, tous vos mouvements), lisibles dans Excel.</li>
           <li><strong>Fermer votre compte</strong>&nbsp;: un e-mail à <a href="mailto:bonjour@stovo.fr">bonjour@stovo.fr</a>. L'effacement est fait sous un mois et confirmé par écrit, avec la date. La marche à suivre est décrite dans <a href="vos-donnees.html">Vos données</a>.</li>
           <li><strong>Toute autre demande</strong>&nbsp;: <a href="mailto:bonjour@stovo.fr">bonjour@stovo.fr</a>, réponse sous un mois.</li>
           <li>Si vous estimez que vos droits ne sont pas respectés, vous pouvez saisir la CNIL (<a href="https://www.cnil.fr" rel="noopener">cnil.fr</a>).</li>
         </ul>
 
         <h2>Cookies et stockage sur votre appareil</h2>
-        <p>Ce site n'utilise aucun cookie ni outil de mesure d'audience. L'application ne dépose aucun cookie non plus ; elle garde dans la mémoire de votre navigateur trois choses qui ne quittent jamais votre appareil&nbsp;: votre session (pour ne pas vous reconnecter à chaque ouverture), la couleur d'accent que vous avez choisie, et un réglage d'affichage du tableau de bord. Vous les effacez en vous déconnectant ou en vidant les données du site.</p>
+        <p>Ce site n'utilise aucun cookie, aucun outil de mesure d'audience, aucun traceur publicitaire. L'application ne dépose aucun cookie non plus. Elle garde cinq informations dans la mémoire de votre navigateur, qui <strong>ne quittent jamais votre appareil</strong> et ne nous sont jamais transmises&nbsp;:</p>
+        <ul>
+          <li>votre session, pour ne pas avoir à vous reconnecter à chaque ouverture&nbsp;;</li>
+          <li>la couleur d'accent que vous avez choisie&nbsp;;</li>
+          <li>l'état replié ou déplié du bloc du matin, sur le tableau de bord&nbsp;;</li>
+          <li>un petit journal technique du micro, qui sert à comprendre pourquoi la dictée a échoué&nbsp;;</li>
+          <li>le fait que vous avez fermé le guide de première connexion, pour qu'il ne revienne pas.</li>
+        </ul>
+        <p>Toutes servent le service que vous avez demandé, ce qui, au regard des règles sur les traceurs, dispense de vous demander votre accord. Vous les effacez en vous déconnectant ou en vidant les données du site dans votre navigateur.</p>
 
         <h2>Sécurité</h2>
-        <p>Connexions chiffrées (HTTPS), mots de passe hachés, cloisonnement de chaque compte dans la base, écriture réservée au serveur, sauvegarde chaque nuit et restauration éprouvée. Rien n'est infaillible&nbsp;: si un incident touchait vos données, vous en seriez informé.</p>
+        <p>Connexions chiffrées (HTTPS), mots de passe hachés, cloisonnement de chaque compte dans la base elle-même, écriture réservée au serveur qui vérifie votre identité à chaque appel, sauvegarde chaque nuit sur un ordinateur situé en France, restauration éprouvée. Rien n'est infaillible&nbsp;: si un incident touchait vos données, vous en seriez informé.</p>
       </div>
     </div>
   </section>
