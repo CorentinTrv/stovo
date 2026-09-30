@@ -233,8 +233,12 @@ export const CONTENU = [
         id: 'comprendre-pastilles',
         items: [
           { terme: '● Vert', texte: 'En stock, rien à faire.' },
-          { terme: '▲ Orange', texte: 'Rupture imminente : à ce rythme de vente, il reste moins de 3 jours.' },
           { terme: '■ Rouge', texte: 'Sous le point de commande : à commander maintenant.' },
+          // LOT D30-L3 (27/09/2026, plan §3 Q2) : troisieme pastille, neutre
+          // (sans couleur) -- un produit jamais compte (aucun mouvement
+          // depuis sa creation) ne peut pas etre juge "a commander" ni "en
+          // stock", il se range a part.
+          { terme: '○ Pas encore compté', texte: 'Tu ne lui as jamais dit combien tu en as, Stovo ne peut rien calculer, il ne te dit donc pas de le commander.' },
         ],
       },
       {
@@ -413,7 +417,7 @@ export const CONTENU = [
       {
         type: 'astuce',
         titre: '« Huit » ou « 8 » : Stovo comprend les deux, partout',
-        texte: 'En réception, en sortie et dans le parcours d\'inventaire, un nombre écrit en toutes lettres par la reconnaissance vocale (« dix », « vingt-cinq ») est compris directement. En saisie normale, c\'est un <b>repli</b> : Stovo essaie d\'abord de comprendre la phrase telle quelle, et ne retente la conversion que si ça n\'a pas suffi. Cette nuance protège un produit dont le nom contient un mot-nombre (« quatre quarts », « cent pur jus ») : le nom déjà connu l\'emporte toujours avant qu\'une conversion soit tentée. Dans le doute, relis toujours le champ avant d\'envoyer.',
+        texte: 'En réception, en sortie et dans le parcours d\'inventaire, un nombre écrit en toutes lettres par la reconnaissance vocale (« dix », « vingt-cinq ») est compris directement. En saisie normale, c\'est un <b>repli</b> : Stovo essaie d\'abord de comprendre la phrase telle quelle, et ne retente la conversion que si ça n\'a pas suffi. Cette nuance protège un produit dont le nom contient un mot-nombre (« quatre quarts », « cent pur jus ») : le nom déjà connu l\'emporte toujours avant qu\'une conversion soit tentée. Dans le doute, relis toujours le champ avant d\'envoyer. Et quand ton téléphone écrit « une », « cette » ou « dit » juste après le verbe (« j\'ai vendu une bière », « j\'ai reçu dit pâtes »), Stovo le lit comme 1, 7 ou 10, et il te le dit dans sa question quand c\'est une devinette. « de » peut vouloir dire 2 ou 10 : là, il te redemande le nombre.',
       },
       {
         type: 'astuce',
@@ -438,7 +442,7 @@ export const CONTENU = [
       {
         type: 'astuce',
         titre: 'Un mot mal entendu ? Donne-lui un surnom',
-        texte: 'Si ton téléphone écrit systématiquement « serial » quand tu dis « céréales », ne te bats pas : dis une fois « <b>appelle les céréales serial</b> ». Le mot est appris, et il sera reconnu instantanément et gratuitement les fois suivantes. Stovo peut aussi te le proposer tout seul quand il ne reconnaît pas un mot : accepter sa proposition enregistre le surnom au passage.',
+        texte: 'Si ton téléphone écrit systématiquement « serial » quand tu dis « céréales », ne te bats pas : dis une fois « <b>appelle les céréales serial</b> ». Le mot est appris, et il sera reconnu instantanément et gratuitement les fois suivantes. Stovo peut aussi te le proposer tout seul quand il ne reconnaît pas un mot : accepter sa proposition enregistre le surnom au passage. À la création, c\'est différent : le produit n\'existe pas encore, Stovo n\'a rien pour corriger ton téléphone. Si le nom proposé est faux, réponds non et corrige le mot au clavier dans le champ.',
       },
       {
         type: 'astuce',

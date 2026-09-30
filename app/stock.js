@@ -39,10 +39,17 @@ let produitsCourants = null; // null = pas encore charge (etat "Chargement...")
 const lignesOuvertes = new Set();
 
 // Badge d'etat : MEMES regles que les cartes et les groupes du
-// dashboard (sous le point de commande -> a commander ; sinon autonomie
-// courte -> a surveiller ; sinon en stock).
+// dashboard (jamais compte -> pastille neutre ; sinon sous le point de
+// commande -> a commander ; sinon autonomie courte -> a surveiller ; sinon
+// en stock). LOT D30-L3 (27/09/2026) : p._jamaisCompte et p._aCommander sont
+// deja poses par dashboard.js (module jumeau pilotage.js, lot L1), au meme
+// titre que p._pointCommande/p._couverture -- aucune lecture ni calcul de
+// plus ici, meme discipline que le reste de ce fichier (100% lecture seule).
 function badgeDe(p) {
-  if (Number(p.stock_actuel) <= (Number(p._pointCommande) || 0)) {
+  if (p._jamaisCompte) {
+    return '<span class="badge neutre">○</span>';
+  }
+  if (p._aCommander) {
     return '<span class="badge danger">■</span>';
   }
   if (urgence(p._couverture) === 'warn') {
@@ -58,24 +65,42 @@ function ligneStock(p) {
   const cov = p._couverture;
   // LOT P-3 : version courte des trois etats, memes textes que la carte du
   // dashboard mais sans la ligne de detail (l'espace de l'onglet Stock est
-  // compact, cf. plan §3 Q2 niveau 3).
-  const autonomieTxt = p._etat === 'mesure'
-    ? `Il te reste ${txtCouverture(cov)}`
-    : p._etat === 'dormant'
-      ? `Rien n'est sorti depuis ${SEUIL_DORMANT_JOURS} jours`
-      : `Pas assez de sorties pour estimer`;
+  // compact, cf. plan §3 Q2 niveau 3). LOT D30-L3 (27/09/2026) : jamais
+  // compte affiche le geste qui repare (texte Q2), avant les trois etats
+  // habituels -- meme priorite et meme texte que carteProduit. LOT
+  // D30-L3bis (27/09/2026, plan §2.2) : "il me reste 12" remplace "j'ai reçu
+  // 12" -- le premier geste attendu est de dire le stock actuel, pas une
+  // entree ; verifie sur le vrai cerveau deterministe par le Jarvis (voir le
+  // rapport de passation).
+  const autonomieTxt = p._jamaisCompte
+    ? `Tu ne m'as pas encore dit combien tu en as. Dis par exemple : il me reste 12 ${p.nom}.`
+    : p._etat === 'mesure'
+      ? `Il te reste ${txtCouverture(cov)}`
+      : p._etat === 'dormant'
+        ? `Rien n'est sorti depuis ${SEUIL_DORMANT_JOURS} jours`
+        : `Pas assez de sorties pour estimer`;
   const aPrix = (p.prix_achat !== null && p.prix_achat !== undefined);
   // "0,80 € / rouleau" : prix UNITAIRE, toujours au singulier (comme
   // "€/kg"), meme raison qu'a l'identique dans carteProduit (dashboard.js).
   const prixTxt = aPrix ? `<b>${fmtEuro(p.prix_achat)}</b> / ${accorderUnite(p.unite, 1)}` : 'non renseigné';
   const valeurTxt = (aPrix && p._valeur !== null) ? ` · Valeur : <b>${fmtEuro(p._valeur)}</b>` : '';
   const pdc = Number(p._pointCommande) || 0;
-  const commanderTxt = pdc > 0 ? `<br>Commande quand il en reste <b>${fmtNombre(pdc)} ${accorderUnite(p.unite, pdc)}</b>` : '';
+  // LOT D30-L3 : meme raison que dans carteProduit -- "Commande quand il en
+  // reste X" n'a pas de sens pour un produit jamais compte.
+  const commanderTxt = (!p._jamaisCompte && pdc > 0) ? `<br>Commande quand il en reste <b>${fmtNombre(pdc)} ${accorderUnite(p.unite, pdc)}</b>` : '';
+  // LOT D30-L3bis (27/09/2026, plan §2.2) : "0 unité" contredisait "tu ne
+  // m'as pas encore dit combien tu en as" juste en dessous (critique
+  // impeccable du 27/09, heuristique 2, note 2/4) -- un tiret dit "inconnu"
+  // au lieu d'un chiffre qui dit "compté et vide". Les produits comptes ne
+  // changent pas.
+  const stockTxt = p._jamaisCompte
+    ? `<span class="sl-stock" aria-label="stock pas encore compté">—</span>`
+    : `<span class="sl-stock"><b>${fmtNombre(p.stock_actuel)}</b> ${accorderUnite(p.unite, p.stock_actuel)}</span>`;
   return `
     <details class="stock-ligne" data-id="${p.id}"${lignesOuvertes.has(p.id) ? ' open' : ''}>
       <summary class="stock-sommaire">
         <span class="sl-nom">${p.nom}</span>
-        <span class="sl-stock"><b>${fmtNombre(p.stock_actuel)}</b> ${accorderUnite(p.unite, p.stock_actuel)}</span>
+        ${stockTxt}
         ${badgeDe(p)}
       </summary>
       <div class="stock-detail">

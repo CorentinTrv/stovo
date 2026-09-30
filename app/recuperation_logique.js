@@ -50,3 +50,20 @@ export function libelleRenvoi(secondesRestantes) {
     ? `Renvoyer un code (dans ${secondesRestantes} s)`
     : 'Renvoyer un code';
 }
+
+// État complet du lien "Renvoyer un code" à un instant donné (D50,
+// 25/09/2026, dette "muet pendant 60 secondes"). Regroupe le calcul et le
+// libellé pour que recuperation.js n'ait qu'UN SEUL endroit qui décide de
+// l'affichage : le tic du minuteur (setInterval) et le clic sur le lien
+// appellent la même fonction, donc un clic ne peut jamais tomber sur un
+// texte resté périmé (ex. minuteur JS ralenti en arrière-plan sur iOS le
+// temps de lire le code reçu par mail) — le clic redit toujours l'état vrai
+// avant de décider s'il déclenche un envoi.
+export function etatRenvoi(debutMs, maintenantMs, dureeMs = 60000) {
+  const restant = calculerSecondesRestantesRenvoi(debutMs, maintenantMs, dureeMs);
+  return {
+    restant,
+    texte: libelleRenvoi(restant),
+    inactif: restant > 0,
+  };
+}

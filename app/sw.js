@@ -428,7 +428,34 @@
 // v50 (lot RGPD F2, 22/09/2026) : supabase-js quitte le CDN tiers direct,
 // servi desormais par nos soins (vendor/supabase-2.117.0.umd.js, epingle
 // en 2.117.0). UN FICHIER entre au precache. pwa-api INCHANGEE par ce lot.
-const CACHE_NAME = 'stovo-app-v50';
+// v51 (lot dettes B, 25/09/2026) : D50 (le lien "Renvoyer un code" rafraichit
+// toujours son affichage au clic, jamais muet, recuperation.js et
+// recuperation_logique.js), D49 (repli hors ligne au demarrage, nouveau module
+// pur hors_ligne_logique.js ajoute au precache, app.js et index.html), D47 (le
+// tableau "Derniers mouvements" tient a 390 px, styles.css seul), D58 (l'orange
+// retire de l'Aide, aide-contenu.js ; fonctions.html n'est pas precache).
+// Code dans une worktree partie de v47, renumerote v51 a la fusion par le Jarvis.
+// v52 (lot D30-L3, 27/09/2026) : panier "Pas encore compté" (dashboard.js,
+// stock.js, styles.css), la ligne de désamorçage du palier 2 de "Premiers
+// pas" disparaît (premiers_pas_logique.js), texte Q2 de l'étape 2 du
+// tutoriel "Comprendre mon Pilotage" (tutoriels_logique.js), pastille ○
+// dans l'Aide (aide-contenu.js). pwa-api INCHANGEE par ce lot.
+// D30-L3bis (27/09/2026, meme jour) : quatre correctifs de la critique
+// impeccable du panier "Pas encore compté" (22/36) -- verdict et écran du
+// matin en couleur neutre plutôt que "validé" quand des produits sont
+// jamais comptés, "—" au lieu de "0" pour un stock inconnu (Stock +
+// détail), le panier devient une liste compacte au lieu de cartes répétées,
+// le bloc "Ton pilotage est en pause" se tait tant que rien n'est compté
+// (dashboard.js, stock.js, styles.css). CACHE_NAME reste v52 : rien n'a été
+// déployé depuis, ce lot fait toujours partie de la MÊME version pas encore
+// livrée.
+// v53 (lot D41-D44-L7, 29/09/2026) : l'Aide dit ce qui a changé (D41, D44) --
+// l'astuce "« Huit » ou « 8 »..." explique le créneau du nombre en homophone
+// (un/une, cette/cet, dit/dis, de), l'astuce "Un mot mal entendu ? Donne-lui
+// un surnom" explique la limite à la création (aide-contenu.js). pwa-api
+// INCHANGEE par ce lot (elle est deja en ligne depuis L5/L6, ou en attend le
+// deploiement, selon l'ordre choisi par le Jarvis).
+const CACHE_NAME = 'stovo-app-v53';
 
 // Coquille locale a precacher : les fichiers de l'app elle-meme, dont
 // vendor/supabase-2.117.0.umd.js depuis le lot RGPD F2 (supabase-js est
@@ -456,6 +483,7 @@ const FICHIERS_COQUILLE = [
   './ecran_session.js',
   './recuperation_logique.js',
   './recuperation.js',
+  './hors_ligne_logique.js',
   './contact.js',
   './couleur_logique.js',
   './reglages.js',

@@ -25,6 +25,9 @@
 
 import { getSessionActuelle, seConnecter, onAuthChange } from './auth.js';
 import { afficherApp, afficherLogin } from './ecran_session.js';
+// D49 (25/09/2026) : repli hors ligne. Module pur (aucun DOM, aucun réseau),
+// voir hors_ligne_logique.js pour le pourquoi.
+import { MESSAGE_HORS_LIGNE, fautIlAfficherRepliHorsLigne } from './hors_ligne_logique.js';
 // Lot A6 (25/08/2026) : la bannière « nouvelle version prête ». Module pur
 // (aucun DOM), il décide seulement QUAND l'afficher et garantit un seul
 // reload ; c'est ci-dessous, dans la partie enregistrement du service
@@ -75,19 +78,55 @@ const majBouton = document.getElementById('maj-bouton');
 
 // --- Garde de session : affiche l'app OU l'écran de connexion ---
 
+// D49 (25/09/2026) : repli hors ligne. Test 10 du 16/09, la coquille
+// s'affichait vide, sans un mot, parce que getSessionActuelle() attendait un
+// réseau absent (une réponse qui n'arrive jamais, ou très tard). Au tout
+// premier chargement, si l'appareil est hors ligne, on montre le message
+// TOUT DE SUITE et on ne lance getSessionActuelle() qu'une fois le réseau
+// revenu (événement 'online') : en ligne, ce bloc ne change RIEN au parcours
+// d'avant (même appel, aucun délai ajouté).
+const ecranHorsLigne = document.getElementById('ecran-hors-ligne');
+document.getElementById('hors-ligne-message').textContent = MESSAGE_HORS_LIGNE;
+
 // Session déjà active (persistSession) → on saute directement dans l'app.
 // Sinon → écran de connexion. C'est la garde qui protège le dashboard. Au
 // tout premier chargement de la page, la récupération ne peut pas être "en
 // cours" (elle nécessite un geste de l'utilisateur déjà dans la page) : pas
 // besoin de consulter gardeRecuperation ici, seulement dans onAuthChange
 // ci-dessous.
-getSessionActuelle().then((session) => {
-  if (session) {
-    afficherApp();
-  } else {
-    afficherLogin();
-  }
-});
+//
+// `horsLigneActif` : Supabase déclenche onAuthChange (plus bas) tout SEUL,
+// une première fois, dès l'initialisation du client — indépendamment de
+// notre propre appel à getSessionActuelle() ci-dessous. Sans cette garde,
+// CET événement-là aurait suffi à appeler afficherLogin() pendant qu'on est
+// hors ligne (trouvé au banc Chromium de ce lot, avec un compte tout neuf
+// sans session stockée) : même mécanique que `gardeRecuperation` un peu plus
+// bas, un simple booléen consulté aux deux endroits qui peuvent ouvrir
+// l'app ou l'écran de connexion.
+let horsLigneActif = false;
+
+function verifierSessionEtAfficher() {
+  getSessionActuelle().then((session) => {
+    ecranHorsLigne.hidden = true;
+    if (session) {
+      afficherApp();
+    } else {
+      afficherLogin();
+    }
+  });
+}
+
+if (fautIlAfficherRepliHorsLigne(navigator.onLine)) {
+  horsLigneActif = true;
+  ecranHorsLigne.hidden = false;
+  window.addEventListener('online', function reprendreEnLigne() {
+    window.removeEventListener('online', reprendreEnLigne);
+    horsLigneActif = false;
+    verifierSessionEtAfficher();
+  });
+} else {
+  verifierSessionEtAfficher();
+}
 
 // Reste cohérent si la session change en cours de vie de la page (ex.
 // expiration sans renouvellement possible, connexion depuis le formulaire
@@ -98,8 +137,12 @@ getSessionActuelle().then((session) => {
 // passe encore valide (le piège majeur du lot, §1.3 de l'analyse). Tant que
 // `gardeRecuperation.estEnCours()` est vrai, c'est recuperation.js qui décide
 // seul de la suite (écran « Fait », ou déconnexion propre en cas d'échec) :
-// cet événement est ignoré ici, ni afficherApp ni afficherLogin.
+// cet événement est ignoré ici, ni afficherApp ni afficherLogin. D49
+// (25/09/2026) : `horsLigneActif` ignore de la même façon le tout premier
+// événement (INITIAL_SESSION, déclenché par Supabase tout seul à
+// l'initialisation du client) tant que le repli hors ligne est affiché.
 onAuthChange((session) => {
+  if (horsLigneActif) return;
   if (gardeRecuperation.estEnCours()) return;
   if (session) {
     afficherApp();

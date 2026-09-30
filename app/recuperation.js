@@ -22,9 +22,8 @@ import {
 } from './auth.js';
 import { afficherApp } from './ecran_session.js';
 import {
-  calculerSecondesRestantesRenvoi,
   creerGardeRecuperation,
-  libelleRenvoi,
+  etatRenvoi,
 } from './recuperation_logique.js';
 
 export const gardeRecuperation = creerGardeRecuperation();
@@ -88,25 +87,35 @@ $('lien-code-demande-retour').addEventListener('click', (evenement) => {
 let dernierEnvoiMs = null;
 let intervalleRenvoi = null;
 
+// Un seul endroit qui décide de l'affichage du lien (D50, 25/09/2026) :
+// le tic du minuteur et le clic dessus (plus bas) appellent tous deux
+// majLienRenvoi(), jamais un calcul refait à la main à un second endroit.
+// Ça évite qu'un clic tombe sur un texte resté périmé (setInterval ralenti
+// en arrière-plan sur iOS, le temps de lire le code reçu par mail) : le clic
+// rafraîchit toujours l'affichage à l'état vrai du moment avant de décider.
+function majLienRenvoi() {
+  const lien = $('lien-renvoyer-code');
+  const etat = dernierEnvoiMs
+    ? etatRenvoi(dernierEnvoiMs, Date.now())
+    : etatRenvoi(0, 0, 0); // pas encore d'envoi : lien actif, sans mention de délai
+  lien.textContent = etat.texte;
+  // Grisé pendant le compte à rebours (planche Code2Saisie : lien --muted
+  // tant qu'il reste du temps, --flamme une fois actif) : classe CSS dédiée
+  // plutôt qu'un style inline, pour rester cohérent avec le reste de la
+  // feuille de style.
+  lien.classList.toggle('lien-recup-inactif', etat.inactif);
+  if (etat.restant <= 0 && intervalleRenvoi) {
+    clearInterval(intervalleRenvoi);
+    intervalleRenvoi = null;
+  }
+  return etat;
+}
+
 function demarrerMinuteurRenvoi() {
   dernierEnvoiMs = Date.now();
-  const lien = $('lien-renvoyer-code');
-  const majLien = () => {
-    const restant = calculerSecondesRestantesRenvoi(dernierEnvoiMs, Date.now());
-    lien.textContent = libelleRenvoi(restant);
-    // Grisé pendant le compte à rebours (planche Code2Saisie : lien --muted
-    // tant qu'il reste du temps, --flamme une fois actif) : classe CSS
-    // dédiée plutôt qu'un style inline, pour rester cohérent avec le reste
-    // de la feuille de style.
-    lien.classList.toggle('lien-recup-inactif', restant > 0);
-    if (restant <= 0 && intervalleRenvoi) {
-      clearInterval(intervalleRenvoi);
-      intervalleRenvoi = null;
-    }
-  };
   if (intervalleRenvoi) clearInterval(intervalleRenvoi);
-  majLien();
-  intervalleRenvoi = setInterval(majLien, 1000);
+  majLienRenvoi();
+  intervalleRenvoi = setInterval(majLienRenvoi, 1000);
 }
 
 async function envoyerCode(email) {
@@ -156,12 +165,13 @@ $('lien-code-saisie-retour').addEventListener('click', (evenement) => {
 
 lienRenvoyer.addEventListener('click', async (evenement) => {
   evenement.preventDefault();
-  // Grisé pendant le compte à rebours (Supabase refuse un 2e envoi avant 60 s,
-  // `max_frequency`) : un clic pendant cette fenêtre ne déclenche rien.
-  const restant = dernierEnvoiMs
-    ? calculerSecondesRestantesRenvoi(dernierEnvoiMs, Date.now())
-    : 0;
-  if (restant > 0) return;
+  // D50 (25/09/2026) : le clic rafraîchit D'ABORD l'affichage à l'état vrai
+  // du moment (majLienRenvoi), jamais muet même si le minuteur affiché était
+  // périmé. Supabase refuse un 2e envoi avant 60 s (`max_frequency`) : tant
+  // que le décompte est actif, le clic redit juste combien de temps reste,
+  // il ne déclenche rien de plus.
+  const etat = majLienRenvoi();
+  if (etat.restant > 0) return;
   const resultat = await envoyerCode($('recup-email-affiche').textContent);
   if (!resultat.ok) {
     afficherErreurCode(resultat.message);

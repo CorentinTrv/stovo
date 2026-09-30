@@ -170,6 +170,13 @@ header {
 .verdict.v-ok { color: var(--brand-dark); }
 .verdict.v-warn { color: var(--warn-text); }
 .verdict.v-crit { color: var(--danger-text); }
+/* LOT D30-L3bis (27/09/2026, plan §2.1) : etat neutre -- rien a commander,
+   mais des produits jamais comptes (Stovo ne sait pas si la situation est
+   bonne, --brand-dark mentirait). --muted, PAS --text : c'est deja la
+   couleur de toute la famille "jamais compte" (badge.neutre, .h-muted du
+   hero de carte, .inv-sym-pasencorecompte plus bas), --text ferait une
+   quatrieme teinte pour la meme idee. */
+.verdict.v-neutre { color: var(--muted); }
 
 /* ---------- Titres de section ---------- */
 .section-title { font-size: 17px; font-weight: 700; letter-spacing: -.01em; margin: 30px 0 14px; display: flex; align-items: center; gap: 10px; }
@@ -231,6 +238,10 @@ header {
 .badge.ok { color: var(--ok); background: var(--ok-bg); border: 1px solid var(--brand-light); }
 .badge.danger { color: var(--danger-text); background: var(--danger-bg); border: 1px solid var(--danger-border); }
 .badge.warn { color: var(--warn-text); background: var(--warn-bg); border: 1px solid var(--warn-border); }
+/* LOT D30-L3 (27/09/2026) : pastille "Pas encore compté", NEUTRE (sans
+   couleur d'alerte ni de succès, plan §2.1 -- ni rouge ni vert), meme
+   famille visuelle que .tag-fixe (teinte --fond-chaud, texte --muted). */
+.badge.neutre { color: var(--muted); background: var(--fond-chaud); border: 1px solid var(--border); }
 
 /* ---------- Tableau des mouvements ---------- */
 .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
@@ -268,6 +279,26 @@ footer { margin-top: 36px; font-size: 12.5px; color: var(--muted); text-align: c
   th:nth-child(4), td:nth-child(4) { display: none; }
   th, td { padding: 11px 12px; }
   td:first-child { font-size: 13px; }
+  /* D47 (25/09/2026) : le tableau "Derniers mouvements" débordait à 390px et
+     se faisait couper par .table-wrap (overflow:hidden) — la colonne
+     "Mouvement" imposait sa largeur en white-space:nowrap (quantité + pilule
+     de motif), et l'agencement "auto" du tableau pouvait dépasser 100% dès
+     que le contenu minimal des colonnes le demandait. table-layout:fixed
+     répartit les 3 colonnes visibles sur 100% de la largeur, jamais plus ;
+     le retour à la ligne (overflow-wrap) remplace la troncature : aucune
+     information perdue, aucun défilement horizontal. */
+  table { table-layout: fixed; }
+  th:nth-child(1), td:nth-child(1) { width: 22%; overflow-wrap: anywhere; }
+  th:nth-child(2), td:nth-child(2) { width: 42%; overflow-wrap: anywhere; }
+  th:nth-child(3), td:nth-child(3) { width: 36%; white-space: normal; overflow-wrap: anywhere; }
+  /* Pastille D47 (29/09/2026) : .tag-motif est un <span> inline (dashboard.js
+     l.925). Des que la colonne "Mouvement" passe en white-space:normal
+     ci-dessus, un motif long ("inventaire") peut couper sur deux lignes --
+     et un span inline coupe alors son fond/bordure en deux blocs distincts.
+     inline-block garde un seul bloc dont le texte peut passer sur deux
+     lignes a l'interieur de son propre fond ; max-width l'empeche de
+     depasser la cellule. */
+  .tag-motif { display: inline-block; max-width: 100%; }
 }
 
 /* =====================================================================
@@ -880,6 +911,10 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .matin.matin-ok .matin-resume { color: var(--brand-dark); }
 .matin.matin-warn .matin-resume { color: var(--warn-text); }
 .matin.matin-crit .matin-resume { color: var(--danger-text); }
+/* LOT D30-L3bis (27/09/2026, plan §2.1) : meme etat neutre que .verdict.v-neutre
+   ci-dessus, meme raison (--muted, deja la couleur de la famille "jamais
+   compte"). */
+.matin.matin-neutre .matin-resume { color: var(--muted); }
 
 /* Correctif du 01/08/2026 : #matin-liste devient une vraie <ul> (voir
    index.html) pour qu'un lecteur d'ecran annonce "liste de N elements" au
@@ -962,9 +997,29 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 }
 .inv-groupe[open] > .inv-sommaire::before { transform: rotate(45deg); }
 .inv-sym-commander { color: var(--danger); }
+/* LOT D30-L3 (27/09/2026) : symbole du panier "Pas encore compté", neutre. */
+.inv-sym-pasencorecompte { color: var(--muted); }
 .inv-sym-surveiller { color: var(--warn); }
 .inv-sym-stock { color: var(--brand-dark); }
 .inv-groupe > .grid { margin-top: 12px; }
+
+/* LOT D30-L3bis (27/09/2026, plan §2.3) : contenu du panier "Pas encore
+   compté", liste compacte plutot que des cartes repetees (critique
+   impeccable du 27/09, 22/36 -- 250 references jamais comptees feraient
+   plus de 100 000px de cartes avant "En stock"). Meme modele visuel que les
+   lignes de l'onglet Stock (.stock-sommaire : grille 1fr auto auto, meme
+   typographie via .sl-nom/.sl-stock reutilisees plus bas), sans le pli
+   <details> : il n'y a rien de plus a deplier qu'un tiret. */
+.inv-groupe > .pec-entete { margin-top: 12px; font-size: 13.5px; color: var(--muted); padding: 0 2px 8px; line-height: 1.5; }
+.pec-liste { border-top: 1px solid var(--border); }
+.pec-ligne {
+  display: grid; grid-template-columns: 1fr auto auto;
+  gap: 12px; align-items: center; padding: 11px 2px;
+  border-top: 1px solid var(--border);
+}
+.pec-ligne:first-child { border-top: none; }
+.pec-nom { font-weight: 700; font-size: 14.5px; }
+.pec-valeur { font-size: 13.5px; color: var(--muted); white-space: nowrap; }
 
 /* ---------- Onglet « Stock » (QW-C, 18/07/2026) ----------
    Liste compacte (des lignes, pas des cartes) + recherche a la frappe.

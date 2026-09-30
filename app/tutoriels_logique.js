@@ -67,8 +67,12 @@ export const TUTORIELS = [
         titre: 'Quatre compteurs, trois couleurs',
         paragraphes: [
           'Les quatre cases te disent, dans l\'ordre : ce qui est à commander, ce qui va manquer sous trois jours, combien de produits tu suis, et combien de mouvements tu as déclarés cette semaine.',
-          'Les trois couleurs sont les mêmes partout dans Stovo. Vert, rien à faire. Orange, à ce rythme il te reste moins de trois jours. Rouge, tu es passé sous ton point de commande, c\'est le moment de commander.',
-          'Un produit que tu viens de créer et dont tu n\'as pas encore dit le stock apparaît en rouge tant qu\'il est à zéro. Dis-lui ce que tu as, il repasse au vert.',
+          'Les couleurs sont les mêmes partout dans Stovo. Vert, rien à faire. Rouge, tu es passé sous ton point de commande, c\'est le moment de commander.',
+          // LOT D30-L3 (27/09/2026, plan §3 Q2) : un produit jamais compte ne
+          // s'affiche plus rouge (l'alerte se tait, module jumeau
+          // pilotage.ts/pilotage.js), il se range dans le panier neutre
+          // "Pas encore compte". Texte remplace a l'identique de la consigne.
+          'Un produit que tu viens de créer, et dont tu n\'as pas encore dit le stock, se range à part dans « Pas encore compté ». Dis-lui ce que tu as, il rejoint les autres.',
         ],
         roles: ['corps', 'corps', 'note'],
         phrasesCitees: [],

@@ -40,6 +40,13 @@ import {
   COUVERTURE_CIBLE_JOURS,
   SECURITE_JOURS,
   SEUIL_DORMANT_JOURS,
+  // LOT D30-L3 (27/09/2026) : la decision "a commander" entre dans le
+  // module jumeau (lot L1). FENETRE_JOURS sert au Set des produits ayant
+  // bouge (voir idsAvecMouvementDansLaFenetre plus bas, meme fonction que
+  // _shared/reappro.ts cote backend, lot L2).
+  estACommander,
+  estJamaisCompte,
+  FENETRE_JOURS,
 } from './pilotage.js';
 // Chantier C1 (26/07/2026) : la démarque valorisée ("Ce que tu as jeté"),
 // voir majPertes() plus bas. Module PUR et isolé (aucun DOM, aucun Supabase,
@@ -89,6 +96,25 @@ const echapperHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[c]));
 
+// LOT D30-L3 (27/09/2026, plan §2.1) : Set des produit_id ayant au moins un
+// mouvement (tout type, tout motif) dans la fenetre de FENETRE_JOURS jours,
+// construit UNE SEULE FOIS a partir des mouvements deja lus par charger()
+// (jamais une lecture de plus). Meme fonction que idsAvecMouvementDansLaFenetre
+// de _shared/reappro.ts (backend, lot L2) : nom et forme repris a l'identique
+// pour que les deux cotes restent lisibles en miroir, sans etre un import
+// partage (JS/TS separes, aucun module commun entre front et backend).
+function idsAvecMouvementDansLaFenetre(mouvements, maintenantMs) {
+  const limite = maintenantMs - FENETRE_JOURS * 864e5;
+  const ids = new Set();
+  (mouvements || []).forEach((m) => {
+    if (!m) return;
+    const t = new Date(m.cree_le).getTime();
+    if (!Number.isFinite(t) || t < limite) return;
+    ids.add(m.produit_id);
+  });
+  return ids;
+}
+
 // Texte lisible de la couverture en jours
 const txtCouverture = (c) => {
   if (c === null) return '—';
@@ -121,21 +147,41 @@ let texteListeCourses = '';
 // statique dans index.html et n'est jamais recree par charger() (seul son
 // contenu #pertes-contenu est remplace), donc son etat survit tout seul au
 // rafraichissement. Voir majPertes()/demarrerDashboard() plus bas.
-const invGroupesOuverts = { commander: true, surveiller: true, stock: false, pertes: false };
+// LOT D30-L3 (27/09/2026, plan §3 Q2) : "pasencorecompte" ajoutee, ouverte
+// par defaut (recommandation validee par Corentin, cout ~1h de front assume).
+// Clef en minuscules, comme les trois autres (pas de camelCase) : c'est
+// aussi le suffixe de la classe CSS inv-sym-${cle}, voir groupe() plus bas.
+const invGroupesOuverts = { commander: true, pasencorecompte: true, surveiller: true, stock: false, pertes: false };
 
 // Change la couleur d'etat du bandeau du matin SANS ecraser ses autres classes
 // (surtout "replie", pose par l'utilisateur et sinon perdu a chaque rendu).
 const etatMatin = (sec, cls) => {
-  sec.classList.remove('matin-ok', 'matin-warn', 'matin-crit');
+  // LOT D30-L3bis (27/09/2026, plan §2.1) : "matin-neutre" ajoutee a la
+  // liste des classes retirees, sinon elle resterait collee au rendu
+  // suivant si l'etat change de neutre vers ok/warn/crit.
+  sec.classList.remove('matin-ok', 'matin-neutre', 'matin-warn', 'matin-crit');
   sec.classList.add(cls);
 };
 
 // Carte d'un produit (inventaire)
+// LOT D30-L3bis (27/09/2026, plan §2.3) : cette fonction n'est plus jamais
+// appelee pour un produit jamais compte -- le panier "Pas encore compte" a
+// desormais son propre rendu compact (rendrePasEncoreCompte plus bas), pour
+// eviter la carte complete (~470px) que la critique impeccable du 27/09
+// (22/36) signalait repetee jusqu'a 18 fois. La branche jamaisCompte du lot
+// L3 est donc retiree ICI (code mort : plus aucun appelant ne passe un
+// produit jamais compte a carteProduit) ; carteProduit retrouve exactement
+// son comportement d'avant le lot L3.
 const carteProduit = (p) => {
   const stock = Number(p.stock_actuel);
   const pdc = Number(p._pointCommande) || 0;   // point de commande effectif (dynamique ou repli figé)
   const dynamique = p._pdcDynamique !== null;  // a-t-on pu le calculer sur les ventes récentes ?
-  const alerte = stock <= pdc;
+  // LOT D30-L3 (27/09/2026) : la decision "a commander" vient desormais du
+  // module jumeau (p._aCommander, calcule par charger() via estACommander,
+  // lot L1) au lieu de recopier "stock <= pdc" ici. Meme formule qu'avant ce
+  // lot (estACommander(p, pointCommande, false) === stock <= pointCommande),
+  // donc AUCUN changement pour ce cas.
+  const alerte = Boolean(p._aCommander);
   // jauge : le point de commande est placé à 50%, le stock se remplit jusqu'à (stock / 2*pdc)
   const largeur = pdc > 0 ? Math.min(100, (stock / (pdc * 2)) * 100) : (stock > 0 ? 100 : 0);
   const cov = p._couverture;
@@ -162,7 +208,8 @@ const carteProduit = (p) => {
   const tagPdc = dynamique
     ? `<span class="tag-auto" title="Calculé sur tes ventes : ${consoJ.toFixed(1).replace('.', ',')} /j × (${fmtNombre(delai)} j livraison + ${SECURITE_JOURS} j sécurité)">auto</span>`
     : `<span class="tag-fixe" title="Seuil figé : pas encore de ventes récentes pour le calculer sur le rythme réel">fixe</span>`;
-  // Badge état, doublé d'un symbole pour rester lisible même sans la couleur (daltonien)
+  // Badge état, doublé d'un symbole pour rester lisible même sans la couleur
+  // (daltonien).
   const badge = alerte
     ? `<span class="badge danger">■ À commander</span>`
     : (urgence(cov) === 'warn' ? `<span class="badge warn">▲ À surveiller</span>` : `<span class="badge ok">● En stock</span>`);
@@ -176,6 +223,9 @@ const carteProduit = (p) => {
       ? `Rien n'est sorti depuis ${SEUIL_DORMANT_JOURS} jours`
       : `Pas assez de sorties pour estimer`;
   const commanderTxt = pdc > 0 ? `Commande quand il en reste <b>${fmtNombre(pdc)} ${accorderUnite(p.unite, pdc)}</b> ${tagPdc}` : '';
+  // Structure du template INCHANGEE (identique a avant le lot L3) : c'est ce
+  // qui garantit l'egalite au pixel pres du temoin (§4 de la consigne).
+  const ligneDetail2 = `${consoTxt}${commanderTxt ? '<br>' + commanderTxt : ''}`;
   return `
     <div class="card">
       <div class="c-top"><div class="c-name">${p.nom}</div>${badge}</div>
@@ -187,10 +237,43 @@ const carteProduit = (p) => {
       </div>
       <div class="c-detail">
         Prix : ${prixTxt}${valeurTxt}<br>
-        ${consoTxt}${commanderTxt ? '<br>' + commanderTxt : ''}
+        ${ligneDetail2}
       </div>
     </div>`;
 };
+
+// LOT D30-L3bis (27/09/2026, plan §2.3, preuve §3.3) : phrase-geste unique en
+// tete du panier "Pas encore compte", fonction pure (un seul parametre, le
+// nom du PREMIER produit du panier), testable sans DOM. Le verbe change par
+// rapport au lot L3 ("j'ai reçu" apprenait un mouvement d'entree, alors que
+// le premier geste attendu ici est de dire le stock actuel : "il me reste").
+// Verifie sur le vrai cerveau deterministe par le Jarvis le 27/09/2026 :
+// "il me reste 12 Sucre"/"Huile d'olive 75cl"/"Coca 50 cl"/"Farine T55 1kg"
+// donnent toutes un inventaire de 12 sur le bon produit.
+export function phraseEnTetePasEncoreCompte(nomPremierProduit) {
+  return `Tu ne m'as pas encore dit combien tu en as. Dis par exemple : il me reste 12 ${nomPremierProduit}.`;
+}
+
+// LOT D30-L3bis (27/09/2026, plan §2.3) : rendu dedie du panier "Pas encore
+// compte" -- PAS carteProduit (une carte complete de ~470px, dixieme fois
+// repetee pour un import de 250 references, constat de la critique
+// impeccable du 27/09, 22/36). Meme modele visuel que les lignes de l'onglet
+// Stock (nom a gauche, "—" a droite, meme pastille neutre que badgeDe() de
+// stock.js) : nom du produit SANS echapperHtml, meme convention que le reste
+// de ce fichier (carteProduit, ligneReappro) et de stock.js (ligneStock) --
+// dette deja connue, traitee separement (voir le rapport de passation du
+// 01/08/2026), pas etendue ni retiree par ce lot.
+function rendrePasEncoreCompte(produits) {
+  if (!produits.length) return '';
+  const entete = phraseEnTetePasEncoreCompte(produits[0].nom);
+  const lignes = produits.map((p) => `
+    <div class="pec-ligne">
+      <span class="pec-nom">${p.nom}</span>
+      <span class="pec-valeur" aria-label="stock pas encore compté">—</span>
+      <span class="badge neutre">○</span>
+    </div>`).join('');
+  return `<div class="pec-entete">${entete}</div><div class="pec-liste">${lignes}</div>`;
+}
 
 // Ligne de la section "à réapprovisionner"
 const ligneReappro = (p) => {
@@ -228,8 +311,14 @@ const fmtDateJour = (iso) => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', 
 // navigateur necessaire, meme esprit que reception.js/aide.js). Ne fait AUCUN
 // nouveau calcul, met seulement en mots gesteVivant/derniereSortieLe deja
 // calcules par charger() (module partage pilotage.js).
-export function etatBandeauPilotage(produits, gesteVivant, derniereSortieLe) {
+// LOT D30-L3bis (27/09/2026, plan §2.4) : nbJamaisCompte ajoute en 4e
+// parametre (defaut 0, donc AUCUN changement pour tout appelant qui ne le
+// fournirait pas). Si TOUS les produits actifs sont jamais comptes, le geste
+// utile est de compter -- pas de declarer une sortie -- et le panier "Pas
+// encore compte" porte deja ce geste : le bandeau se tait.
+export function etatBandeauPilotage(produits, gesteVivant, derniereSortieLe, nbJamaisCompte = 0) {
   if (produits.length === 0 || gesteVivant) return { visible: false };
+  if (nbJamaisCompte === produits.length) return { visible: false };
   const depuisTxt = derniereSortieLe ? `depuis le ${fmtDateJour(derniereSortieLe)}` : 'depuis toujours';
   const texte = `Stovo n'a aucune sortie déclarée ${depuisTxt}. Il sait ce qui entre, pas ce qui part : sans sorties, il ne peut ni calculer combien de temps tu tiens, ni te dire quoi commander.`;
   return { visible: true, texte };
@@ -245,10 +334,10 @@ export function etatBandeauPilotage(produits, gesteVivant, derniereSortieLe) {
 // Bouton "Declarer une sortie" : recopie EXACTE du patron deja valide dans
 // aide.js (l.372-395) — remplit #champ-parler, bascule sur l'onglet Parler
 // via l'evenement 'stovo:onglet', et N'ENVOIE RIEN. Zero concept neuf.
-function majBandeauPilotage(produits, gesteVivant, derniereSortieLe) {
+function majBandeauPilotage(produits, gesteVivant, derniereSortieLe, nbJamaisCompte) {
   const sec = $('bandeau-pilotage');
   if (!sec) return;
-  const etat = etatBandeauPilotage(produits, gesteVivant, derniereSortieLe);
+  const etat = etatBandeauPilotage(produits, gesteVivant, derniereSortieLe, nbJamaisCompte);
   if (!etat.visible) {
     sec.style.display = 'none';
     sec.innerHTML = '';
@@ -289,6 +378,36 @@ function majBandeauPilotage(produits, gesteVivant, derniereSortieLe) {
 // explique deja la situation, pas la peine de superposer un 2e message
 // (plan §5 LOT P-5 (c)).
 //
+// LOT D30-L3bis (27/09/2026, plan §2.1, preuve §3.3) : phrase et classe du
+// verdict, extraites en fonction pure (meme esprit qu'etatBandeauPilotage
+// ci-dessus) pour porter un banc offline. N'assemble que des compteurs deja
+// calcules par charger() (aucun nouveau calcul) : nbProduits, le nombre de
+// produits a commander, le nombre en rupture imminente, le nombre jamais
+// compte. "v-neutre" seulement quand rien n'est a commander ET qu'il existe
+// au moins un jamais compte (sinon "v-ok" est inchange, temoin au pixel).
+export function calculerVerdict(nbProduits, nbACommander, nbRuptureImminente, nbJamaisCompte) {
+  if (nbProduits === 0) return { visible: false };
+  if (nbACommander === 0 && nbRuptureImminente === 0) {
+    if (nbJamaisCompte > 0) {
+      const reste = nbProduits > nbJamaisCompte ? ' Le reste est bon.' : '';
+      return {
+        visible: true,
+        classe: 'v-neutre',
+        texte: `○ ${nbJamaisCompte} produit${nbJamaisCompte > 1 ? 's' : ''} pas encore compté${nbJamaisCompte > 1 ? 's' : ''}.${reste}`,
+      };
+    }
+    return { visible: true, classe: 'v-ok', texte: '● Tout ton stock est au vert.' };
+  }
+  const parts = [];
+  if (nbACommander) parts.push(`${nbACommander} produit${nbACommander > 1 ? 's' : ''} à commander`);
+  if (nbRuptureImminente) parts.push(`${nbRuptureImminente} en rupture imminente`);
+  return {
+    visible: true,
+    classe: nbRuptureImminente ? 'v-crit' : 'v-warn',
+    texte: (nbRuptureImminente ? '■ ' : '▲ ') + parts.join(', ') + ', le reste est bon.',
+  };
+}
+
 // Le total en euros ne compte que les produits dormants dont le prix est
 // connu. Si AU MOINS UN dormant n'a pas de prix, le total est annonce
 // "au moins X €" plutot que "environ X €" (meme convention que la demarque
@@ -334,7 +453,7 @@ function majResumeDormant(produits, compteursEtat, gesteVivant) {
 // par charger() (produits a commander + ruptures imminentes). C'est ce qui le
 // rend sur en lecture seule. Trois etats : catalogue vide (masque), rien a
 // commander (message vert), des produits a commander (resume + liste de courses).
-function majEcranDuMatin(produits, aCommander, ruptureImminente) {
+function majEcranDuMatin(produits, aCommander, ruptureImminente, jamaisComptes) {
   const sec = $('matin');
   $('matin-titre').textContent = titreDuMoment();
   const resume = $('matin-resume');
@@ -347,9 +466,16 @@ function majEcranDuMatin(produits, aCommander, ruptureImminente) {
 
   // Rien sous le point de commande : message positif, pas de liste ni de copier.
   if (aCommander.length === 0) {
-    etatMatin(sec, 'matin-ok');
+    // LOT D30-L3bis (27/09/2026, plan §2.1) : couleur NEUTRE (--muted), pas
+    // "matin-ok" (--brand-dark, la couleur "validé" de DESIGN.md), tant
+    // qu'il reste des produits jamais comptes -- Stovo ne sait pas encore si
+    // la situation est bonne. Sans jamais compte, comportement inchange.
+    const nJC = (jamaisComptes || []).length;
+    etatMatin(sec, nJC > 0 ? 'matin-neutre' : 'matin-ok');
     $('matin-chevron').style.display = 'none';  // rien a replier
-    resume.textContent = "● Rien à commander aujourd'hui, ton stock est au vert.";
+    resume.textContent = nJC > 0
+      ? `Rien à commander aujourd'hui. ${nJC} produit${nJC > 1 ? 's' : ''} pas encore compté${nJC > 1 ? 's' : ''} : dis-moi combien tu en as.`
+      : "● Rien à commander aujourd'hui, ton stock est au vert.";
     liste.innerHTML = '';
     btnCopier.hidden = true;
     texteListeCourses = '';
@@ -618,6 +744,13 @@ async function charger() {
   // garde-fou gesteVivant, plan §3 Q3). ---
   const gesteVivant = calculerGesteVivant(mvts, maintenantMs);
   const derniereSortieLe = calculerDerniereSortieLe(mvts);
+  // LOT D30-L3 (27/09/2026, plan §2.1) : "mouvements lus" au sens strict --
+  // une lecture ratee (errM pose par lireTable, voir plus haut) n'est JAMAIS
+  // une absence de mouvement, mvts resterait alors indefini. idsAvecMouvement
+  // est construit UNE SEULE FOIS pour tout le catalogue (meme discipline que
+  // _shared/reappro.ts cote backend, lot L2), pas par produit.
+  const mouvementsLus = !errM && Array.isArray(mvts);
+  const idsAvecMouvement = idsAvecMouvementDansLaFenetre(mvts, maintenantMs);
   produits.forEach(p => {
     const { consoJour, couverture, pdcDynamique, pointCommande, qteCommander } = calculerLignePilotage(p, sorties[p.id], maintenantMs);
     p._consoJour = consoJour;
@@ -630,6 +763,12 @@ async function charger() {
     // qualifient un produit de la meme facon (plan §3 Q3).
     const ancienneteJours = calculerAncienneteJours(p.cree_le, maintenantMs);
     p._etat = calculerEtatProduit(consoJour, ancienneteJours, gesteVivant);
+    // LOT D30-L3 : la decision "a commander" passe desormais par le module
+    // jumeau (pilotage.ts/pilotage.js, lot L1) au lieu de recopier
+    // "stock <= pointCommande" a chaque endroit qui en a besoin (carteProduit,
+    // le filtre aCommander plus bas, le panier de l'inventaire, stock.js).
+    p._jamaisCompte = estJamaisCompte(p, idsAvecMouvement, mouvementsLus, maintenantMs);
+    p._aCommander = estACommander(p, pointCommande, p._jamaisCompte);
   });
   // Compteurs (LOT P-3) : pur agregat des etats deja calcules ci-dessus, pas
   // affiches dans ce lot (utile au lot P-6 et a un futur chiffre de synthese,
@@ -660,38 +799,38 @@ async function charger() {
   });
 
   // --- KPI ---
-  // "À commander" piloté par le point de commande dynamique (repli sur le seuil figé si pas de ventes récentes)
-  const aCommander = produits.filter(p => Number(p.stock_actuel) <= Number(p._pointCommande));
+  // "À commander" piloté desormais par le module jumeau (p._aCommander, lot
+  // L1/L3 de D30) : un produit jamais compte n'y entre plus (plan §2.1).
+  const aCommander = produits.filter(p => p._aCommander);
   const ruptureImminente = produits.filter(p => p._couverture !== null && p._couverture < 3);
+  // LOT D30-L3 : les produits jamais comptes, pour le panier neuf et les
+  // textes Q2 (verdict, ecran du matin) ci-dessous.
+  const jamaisComptes = produits.filter(p => p._jamaisCompte);
   $('kpi-commander').textContent = aCommander.length;
   $('kpi-rupture').textContent = ruptureImminente.length;
   $('kpi-produits').textContent = produits.length;
   $('kpi-mouvements').textContent = nbMvt7j;
-  // --- Phrase de verdict : la réponse en un coup d'œil, assemblée à partir des compteurs déjà calculés (aucun nouveau calcul) ---
+  // --- Phrase de verdict : la réponse en un coup d'œil, assemblée à partir
+  // des compteurs déjà calculés (aucun nouveau calcul), voir calculerVerdict
+  // (fonction pure, LOT D30-L3bis) ---
   const vEl = $('verdict');
-  if (produits.length === 0) {
+  const verdict = calculerVerdict(produits.length, aCommander.length, ruptureImminente.length, jamaisComptes.length);
+  if (!verdict.visible) {
     vEl.style.display = 'none';
   } else {
-    const parts = [];
-    if (aCommander.length) parts.push(`${aCommander.length} produit${aCommander.length > 1 ? 's' : ''} à commander`);
-    if (ruptureImminente.length) parts.push(`${ruptureImminente.length} en rupture imminente`);
     vEl.style.display = 'block';
-    if (parts.length === 0) {
-      vEl.className = 'verdict v-ok';
-      vEl.textContent = '● Tout ton stock est au vert.';
-    } else {
-      vEl.className = 'verdict ' + (ruptureImminente.length ? 'v-crit' : 'v-warn');
-      vEl.textContent = (ruptureImminente.length ? '■ ' : '▲ ') + parts.join(', ') + ', le reste est bon.';
-    }
+    vEl.className = 'verdict ' + verdict.classe;
+    vEl.textContent = verdict.texte;
   }
   // Bandeau "pilotage en pause" (Niveau 1, LOT P-3) : juste sous le verdict.
   // Aucun calcul ici, juste de la mise en scene de gesteVivant/derniereSortieLe
   // deja calcules plus haut. Masque tout seul si le catalogue est vide (rien
-  // a declarer sans produit) ou si le geste de sortie est vivant.
-  majBandeauPilotage(produits, gesteVivant, derniereSortieLe);
+  // a declarer sans produit), si le geste de sortie est vivant, ou (LOT
+  // D30-L3bis, plan §2.4) si TOUS les produits actifs sont jamais comptes.
+  majBandeauPilotage(produits, gesteVivant, derniereSortieLe, jamaisComptes.length);
   // Ecran du matin (brique 1) : le brief en tete, a partir des memes compteurs
   // (aCommander + ruptureImminente), aucun nouveau calcul.
-  majEcranDuMatin(produits, aCommander, ruptureImminente);
+  majEcranDuMatin(produits, aCommander, ruptureImminente, jamaisComptes);
   // Valeur du stock : total des produits valorisés, et part du catalogue déjà valorisée (incite à dicter les prix manquants)
   $('kpi-valeur').textContent = nbValorises ? fmtEuro(valeurTotale) : '—';
   $('kpi-valeur-sub').textContent = produits.length === 0
@@ -723,24 +862,36 @@ async function charger() {
   if (!produits.length) {
     $('inv-grid').innerHTML = `<div class="state">Pour démarrer, importe ton catalogue ou dis au bot : « ajoute le produit X ».</div>`;
   } else {
-    // Trois paniers mutuellement exclusifs, memes regles que les badges des cartes :
-    // sous le point de commande -> a commander ; sinon autonomie courte -> a surveiller ; sinon en stock.
-    const gCommander = [], gSurveiller = [], gStock = [];
+    // LOT D30-L3 (27/09/2026, plan §2.1/§3 Q2) : quatre paniers mutuellement
+    // exclusifs desormais, memes regles que les badges des cartes. Jamais
+    // compte est teste EN PREMIER (il l'emporte sur "a commander" par
+    // construction, voir estACommander) : sous le point de commande -> a
+    // commander ; sinon autonomie courte -> a surveiller ; sinon en stock.
+    const gCommander = [], gPasEncoreCompte = [], gSurveiller = [], gStock = [];
     produits.forEach(p => {
-      if (Number(p.stock_actuel) <= (Number(p._pointCommande) || 0)) gCommander.push(p);
+      if (p._jamaisCompte) gPasEncoreCompte.push(p);
+      else if (p._aCommander) gCommander.push(p);
       else if (urgence(p._couverture) === 'warn') gSurveiller.push(p);
       else gStock.push(p);
     });
     // Un groupe = un <details> (pli natif), ouvert selon invGroupesOuverts. Groupe vide = pas affiche.
-    const groupe = (cle, sym, titre, arr) => arr.length ? `
+    // LOT D30-L3bis (27/09/2026, plan §2.3) : rendreContenu injecte, pour que
+    // le panier "pasencorecompte" seul utilise rendrePasEncoreCompte au lieu
+    // de la grille de cartes -- les trois autres paniers gardent EXACTEMENT
+    // le meme HTML qu'avant ce lot (temoin au pixel pres).
+    const grilleCartes = (arr) => `<div class="grid">${arr.map(carteProduit).join('')}</div>`;
+    const groupe = (cle, sym, titre, arr, rendreContenu) => arr.length ? `
       <details class="inv-groupe" data-groupe="${cle}"${invGroupesOuverts[cle] ? ' open' : ''}>
         <summary class="inv-sommaire"><span class="inv-sym inv-sym-${cle}">${sym}</span> ${titre} <span class="count">${arr.length}</span></summary>
-        <div class="grid">${arr.map(carteProduit).join('')}</div>
+        ${rendreContenu(arr)}
       </details>` : '';
+    // "Pas encore compté" juste après "À commander" (plan §3 Q2, place
+    // validée par Corentin).
     $('inv-grid').innerHTML =
-      groupe('commander', '■', 'À commander', gCommander)
-      + groupe('surveiller', '▲', 'À surveiller', gSurveiller)
-      + groupe('stock', '●', 'En stock', gStock);
+      groupe('commander', '■', 'À commander', gCommander, grilleCartes)
+      + groupe('pasencorecompte', '○', 'Pas encore compté', gPasEncoreCompte, rendrePasEncoreCompte)
+      + groupe('surveiller', '▲', 'À surveiller', gSurveiller, grilleCartes)
+      + groupe('stock', '●', 'En stock', gStock, grilleCartes);
   }
 
   // Onglet « Stock » (QW-C) : on publie les produits AVEC leurs chiffres
@@ -977,6 +1128,9 @@ export { carteProduit };
 // resumeDormant deja exportee ci-dessus (declaration `export function`, LOT
 // P-5) : listee ici en commentaire pour garder une trace unique de toutes
 // les exports "banc offline" du fichier.
+// calculerVerdict et phraseEnTetePasEncoreCompte (LOT D30-L3bis, 27/09/2026)
+// deja exportees ci-dessus (declaration `export function`), meme raison :
+// listees ici en commentaire pour garder cette trace unique a jour.
 
 // Chantier "Premiers pas", lot 2 (18/09/2026) : alias pour que le fil de
 // première connexion puisse forcer un rechargement des données sans

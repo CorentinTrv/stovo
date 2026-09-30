@@ -166,3 +166,64 @@ export function compterEtats(etats) {
   (etats || []).forEach((e) => { compteurs[e]++; });
   return compteurs;
 }
+
+// ============================================================================
+// LOT D30-L1 (27/09/2026) : la decision "a commander" entre dans le module
+// jumeau. Plan de l'Architecte, §1.1, §2.1 option A, §5 lot L1
+// (context/import/app-stock/2026-09-25_architecte_plan-D41-D44-D30.md).
+//
+// POURQUOI : la comparaison "stock_actuel <= pointCommande" etait recopiee A
+// CINQ ENDROITS (dashboard.js x3, stock.js, reappro.ts, cote backend), sans
+// aucun jeu d'essai commun. En plus, aucun de ces cinq endroits ne savait
+// distinguer un produit "jamais compte" (stock a 0 parce qu'aucun mouvement
+// n'a JAMAIS ete enregistre) d'un produit "en rupture" (stock retombe a 0
+// APRES des mouvements). Un produit importe est TOUJOURS a 0 sans mouvement :
+// le classer "a commander" fait 250 lignes rouges au premier import (fiche D59).
+//
+// Decision Q1 de Corentin (25/09) : un seuil ne compte pas comme une
+// histoire, SEUL un mouvement dit que le stock est connu (voir pilotage_cas.ts,
+// cas 2 : seuil_alerte a 5 sur un produit jamais compte -> quand meme "jamais
+// compte", pas d'alerte).
+// ============================================================================
+
+// Cette fonction ne connait JAMAIS rien par supposition : au moindre doute
+// (mouvements non lus, cree_le absent ou illisible), elle rend FAUX, c'est-a-
+// dire la regle d'aujourd'hui (comparaison stock <= pointCommande, sans
+// exception). Voir pilotage_cas.ts, CAS_A_COMMANDER, cas 7 et 8.
+function creeLeLisible(creeLe) {
+  return creeLe !== null && creeLe !== undefined && Number.isFinite(new Date(creeLe).getTime());
+}
+
+// Un produit est "jamais compte" si TOUTES ces conditions sont reunies :
+// - mouvements lus (une lecture ratee n'est jamais une absence de mouvement) ;
+// - stock_actuel a 0 (un stock non nul a forcement ete pose par un mouvement,
+//   le backend n'ecrit jamais stock_actuel ailleurs qu'au trigger) ;
+// - cree_le lisible (sans date fiable, impossible de dire que le produit est
+//   jeune) ;
+// - anciennete sous FENETRE_JOURS - 1 (marge d'un jour qui couvre l'ecart
+//   entre l'instant de la requete de mouvements et maintenantMs) ;
+// - aucun mouvement du produit dans idsAvecMouvement (tout type, tout motif :
+//   un mouvement avec motif, comme une casse, prouve deja que le stock est
+//   connu, voir CAS_A_COMMANDER cas 4, "rupture par perte").
+//
+// idsAvecMouvement : Set des produit_id ayant au moins un mouvement dans la
+// fenetre de FENETRE_JOURS deja lue par l'appelant (calcule une seule fois
+// pour tout le catalogue, pas par produit).
+// maintenantMs : injecte pour rendre la fonction deterministe en test.
+export function estJamaisCompte(produit, idsAvecMouvement, mouvementsLus, maintenantMs = Date.now()) {
+  if (!mouvementsLus) return false;
+  if (Number(produit.stock_actuel) !== 0) return false;
+  if (!creeLeLisible(produit.cree_le)) return false;
+  if (calculerAncienneteJours(produit.cree_le, maintenantMs) >= FENETRE_JOURS - 1) return false;
+  return !idsAvecMouvement.has(produit.id);
+}
+
+// La decision "a commander", desormais unique : un produit jamais compte
+// n'est JAMAIS a commander (l'alerte se tait, panier "Pas encore compte" cote
+// front, plan §2.1 Q2) ; pour tout le reste, c'est exactement la regle
+// d'aujourd'hui, stock <= pointCommande (propriete verifiee par
+// pilotage_cas.ts sur tout CAS_PILOTAGE existant, sans exception).
+export function estACommander(produit, pointCommande, jamaisCompte) {
+  if (jamaisCompte) return false;
+  return Number(produit.stock_actuel) <= pointCommande;
+}

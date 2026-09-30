@@ -252,16 +252,21 @@ function palier1() {
 function palier2(nomProduit) {
   const nom = nomOuVide(nomProduit);
   const phraseModele = `j'ai reçu 12 ${nom}`;
+  // LOT D30-L3 (27/09/2026) : la ligne de desamorcage ("Si ton Pilotage
+  // affiche deja « a commander »...") disparait SANS remplacante (plan §3
+  // Q2) -- ce palier dit deja "Combien en as-tu ?", et un produit jamais
+  // compte ne s'affiche plus "a commander" nulle part (module jumeau
+  // pilotage.ts/pilotage.js, lot L1). Le mensonge assume qu'annoncait le
+  // commentaire du test 14bis disparu n'a donc plus lieu d'etre.
   const paragraphes = [
     `C'est créé. « ${nom} » est dans ton stock, à zéro pour l'instant.`,
     'Combien en as-tu ? Dis-le :',
     phraseModele,
     'Mets le vrai nombre, celui que tu as devant toi.',
-    `Si ton Pilotage affiche déjà « à commander » pour « ${nom} », c'est normal : il est encore à zéro. Ça s'éteint dès que tu lui dis ce que tu as.`,
   ];
-  // Roles : le marqueur/la phrase modele (index 2) en `modele`, la derniere
-  // ligne (index 4, desamorcage de D30) en `note`, le reste en `corps`.
-  const rolesParagraphes = ['corps', 'corps', 'modele', 'corps', 'note'];
+  // Roles : le marqueur/la phrase modele (index 2) en `modele`, le reste en
+  // `corps` (plus de derniere ligne en `note` depuis le retrait ci-dessus).
+  const rolesParagraphes = ['corps', 'corps', 'modele', 'corps'];
   // Pas de trou a ce palier (le nom est deja connu) : la phrase modele est
   // un segment unique, entierement en gras (§7.1 : rien n'y est en muted).
   const segmentsParagraphes = [
@@ -269,7 +274,6 @@ function palier2(nomProduit) {
     segmentEntier(paragraphes[1], 'corps'),
     segmentEntier(phraseModele, 'modele'),
     segmentEntier(paragraphes[3], 'corps'),
-    segmentEntier(paragraphes[4], 'note'),
   ];
   return {
     titre: TITRE,

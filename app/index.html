@@ -175,6 +175,21 @@
     </div>
   </div>
 
+  <!-- ================= Repli hors ligne (D50/D49, 25/09/2026) =================
+       Masqué par défaut (hidden) : app.js le montre au tout premier chargement
+       si l'appareil est hors ligne (test 10 du protocole iPhone du 16/09, la
+       coquille s'affichait vide sans un mot pendant que la vérification de
+       session attendait un réseau absent). Réutilise .ecran-login/.login-carte
+       telles quelles (aucune règle CSS neuve). Texte posé par app.js
+       (hors_ligne_logique.js, constante unique). -->
+  <div id="ecran-hors-ligne" class="ecran-login" hidden>
+    <p class="login-logo">Stovo</p>
+    <div class="login-carte">
+      <h1>Hors ligne</h1>
+      <p class="login-soustitre" id="hors-ligne-message"></p>
+    </div>
+  </div>
+
   <!-- ================= Application (dashboard + parler + nav) ================= -->
   <!-- Masquée par défaut (hidden) : app.js la montre une fois la session
        confirmée (au démarrage si déjà connecté, ou juste après un login). -->
