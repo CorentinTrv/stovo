@@ -436,7 +436,7 @@ export const CONTENU = [
       },
       {
         type: 'astuce',
-        titre: 'Une phrase, une action',
+        titre: 'Créer un produit et ajouter du stock : deux phrases',
         texte: '« <b>crée le produit jambon et ajoute 3</b> » ne fait pas deux choses : Stovo ne garde que le nom, te le dit, et attend une deuxième phrase pour la quantité. C\'est voulu : un nom de produit peut contenir un chiffre (« Coca 50 cl »), alors Stovo préfère te montrer ce qu\'il retient plutôt que de deviner. Si tu t\'aperçois après coup que le nom créé est faux, dis « <b>supprime le produit X</b> », ou « <b>renomme le produit X en Y</b> » pour le corriger sans le perdre.',
       },
       {
@@ -468,6 +468,11 @@ export const CONTENU = [
         type: 'astuce',
         titre: 'Le rangement d\'une livraison va deux fois plus vite en mode réception',
         texte: 'Pour trois articles ou plus, passe par « Démarrer une réception » plutôt que trois phrases complètes : tu dictes « 12 pâtes », « 6 bières », « 24 lait » sans verbe, tu vérifies la liste d\'un coup d\'œil, et tu valides une seule fois. Si tu dictes deux fois le même produit, les quantités s\'additionnent au lieu de créer un doublon.',
+      },
+      {
+        type: 'astuce',
+        titre: 'Deux produits dans une même phrase',
+        texte: 'Tu peux dire deux produits d\'un coup : « <b>j\'ai vendu 3 pâtes et 2 riz</b> ». Stovo te montre les deux mouvements, un seul <b>oui</b> les enregistre, <b>non</b> n\'en garde aucun. Au-delà de deux produits, ou si l\'un des deux n\'est pas dans ton catalogue, il préfère ne rien noter et te le dire : passe alors par « Démarrer une réception » ou « Démarrer une sortie ». Après une phrase à deux produits, « annule le dernier » n\'annule que le second.',
       },
       {
         type: 'astuce',

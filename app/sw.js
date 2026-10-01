@@ -455,7 +455,16 @@
 // un surnom" explique la limite à la création (aide-contenu.js). pwa-api
 // INCHANGEE par ce lot (elle est deja en ligne depuis L5/L6, ou en attend le
 // deploiement, selon l'ordre choisi par le Jarvis).
-const CACHE_NAME = 'stovo-app-v53';
+// v54 (lot D21-D72-L7, 30/09/2026) : cote front, seule l'Aide change. Astuce
+// neuve "Deux produits dans une même phrase" (dire deux produits d'un coup,
+// un seul "oui" enregistre les deux, "annule le dernier" n'annule que le
+// second), astuce "Une phrase, une action" renommee en "Créer un produit et
+// ajouter du stock : deux phrases" (texte inchangé, le titre ne contredisait
+// plus le nouveau geste). Le gros du lot est backend (D21-D72 L1 a L6 :
+// decouperDeclaration, deux mouvements groupes en un insert). aide-contenu.js
+// et aide_test.js (deux comptes de blocs 'astuce' mis a jour, 15 -> 16) seuls
+// modifies ici.
+const CACHE_NAME = 'stovo-app-v54';
 
 // Coquille locale a precacher : les fichiers de l'app elle-meme, dont
 // vendor/supabase-2.117.0.umd.js depuis le lot RGPD F2 (supabase-js est
