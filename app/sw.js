@@ -464,7 +464,16 @@
 // decouperDeclaration, deux mouvements groupes en un insert). aide-contenu.js
 // et aide_test.js (deux comptes de blocs 'astuce' mis a jour, 15 -> 16) seuls
 // modifies ici.
-const CACHE_NAME = 'stovo-app-v54';
+// v55 (EX-1 lot 2, 01/10/2026, fusionne apres D21-D72 en ligne en v54) :
+// l'export Excel lisible -- un classeur .xlsx a trois feuilles en plus des
+// deux CSV (bouton "Mon stock dans Excel (.xlsx)", index.html/dashboard.js),
+// nouveau module pur export_excel.js AJOUTE au precache, intro du bloc
+// "Exporter mes données" reformulee, section "Sortir mes données" de l'Aide
+// mise a jour (aide-contenu.js). write-excel-file
+// (vendor/write-excel-file-4.1.1.min.js) n'entre PAS au precache (decision 1
+// du grilling EX-1) : charge seulement au premier clic sur le bouton Excel,
+// jamais au demarrage. pwa-api INCHANGEE par ce lot.
+const CACHE_NAME = 'stovo-app-v55';
 
 // Coquille locale a precacher : les fichiers de l'app elle-meme, dont
 // vendor/supabase-2.117.0.umd.js depuis le lot RGPD F2 (supabase-js est
@@ -504,6 +513,7 @@ const FICHIERS_COQUILLE = [
   './sortie.js',
   './photo.js',
   './export.js',
+  './export_excel.js',
   './maj_worker.js',
   './premiers_pas_logique.js',
   './premiers_pas.js',

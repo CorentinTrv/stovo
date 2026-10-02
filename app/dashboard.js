@@ -72,6 +72,14 @@ import { construireCsvStock, construireCsvMouvements, nomFichierExport, lireTout
 // Icones SVG en trait de la colonne "Source" (lot "monde clair, suite",
 // 23/08/2026) : remplace les emoji 🎙️/⌨️ du tableau des mouvements.
 import { ICONES } from './icones.js';
+// Chantier EX-1, lot 2 (01/10/2026) : le classeur Excel lisible, en plus
+// des deux CSV ci-dessus (decision 5 du grilling, il ne les remplace pas).
+// Module PUR et deja teste (export_excel_test.js) : aucune donnee nouvelle
+// a lire au chargement de l'ecran, ni write-excel-file importe ici (la
+// bibliotheque n'entre JAMAIS au precache, decision 1 -- voir
+// chargerBibliothequeExcel plus bas, qui la charge par un <script> pose au
+// premier clic).
+import { construireClasseurExcel, nomFichierExcel, creerFeatureFiltreAuto, creerFeatureAjusterPageImpression } from './export_excel.js';
 
 // KPI "Activité (7 jours)" (libellé écrit en dur dans index.html, l.138) :
 // constante LOCALE, INDÉPENDANTE de FENETRE_JOURS (module partagé pilotage.js).
@@ -576,12 +584,13 @@ function afficherEtatExport(texte, estErreur) {
   el.textContent = texte;
 }
 
-// Déclenche le téléchargement d'un CSV déjà construit. Le BOM UTF-8 est posé
-// ICI, jamais dans les chaînes rendues par export.js (lot C2-1, plan §4) :
-// sans lui Excel massacre les accents. Blob/URL.createObjectURL/<a download>
-// sont natifs, aucune dépendance ajoutée (plan §3.4).
-function telechargerCsv(nomFichier, contenu) {
-  const blob = new Blob(['\uFEFF' + contenu], { type: 'text/csv;charset=utf-8' });
+// Déclenche le téléchargement d'un Blob déjà construit (Blob/
+// URL.createObjectURL/<a download> natifs, aucune dépendance ajoutée, plan
+// §3.4 du chantier C2). Chantier EX-1, lot 2 (01/10/2026) : extraite de
+// l'ancien telechargerCsv pour être réutilisée par l'export Excel
+// (lancerExportExcel plus bas), SANS changer le comportement des CSV
+// (même mécanisme, même révocation différée).
+function declencherTelechargement(nomFichier, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -596,6 +605,14 @@ function telechargerCsv(nomFichier, contenu) {
   // déjà "exporté". Un délai laisse le temps au navigateur de démarrer la
   // lecture du blob avant qu'on ne le libère.
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Déclenche le téléchargement d'un CSV déjà construit. Le BOM UTF-8 est posé
+// ICI, jamais dans les chaînes rendues par export.js (lot C2-1, plan §4) :
+// sans lui Excel massacre les accents.
+function telechargerCsv(nomFichier, contenu) {
+  const blob = new Blob(['\uFEFF' + contenu], { type: 'text/csv;charset=utf-8' });
+  declencherTelechargement(nomFichier, blob);
 }
 
 // Accord singulier/pluriel simple (même convention que pluriel() de
@@ -613,6 +630,124 @@ function lireTable(construireRequete) {
     if (error) throw new Error(error.message);
     return data;
   });
+}
+
+// =========================================================================
+// Chantier EX-1 « l'export Excel lisible » (lot 2, 01/10/2026)
+// =========================================================================
+// Decision 5 du grilling : le .xlsx s'AJOUTE aux deux CSV ci-dessus, il ne
+// les remplace pas. Decision 4 : les chiffres sont ceux du dernier charger()
+// abouti (dernierEtatPourExport, voir son affectation dans charger() plus
+// bas), jamais recalcules.
+
+// Pure : choisit le message a afficher quand l'export Excel ne peut PAS
+// partir, ou `null` si rien ne bloque. Correctif du 01/10/2026 (/code-
+// review) : l'ancien message unique ("Charge d'abord ton stock, ouvre
+// l'onglet Pilotage") mentait des que l'utilisateur etait deja sur
+// Pilotage -- deux causes distinctes meritent deux messages distincts.
+export function messageBlocageExportExcel(etat) {
+  if (!etat) return "Ton stock n'est pas encore chargé, réessaie dans un instant.";
+  if (!etat.mouvementsLus) return "Tes mouvements n'ont pas pu être lus, réessaie dans un instant.";
+  return null;
+}
+
+// Pure : decide si l'export Excel peut partir. Aucun charger() abouti, ou
+// lecture des mouvements en echec (errM cote charger()), interdisent
+// l'export -- un classeur qui dirait "aucun mouvement" alors que la lecture
+// a rate serait faux (decision 4 du grilling). DERIVEE de
+// messageBlocageExportExcel : une seule logique a maintenir.
+export function peutExporterExcel(etat) {
+  return messageBlocageExportExcel(etat) === null;
+}
+
+// Pure : message de fin d'export Excel (meme esprit qu'accordExport pour
+// les CSV ci-dessus, mais sur deux comptes a la fois).
+export function messageFinExportExcel({ nbProduits, nbMouvements }) {
+  const s = (n) => (n > 1 ? 's' : '');
+  return `Classeur exporté : ${nbProduits} produit${s(nbProduits)}, ${nbMouvements} mouvement${s(nbMouvements)}.`;
+}
+
+// Charge write-excel-file au PREMIER clic seulement (decision 1 du
+// grilling : jamais au precache, jamais au demarrage -- l'export exige le
+// reseau de toute facon). Une seule promesse memorisee : un second clic
+// reutilise le MEME chargement, jamais un second <script>. Si le chargement
+// echoue, la promesse est oubliee (pas gardee "cassee" pour toujours) pour
+// qu'un prochain clic puisse retenter, par exemple une fois la connexion
+// revenue.
+let promesseBibliothequeExcel = null;
+function chargerBibliothequeExcel() {
+  if (!promesseBibliothequeExcel) {
+    promesseBibliothequeExcel = new Promise((resolve, reject) => {
+      if (globalThis.writeXlsxFile) { resolve(globalThis.writeXlsxFile); return; }
+      const script = document.createElement('script');
+      script.src = 'vendor/write-excel-file-4.1.1.min.js';
+      script.onload = () => {
+        if (globalThis.writeXlsxFile) resolve(globalThis.writeXlsxFile);
+        else reject(new Error('bibliothèque introuvable après chargement'));
+      };
+      script.onerror = () => reject(new Error('échec réseau'));
+      document.head.appendChild(script);
+    }).catch((e) => {
+      promesseBibliothequeExcel = null;
+      throw e;
+    });
+  }
+  return promesseBibliothequeExcel;
+}
+
+// Les produits retirés du catalogue (actif=false), lecture NEUVE au clic
+// (jamais chargée par charger()) : mêmes colonnes et même départage de
+// pagination que l'export CSV de l'état de stock ci-dessous (lot C2-3). Le
+// module pur (construireClasseurExcel) filtre lui-même le stock nul.
+function lireProduitsRetires() {
+  return lireTable((de, a) => supabase
+    .from('produits')
+    .select('id, nom, unite, stock_actuel, prix_achat, seuil_alerte, delai_repro_jours, cree_le, actif')
+    .eq('actif', false)
+    .order('nom')
+    .order('id', { ascending: true })
+    .range(de, a));
+}
+
+// Orchestre l'export Excel de bout en bout : vérifie d'abord que le dernier
+// charger() a abouti ET que ses mouvements sont fiables (sinon échec
+// immédiat, décision 4 du grilling), charge la bibliothèque, lit les
+// produits retirés, construit le classeur (module pur export_excel.js,
+// mêmes chiffres que l'écran), déclenche le téléchargement, annonce le
+// résultat.
+async function lancerExportExcel(boutons) {
+  boutons.forEach((b) => { if (b) b.disabled = true; });
+  afficherEtatExport('Préparation du fichier…', false);
+  try {
+    const blocage = messageBlocageExportExcel(dernierEtatPourExport);
+    if (blocage) {
+      throw new Error(blocage);
+    }
+    let writeXlsxFile;
+    try {
+      writeXlsxFile = await chargerBibliothequeExcel();
+    } catch (_e) {
+      throw new Error('Impossible de préparer le classeur Excel, vérifie ta connexion.');
+    }
+    const maintenant = Date.now();
+    const produitsRetires = await lireProduitsRetires();
+    const classeur = construireClasseurExcel({
+      produitsActifs: dernierEtatPourExport.produitsActifs,
+      produitsRetires,
+      mouvements: dernierEtatPourExport.mouvements,
+      maintenant,
+    });
+    const blob = await writeXlsxFile(classeur.feuilles, {
+      ...classeur.optionsGlobales,
+      features: [creerFeatureFiltreAuto(), creerFeatureAjusterPageImpression()],
+    }).toBlob();
+    declencherTelechargement(nomFichierExcel(maintenant), blob);
+    afficherEtatExport(messageFinExportExcel(classeur.comptes), false);
+  } catch (e) {
+    afficherEtatExport(e.message, true);
+  } finally {
+    boutons.forEach((b) => { if (b) b.disabled = false; });
+  }
 }
 
 // Orchestre un export de bout en bout : désactive les deux boutons (un
@@ -677,9 +812,15 @@ async function lancerExport(type, boutons) {
 function majExport() {
   const mention = $('export-mention');
   if (mention) mention.textContent = MENTION_LEGALE + '.';
+  const btnExcel = $('export-excel-btn');
   const btnStock = $('export-stock-btn');
   const btnMouvements = $('export-mouvements-btn');
-  const boutons = [btnStock, btnMouvements];
+  // Chantier EX-1, lot 2 (01/10/2026) : TROIS boutons désactivés ensemble
+  // pendant n'importe lequel des trois exports (même règle que les deux CSV
+  // avant ce lot) -- un export en cours et un second déclenché en parallèle
+  // liraient une table en double, sans bénéfice.
+  const boutons = [btnExcel, btnStock, btnMouvements];
+  if (btnExcel) btnExcel.addEventListener('click', () => lancerExportExcel(boutons));
   if (btnStock) btnStock.addEventListener('click', () => lancerExport('stock', boutons));
   if (btnMouvements) btnMouvements.addEventListener('click', () => lancerExport('mouvements', boutons));
 }
@@ -905,6 +1046,14 @@ async function charger() {
   // requête de plus. `|| []` n'est pas décoratif : si la lecture des
   // mouvements a échoué (errM), mvts est undefined, et le fil doit voir un
   // tableau vide, jamais une exception.
+  // Chantier EX-1, lot 2 (01/10/2026) : dernier état connu pour l'export
+  // Excel (lancerExportExcel plus bas), mémorisé ICI, au moment précis où
+  // charger() publie ses résultats -- jamais recalculé, jamais relu
+  // séparément : ce sont exactement les mêmes chiffres que l'écran
+  // (décision 4 du grilling). mouvementsLus (calculé plus haut) distingue
+  // "pas de mouvement" de "la lecture a échoué" : un classeur qui dirait
+  // "aucun mouvement" dans ce second cas serait faux.
+  dernierEtatPourExport = { produitsActifs: produits, mouvements: mvts, mouvementsLus };
   document.dispatchEvent(new CustomEvent('stovo:donnees', {
     detail: { produits, mouvements: mvts || [], gesteVivant, derniereSortieLe, compteursEtat },
   }));
@@ -972,6 +1121,10 @@ async function charger() {
 // doit toujours fonctionner, drapeau ou pas.
 let demarre = false;
 let donneesACharger = true;
+// Chantier EX-1, lot 2 (01/10/2026) : dernier état connu pour l'export
+// Excel -- voir son affectation dans charger() et sa remise à null dans
+// viderDashboard() plus bas.
+let dernierEtatPourExport = null;
 
 export function demarrerDashboard() {
   if (!demarre) {
@@ -1055,6 +1208,11 @@ export function viderDashboard() {
   // deja consomme le drapeau, la prochaine ouverture doit pouvoir le
   // reconsommer une fois.
   donneesACharger = true;
+  // Chantier EX-1, lot 2 : l'export Excel ne doit jamais utiliser les
+  // chiffres d'un compte qui vient de se déconnecter -- tant qu'aucun
+  // charger() n'a abouti pour la session suivante, l'export reste bloqué
+  // (peutExporterExcel plus haut).
+  dernierEtatPourExport = null;
   texteListeCourses = '';
 
   const matin = $('matin');

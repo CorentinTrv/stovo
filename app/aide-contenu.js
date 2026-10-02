@@ -28,6 +28,12 @@
 // (.csv)" et bouton "Journal de mes mouvements (.csv)") : si ces libelles
 // changent la-bas, cette section doit suivre a l'identique, sinon elle ment.
 //
+// LOT EX-1-L2 (01/10/2026, chantier EX-1 "l'export Excel lisible") : un
+// troisieme bouton dans ce meme bloc, "Mon stock dans Excel (.xlsx)" (decision
+// 5 du grilling EX-1 : le classeur s'ajoute aux deux CSV, il ne les remplace
+// pas), decrit EN PREMIER dans la section (meme ordre qu'a l'ecran). Meme
+// regle : si ce libelle change la-bas, cette section doit suivre.
+//
 // LOT "app court" (23/08/2026) : deux gestes deja en prod depuis fin juillet
 // mais jamais decrits ici. Le mode sortie (bouton "Démarrer une sortie",
 // sortie.js, backend _shared/sortie.ts, lot S-5 du 27/07) et la photo du bon
@@ -508,6 +514,10 @@ export const CONTENU = [
       {
         type: 'texte',
         texte: 'Le bouton est dans l\'onglet <b>Pilotage</b>, tout en bas, dans le bloc replié <b>« Exporter mes données »</b>.',
+      },
+      {
+        type: 'texte',
+        texte: '<b>Mon stock dans Excel (.xlsx)</b> te donne un classeur prêt à lire, à trois feuilles : à commander, état de ton stock, et tes mouvements des 30 derniers jours.',
       },
       {
         type: 'texte',

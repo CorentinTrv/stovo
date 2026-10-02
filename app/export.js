@@ -68,11 +68,15 @@ export const LIBELLE_SOURCE = {
 // Nombre de decimales par famille de colonne, choisi d'apres le type
 // Postgres reel de chaque colonne (voir cahier-logique-n8n.md et
 // PROMPT_creer-produit) : stock_actuel/seuil_alerte sont `numeric` (donc
-// potentiellement fractionnaires, ex. des kg), delai_repro_jours et
-// mouvements.quantite sont `integer` (jamais de decimale).
+// potentiellement fractionnaires, ex. des kg), delai_repro_jours est
+// `integer` (jamais de decimale). CORRECTIF du 01/10/2026 (/code-review,
+// verifie par information_schema le meme jour) : mouvements.quantite est
+// EN REALITE `numeric`, pas `integer` comme l'affirmait ce commentaire --
+// voir formaterQuantiteMouvement plus bas, qui ne depend plus de DEC_ENTIER
+// pour cette colonne.
 const DEC_ARGENT = 2; // prix_achat, valeurs en euros
 const DEC_QTE = 2;    // stock_actuel, seuil_alerte
-const DEC_ENTIER = 0; // delai_repro_jours, quantite de mouvement
+const DEC_ENTIER = 0; // delai_repro_jours
 
 // Un prix est "connu" s'il est renseigne, y compris s'il vaut 0. Un
 // produit offert a un prix d'achat de 0, ce n'est pas la meme chose qu'un
@@ -123,6 +127,21 @@ export function formaterNombre(v, decimales = 2) {
   const n = Number(v);
   if (!Number.isFinite(n)) return '';
   return n.toFixed(decimales).replace('.', ',');
+}
+
+/**
+ * Formate `mouvements.quantite` (correctif du 01/10/2026 : cette colonne
+ * est `numeric` en base, pas `integer`, verifie par information_schema --
+ * un `DEC_ENTIER` fixe arrondissait a tort 0,4 en "0" et 2,5 en "3"). Un
+ * entier garde EXACTEMENT le rendu d'avant (`toFixed(0)`, sans decimale,
+ * aucun mouvement reel n'a de decimale aujourd'hui donc la sortie actuelle
+ * ne doit pas changer pour eux) ; un non-entier s'affiche a deux decimales,
+ * comme stock_actuel/seuil_alerte (DEC_QTE).
+ */
+function formaterQuantiteMouvement(v) {
+  const n = Number(v);
+  const decimales = Number.isFinite(n) && Number.isInteger(n) ? DEC_ENTIER : DEC_QTE;
+  return formaterNombre(v, decimales);
 }
 
 /**
@@ -311,7 +330,7 @@ export function construireCsvMouvements({ mouvements, produits, maintenant = Dat
     { entete: 'Heure', valeur: (m) => formaterHeure(m.cree_le, fuseau) },
     { entete: 'Produit', valeur: (m) => echapperCsv((m.produits && m.produits.nom) || '(produit supprimé)') },
     { entete: 'Type', valeur: (m) => echapperCsv(LIBELLE_TYPE[m.type] ?? m.type ?? '') },
-    { entete: 'Quantité', valeur: (m) => formaterNombre(m.quantite, DEC_ENTIER) },
+    { entete: 'Quantité', valeur: (m) => formaterQuantiteMouvement(m.quantite) },
     { entete: 'Unité', valeur: (m) => echapperCsv((m.produits && m.produits.unite) || '') },
     { entete: 'Motif', valeur: (m) => (m.motif ? echapperCsv(LIBELLE_MOTIF_EXPORT[m.motif] ?? m.motif) : '') },
     { entete: 'Source', valeur: (m) => echapperCsv(LIBELLE_SOURCE[m.source] ?? m.source ?? '') },
