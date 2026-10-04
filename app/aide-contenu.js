@@ -320,8 +320,8 @@ export const CONTENU = [
         icone: 'recaler',
         titre: 'Recaler après comptage',
         quoi: 'Tu comptes en rayon et tu annonces le vrai chiffre. Stovo calcule tout seul l\'écart avec ce qu\'il croyait, et écrit la correction.',
-        exemples: ['en rayon il y a 8 lait', 'inventaire pâtes 12', 'il reste 5 riz'],
-        note: 'Tu annonces ce que tu <b>as compté</b>, jamais l\'écart. Si le compte tombe juste, Stovo te le dit et n\'écrit rien.',
+        exemples: ['en rayon il y a 8 lait', 'inventaire pâtes 12', 'il reste 5 riz', 'il reste 2 pâtes et 3 riz'],
+        note: 'Tu annonces ce que tu <b>as compté</b>, jamais l\'écart. Si le compte tombe juste, Stovo te le dit et n\'écrit rien. Tu peux compter deux produits d\'un coup : un seul <b>oui</b> recale les deux.',
       },
       {
         type: 'geste',
@@ -407,7 +407,12 @@ export const CONTENU = [
         type: 'geste',
         icone: 'document-fleche',
         titre: 'Importer un catalogue',
-        quoi: `Le bouton « Importer un catalogue (.xlsx) » sur l'écran ${LIBELLES_ONGLETS.parler}. Stovo lit ton fichier Excel, reconnaît tout seul tes colonnes (nom, stock, prix…) et te dit ce qu'il a compris avant d'écrire.`,
+        // Lot "Reponses honnetes" (D59, 02/10/2026) : la promesse "nom,
+        // stock, prix" etait fausse -- l'import n'a que cinq cles (nom,
+        // unite, prix d'achat, seuil, delai), et AUCUNE ne lit de quantite
+        // (import_catalogue.ts:43). Phrase corrigee, le dicte-ton-stock
+        // reste la demo du vocal au salon.
+        quoi: `Le bouton « Importer un catalogue (.xlsx) » sur l'écran ${LIBELLES_ONGLETS.parler}. Stovo lit ton fichier Excel et reconnaît tout seul tes colonnes : nom, unité, prix d'achat, seuil, délai. Les quantités ne s'importent pas : une fois les produits créés, tu dictes ton stock ("il reste 12 pâtes").`,
         exemples: [],
         note: 'Réimporter le même fichier ne crée pas de doublon : les produits déjà connus sont ignorés. C\'est le moyen le plus rapide de démarrer avec beaucoup de références.',
       },
@@ -478,7 +483,7 @@ export const CONTENU = [
       {
         type: 'astuce',
         titre: 'Deux produits dans une même phrase',
-        texte: 'Tu peux dire deux produits d\'un coup : « <b>j\'ai vendu 3 pâtes et 2 riz</b> ». Stovo te montre les deux mouvements, un seul <b>oui</b> les enregistre, <b>non</b> n\'en garde aucun. Au-delà de deux produits, ou si l\'un des deux n\'est pas dans ton catalogue, il préfère ne rien noter et te le dire : passe alors par « Démarrer une réception » ou « Démarrer une sortie ». Après une phrase à deux produits, « annule le dernier » n\'annule que le second.',
+        texte: 'Tu peux dire deux produits d\'un coup : « <b>j\'ai vendu 3 pâtes et 2 riz</b> », ou pour un comptage « <b>il reste 2 pâtes et 3 riz</b> ». Stovo te montre les deux, un seul <b>oui</b> les enregistre, <b>non</b> n\'en garde aucun. <b>Deux produits par phrase, pas plus</b> : au-delà, Stovo peut en oublier un, alors relis bien ce qu\'il te montre avant ton oui. Si l\'un des deux n\'est pas dans ton catalogue, il préfère ne rien noter et te le dire. Pour plus de produits, passe par « Démarrer une réception » ou « Démarrer une sortie ». Là aussi, une ligne peut porter deux produits (« 10 pâtes, 5 riz »). Un comptage et une vente, eux, se disent en deux phrases. Après une phrase à deux produits, « annule le dernier » n\'annule que le second.',
       },
       {
         type: 'astuce',

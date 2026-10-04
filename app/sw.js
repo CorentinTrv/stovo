@@ -473,7 +473,18 @@
 // (vendor/write-excel-file-4.1.1.min.js) n'entre PAS au precache (decision 1
 // du grilling EX-1) : charge seulement au premier clic sur le bouton Excel,
 // jamais au demarrage. pwa-api INCHANGEE par ce lot.
-const CACHE_NAME = 'stovo-app-v55';
+// v56 (02-04/10/2026, plusieurs lots jamais bumpes avant ce correctif) :
+// D59 (la phrase de l'Aide sur l'import dit que les quantites ne s'importent
+// pas), D71 (messages d'erreur micro audio-capture et aborted,
+// parler_logique.js), T10 (astuce "deux produits par phrase, pas plus" a la
+// place d'un refus que l'app ne tenait pas sans virgule), fiche "Recaler" et
+// astuce "Deux produits dans une meme phrase" (aide-contenu.js, lot "Deux
+// produits, suite" L3/D76, laissee intacte en v55). Le gros de ce qui est
+// livre par cette version est backend, sans effet visible ici (D7, D29, D56,
+// D57, D75, D76) : la seule retouche de CE correctif est le message honnete
+// d'une ligne de session a deux produits dont la seconde ecriture echoue
+// (coeur.ts, aucun fichier front).
+const CACHE_NAME = 'stovo-app-v56';
 
 // Coquille locale a precacher : les fichiers de l'app elle-meme, dont
 // vendor/supabase-2.117.0.umd.js depuis le lot RGPD F2 (supabase-js est

@@ -262,6 +262,12 @@ const MESSAGES_ERREUR_MICRO = {
   'service-not-allowed': 'Micro refusé. Autorise le micro dans les réglages du navigateur.',
   'no-speech': "Je n'ai rien entendu, réessaie.",
   'network': 'Souci réseau pour la reconnaissance vocale.',
+  // Lot "Reponses honnetes" (D71, 02/10/2026) : deux codes qui tombaient
+  // avant ce lot dans le repli generique ("Probleme avec le micro...").
+  // Dette D71 : la CAUSE de ces deux erreurs reste inconnue (pourquoi
+  // l'iPhone les declenche) -- seuls les messages sont rendus honnetes.
+  'audio-capture': "L'iPhone n'a pas pu capter le son. Réessaie, ou tape ta phrase.",
+  'aborted': "L'écoute s'est arrêtée sans rien entendre. Réessaie, ou tape ta phrase.",
 };
 
 // Copie exacte du repli utilise dans reconnaissance.onerror (parler.js).
