@@ -1796,3 +1796,125 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
    par defaut. Meme gabarit que .login-lien-centre a. */
 .aide-texte a { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
 .aide-texte a:hover { color: var(--muted); }
+
+/* =====================================================================
+   Démo en libre-service, lot L6a (07/10/2026) -- le bandeau, et le bouton
+   en forme de lien de l'écran de fin. Règles NEUVES seulement : aucune
+   variable de :root touchée, aucune règle existante modifiée. Les deux écrans
+   de lancement et de fin réutilisent .ecran-login, .login-carte, .btn-login,
+   .login-soustitre, .login-note et .login-erreur tels quels.
+   Le bandeau est DANS LE FLUX (jamais fixed, jamais en surimpression : un
+   bandeau ne cache pas ce qu'il montre, leçon de D70). Fond décor
+   (--fond-chaud), texte en encre, bouton à contour : la flamme reste réservée
+   à l'action principale de chaque écran (règle 1 de DESIGN.md).
+   ===================================================================== */
+.demo-bandeau {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
+  padding: 10px 16px;
+  background: var(--fond-chaud); border-bottom: 1px solid var(--border);
+}
+.demo-bandeau-texte {
+  flex: 1 1 200px; margin: 0;
+  font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--text);
+}
+.demo-bandeau-bouton {
+  /* Peut rétrécir et passer à la ligne : un libellé long ne doit JAMAIS élargir la page
+     (sur un téléphone, une page plus large que l'écran dézoome tout). */
+  flex: 0 1 auto; max-width: 100%; display: inline-flex; align-items: center;
+  min-height: 44px; padding: 8px 16px; line-height: 1.3;
+  font-family: inherit; font-size: 14px; font-weight: 600; text-decoration: none; color: var(--text);
+  background: var(--card); border: 1.5px solid var(--border); border-radius: 14px;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.demo-bandeau-bouton:hover { border-color: var(--text); }
+.demo-bandeau-bouton:active { transform: translateY(1px); }
+/* La proposition du 3e jour : une seconde ligne dans le même bandeau. */
+.demo-sortie { flex: 1 1 100%; display: flex; align-items: center; gap: 10px; }
+.demo-sortie-texte { flex: 1 1 auto; margin: 0; font-size: 14px; line-height: 1.45; color: var(--text); }
+.demo-sortie-fermer {
+  flex: 0 0 auto; width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit; font-size: 16px; color: var(--muted);
+  background: none; border: none; border-radius: 14px; cursor: pointer;
+  transition: background .15s, color .15s, transform .1s;
+}
+.demo-sortie-fermer:hover { background: var(--card); color: var(--text); }
+.demo-sortie-fermer:active { transform: translateY(1px); }
+/* .btn-login posé sur un <a> (le mail de l'écran de fin) : un lien est en
+   ligne par défaut, il faut le mettre en flex pour que la pleine largeur et
+   le centrage de .btn-login s'appliquent, et retirer le soulignement. */
+/* Le mot « Confidentialité » de la ligne RGPD du lancement est un lien dans une phrase :
+   hérite de la couleur du texte, souligné (même geste visuel que .login-legal a). */
+.login-note a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.btn-login.demo-lien-bouton {
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none; text-align: center; padding: 10px 16px; line-height: 1.3;
+}
+/* Lot L6b (07/10/2026) : le message « fonction grisée » de la démo, créé par demo.js et posé sous le
+   bouton touché (photo de bon ou import). C'est la carte .parler-reponse de Saisir, avec l'air qui lui
+   manque au-dessus : collée au bouton, elle se lisait comme sa suite. */
+.demo-grisee { margin-top: 12px; }
+
+/* =====================================================================
+   Démo en libre-service, lot L7 (08/10/2026) -- la carte des missions
+   « L'essentiel », en haut de l'écran Saisir, EN DÉMO SEULEMENT (missions_demo.js
+   la crée à la demande, un testeur n'en a pas une ligne dans sa page). Règles
+   NEUVES seulement : aucune variable de :root touchée, aucune règle existante
+   modifiée. Gabarit de .aide-section (carte repliable, <details> natif, chevron)
+   et de .premiers-pas (carte blanche, filet, ombre légère, JAMAIS l'ombre chaude
+   réservée à l'écran du matin). La phrase à toucher réutilise .aide-exemple (le
+   même geste que dans l'Aide : toucher recopie la phrase dans le champ). La
+   coche est en --ok : c'est le teal de « Validé » (DESIGN.md), jamais la flamme,
+   réservée à l'action.
+   ===================================================================== */
+.missions-demo {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm); margin-bottom: 16px; overflow: hidden;
+  /* .parler-centre centre le texte : la carte se lit à gauche, comme .premiers-pas. */
+  text-align: left;
+}
+.missions-sommaire {
+  cursor: pointer; list-style: none; -webkit-user-select: none; user-select: none;
+  display: flex; align-items: center; gap: 12px;
+  min-height: 52px; padding: 12px 16px;
+  font-size: 16px; font-weight: 700; color: var(--text);
+}
+.missions-sommaire::-webkit-details-marker { display: none; }
+.missions-sommaire:focus-visible { outline: 2px solid var(--text); outline-offset: -3px; }
+.missions-titre { flex: 1 1 auto; min-width: 0; }
+/* Cinq petits disques, visibles même carte repliée : la progression sans un mot de plus. */
+.missions-jalons { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.missions-jalon { width: 8px; height: 8px; border-radius: 999px; background: var(--border); display: block; }
+.missions-jalon-fait { background: var(--ok); }
+.missions-sommaire::after { content: '▾'; color: var(--muted); font-size: 13px; transition: transform .15s; }
+.missions-demo[open] > .missions-sommaire::after { transform: rotate(180deg); }
+.missions-demo[open] > .missions-sommaire { border-bottom: 1px solid var(--border); }
+
+.missions-corps { padding: 4px 16px 16px; }
+.missions-consigne { margin: 12px 0 4px; font-size: 14px; line-height: 1.5; color: var(--muted); }
+.missions-liste { list-style: none; margin: 0; padding: 0; }
+.missions-ligne { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
+.missions-ligne:first-child { border-top: none; }
+
+/* La coche : une case native inactive (les lecteurs d'écran lisent son état), redessinée. */
+.missions-case {
+  -webkit-appearance: none; appearance: none; opacity: 1;
+  flex: 0 0 auto; position: relative; width: 22px; height: 22px; margin: 1px 0 0;
+  border: 1.5px solid var(--border); border-radius: 7px; background: var(--card);
+}
+.missions-case:checked { background: var(--ok); border-color: var(--ok); }
+.missions-case:checked::after {
+  content: ''; position: absolute; left: 6px; top: 2px; width: 6px; height: 11px;
+  border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
+}
+
+.missions-texte { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.missions-ligne-titre { font-size: 14px; font-weight: 700; line-height: 1.35; color: var(--text); }
+.missions-faite .missions-ligne-titre { color: var(--muted); }
+/* Un libellé long ne doit JAMAIS élargir la page (leçon du bandeau, lot L6a). */
+.missions-phrase { max-width: 100%; overflow-wrap: anywhere; }
+.missions-apres { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
+.missions-fini {
+  margin: 4px 0 0; padding-top: 14px; border-top: 1px solid var(--border);
+  font-size: 14.5px; font-weight: 600; line-height: 1.45; color: var(--text);
+}

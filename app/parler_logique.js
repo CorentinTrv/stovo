@@ -35,6 +35,44 @@ export async function lireCorpsReponse(error) {
   return null;
 }
 
+// D91 (12/10/2026) : faut-il tenter la reprise au demarrage ? La reprise est
+// UN appel pwa-api par mode (reception-etat, inventaire-etat, sortie-etat),
+// trois en tout. Elle n'a de sens que si l'app est affichee : l'aiguillage de
+// demo.js (decision unique de l'ecran de demarrage) laisse #app-shell masque
+// quand la demo est en fin (expiree ou purgee), et montre l'ecran de fin. On ne
+// relit donc pas l'etat de la demo ici : on suit son verdict. Une seule fois
+// par chargement de page (`dejaTentee`), comme avant. Entree douteuse : non.
+export function repriseATenter({ session, appAffichee, dejaTentee } = {}) {
+  return Boolean(session) && appAffichee === true && dejaTentee !== true;
+}
+
+// Garde anti double (D91) : lire la session est asynchrone, donc deux tentatives
+// rapprochees (essai au chargement + changement de `hidden`) pourraient toutes
+// deux partir avant que la premiere ait fini. `enCours` est pose de facon
+// SYNCHRONE avant l'attente : la seconde tentative sort sans rien lire. Il est
+// relache des que la lecture finit (session absente, app masquee entre-temps, ou
+// lecture en erreur), pour qu'une connexion ulterieure puisse retenter. `tentee`
+// ne passe a vrai qu'une fois la reprise vraiment lancee. Retourne la promesse
+// pour que le test l'attende ; les entrees (lecture, etat de l'app, lancement)
+// sont injectees, aucun DOM ni reseau ici.
+export function creerDeclencheurReprise({ lireSession, estAppAffichee, lancer }) {
+  let enCours = false;
+  let tentee = false;
+  return async function tenterReprise() {
+    if (enCours || tentee || !estAppAffichee()) return;
+    enCours = true;
+    let session;
+    try {
+      session = await lireSession();
+    } finally {
+      enCours = false;
+    }
+    if (!repriseATenter({ session, appAffichee: estAppAffichee(), dejaTentee: tentee })) return;
+    tentee = true;
+    lancer();
+  };
+}
+
 // Un corps d'erreur lu via lireCorpsReponse est-il exploitable (contient au
 // moins un `reply` ou une `session`) ? Copie exacte de la condition qui
 // vivait dans appelerReceptionApi (parler.js) : ne verifie QUE ces deux
@@ -225,6 +263,18 @@ export function corpsImport(nomFichier, contenuBase64) {
   return { kind: 'import', nomFichier, contenuBase64 };
 }
 
+// Lot "vocal serveur V2" (12/10/2026) : les deux kinds de la route vocale de
+// pwa-api (vocal serveur V1). `capacites` demande ce que le vocal est pour ce
+// compte (ferme, essai, defaut) ; `transcrire` envoie un son enregistre
+// (base64, type MIME, duree en ms) et recoit un texte ou un relais nomme.
+export function corpsCapacites() {
+  return { kind: 'capacites' };
+}
+
+export function corpsTranscrire(audioBase64, mimeType, dureeMs) {
+  return { kind: 'transcrire', audioBase64, mimeType, dureeMs };
+}
+
 // ---------------------------------------------------------------------------
 // Conversion d'un resultat FileReader.readAsDataURL en base64 nu.
 // ---------------------------------------------------------------------------
@@ -372,7 +422,8 @@ export function creerMachineMicro() {
 }
 
 // ---------------------------------------------------------------------------
-// Lot D28, etage 2 : le journal des vingt derniers evenements micro.
+// Lot D28, etage 2 : le journal des derniers evenements micro (vingt a
+// l'origine, quarante depuis le lot "vocal serveur V2", voir PLAFOND_JOURNAL_MICRO).
 // ---------------------------------------------------------------------------
 // Objectif du lot (analyse §4) : tout ce que le code sait partait dans
 // `console.error`, illisible sur un iPhone sans Mac branche. Ce journal
@@ -382,7 +433,10 @@ export function creerMachineMicro() {
 // touche jamais lui-meme au stockage).
 
 export const CLE_JOURNAL_MICRO = 'stovo-diagnostic-micro';
-export const PLAFOND_JOURNAL_MICRO = 20;
+// Lot "vocal serveur V2" (12/10/2026) : de 20 a 40. Un vocal serveur ecrit plus
+// de lignes qu'une dictee (demande-start, start, puis sa ligne de bilan), et la
+// serie de 20 vocaux d'affilee doit tenir entiere dans le journal.
+export const PLAFOND_JOURNAL_MICRO = 40;
 
 // Heure locale courte (ex. "14:07:32"), zero en tete si besoin. Pure : prend
 // un objet Date en parametre plutot que d'appeler `new Date()` elle-meme,
@@ -427,9 +481,18 @@ export function analyserJournalMicro(brut) {
 }
 
 // Lot D28-suite (17/09/2026) : choisit la duree de la garde de demarrage
-// d'apres ce journal -- 8 s tant qu'aucun `start` n'a jamais ete recu sur cet
-// appareil, 2 s des qu'il y en a eu un. Piege deja identifie dans l'analyse :
-// 'audiostart', 'speechstart', 'demande-start' et 'garde-2s-sans-start'
+// d'apres ce journal -- 8 s tant que la DICTEE n'a jamais demarre sur cet
+// appareil, 2 s des qu'elle l'a fait.
+//
+// Correctif de relecture du lot "vocal serveur V2" (12/10/2026) : la preuve est
+// 'audiostart', pas `start`. Le moteur serveur ecrit aussi `start` (l'escalier
+// de Premiers pas en a besoin) mais n'ecrit JAMAIS 'audiostart' : seule la
+// dictee l'emet. Avec `start` comme preuve, quelques vocaux serveur auraient
+// raccourci la garde de la dictee a 2 s sur un appareil ou elle n'a jamais
+// demarre (le cas que D28-suite protege : l'alerte de permission d'iOS).
+//
+// Piege deja identifie dans l'analyse : 'audiostart', 'speechstart',
+// 'demande-start' et 'garde-2s-sans-start'
 // contiennent tous la sous-chaine "start", d'ou l'egalite stricte ci-dessous
 // (jamais `includes`/`indexOf`/regex non ancree, qui rendraient un faux
 // positif et annuleraient tout le lot). Defensive comme le reste du journal :
@@ -439,12 +502,12 @@ export function analyserJournalMicro(brut) {
 // de l'attente au pire, jamais un faux echec au premier geste.
 export function choisirDelaiGardeDemarrage(journal) {
   const liste = Array.isArray(journal) ? journal : [];
-  const dejaDemarre = liste.some((entree) => entree && entree.evenement === 'start');
+  const dejaDemarre = liste.some((entree) => entree && entree.evenement === 'audiostart');
   return dejaDemarre ? DELAI_GARDE_MICRO_MS : DELAI_GARDE_MICRO_PREMIER_MS;
 }
 
 // Ligne d'environnement affichee UNE FOIS en tete du journal (jamais
-// repetee sur chaque entree, et jamais comptee dans le plafond de 20) :
+// repetee sur chaque entree, et jamais comptee dans le plafond du journal) :
 // le user-agent et le mode d'affichage (PWA installee ou simple onglet de
 // navigateur), les deux infos qui permettent de savoir sur quel appareil
 // et dans quel contexte un echec a ete observe.

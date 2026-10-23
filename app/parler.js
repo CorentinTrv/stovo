@@ -48,11 +48,13 @@ import {
   choisirBranche,
   choisirDelaiGardeDemarrage,
   CLE_JOURNAL_MICRO,
+  corpsCapacites,
   corpsChoix,
   corpsConfirmation,
   corpsDeclaration,
   corpsErreurExploitable,
   corpsImport,
+  creerDeclencheurReprise,
   creerEntreeJournalMicro,
   creerMachineMicro,
   creerVerrouDeMode,
@@ -67,6 +69,23 @@ import {
   texteRefusVerrou,
   toucheEnvoie,
 } from './parler_logique.js';
+// Lot "vocal serveur V2" (12/10/2026) : un SECOND moteur de micro, qui enregistre
+// et fait transcrire le son par pwa-api, et le choix entre lui et la dictee
+// ci-dessous. La decision (quel moteur, quel secours, quel texte) vit dans
+// moteur_serveur_logique.js (pur, teste), la glu navigateur dans moteur_serveur.js.
+import {
+  choisirMoteur,
+  cleVocal,
+  CLE_VOCAL_CAPACITE,
+  etatSecours,
+  lireReglagesVocal,
+  MSG_RELAIS_CLAVIER,
+  normaliserCapacite,
+  secoursEstActif,
+  TEXTE_ECOUTE_SERVEUR,
+  TEXTE_TRANSCRIPTION,
+} from './moteur_serveur_logique.js';
+import { creerMoteurServeur, enregistreurDisponible } from './moteur_serveur.js';
 
 const zoneReponse = document.getElementById('parler-reponse');
 const zoneChoix = document.getElementById('parler-choix');
@@ -673,13 +692,29 @@ export function viderParler() {
 // on la fait remonter au chargement, une fois la session confirmée (l'appel
 // reception-etat exige un JWT valide). Sans session, on ne tente rien.
 // Même chose pour un inventaire interrompu (CM-C) et pour une sortie (lot S-5).
-getSessionActuelle().then((session) => {
-  if (session) {
+//
+// D91 (12/10/2026) : avant, ces trois appels pwa-api partaient des le
+// chargement des qu'une session existait, meme pour une demo en fin (l'ecran de
+// fin suffit). Ils partent maintenant quand #app-shell est affiche, c'est-a-dire
+// quand l'aiguillage de demo.js a rendu 'app' (decision dans repriseATenter,
+// parler_logique.js). Une demo en fin n'affiche jamais l'app : zero appel.
+// La garde anti double (lecture de session en cours, reprise deja lancee) vit
+// dans creerDeclencheurReprise, testee isolement.
+const appShell = document.getElementById('app-shell');
+const tenterReprise = creerDeclencheurReprise({
+  lireSession: getSessionActuelle,
+  estAppAffichee: () => !appShell.hidden,
+  lancer: () => {
     modeReception.verifierReprise();
     modeInventaire.verifierReprise();
     modeSortie.verifierReprise();
-  }
+    // Vocal serveur V2 : la capacite du vocal, en plus et sans retarder les trois
+    // reprises ci-dessus (rien n'est attendu).
+    demanderCapacites();
+  },
 });
+new MutationObserver(() => tenterReprise()).observe(appShell, { attributes: true, attributeFilter: ['hidden'] });
+tenterReprise();
 
 // --- Import catalogue .xlsx (lot 12a) ---
 // Le fichier transite en base64 dans le JSON envoyé à pwa-api (pas de multipart,
@@ -1036,39 +1071,192 @@ function reinitialiserEcouteEnArrierePlan() {
   afficherEtatMicro('');
 }
 
-if (!SR) {
-  // Progressive enhancement : sans l'API, le micro reste désactivé (attribut
-  // HTML `disabled` déjà posé) et le clavier fonctionne sans rien de plus.
-  afficherEtatMicro('Reconnaissance vocale non disponible sur cet appareil, utilise le clavier (le vocal serveur arrive bientôt).');
-} else {
-  btnMicro.disabled = false;
-  btnMicro.addEventListener('click', () => {
-    const action = etatMicro.appui();
-    if (action === 'demarrer') {
-      demarrerEcoute();
-      return;
-    }
-    if (action === 'annuler') {
-      // Appui pendant l'attente de démarrage (comportement tranché au lot
-      // D28, voir le rapport de passation) : on annule proprement l'instance
-      // en attente et on rend la main tout de suite, sans relancer un
-      // démarrage dans la foulée. Un second appui explicite relance un essai
-      // propre — plus fiable qu'un enchaînement immédiat abort()+start(),
-      // dont le navigateur ne garantit pas le timing.
-      annulerGardeDemarrage();
-      abandonnerInstanceEnCours();
-      afficherEtatMicro('');
-      return;
-    }
-    // 'arreter' : écoute réellement en cours (onstart déjà reçu), toggle
-    // inchangé — l'appui arrête la reconnaissance en cours. Correction après
-    // relecture du Jarvis (05/09/2026, point 2) : arme aussi la garde de
-    // 2 s qui force la remise à zéro si `onend` n'arrive jamais après ce
-    // `stop()` volontaire (armerGardeArret, voir plus haut).
-    instanceEnCours?.stop();
-    armerGardeArret();
-  });
+// --- Vocal serveur et aiguillage du micro (lot "vocal serveur V2", 12/10/2026) ---
+// Depuis le 12/10/2026 la dictee d'iOS ne tient plus : seul le premier vocal apres
+// l'ouverture de Safari est entendu (decisions du grilling du meme jour). Le
+// moteur serveur ENREGISTRE la voix, s'arrete seul apres un silence et fait
+// transcrire le son par pwa-api (kind « transcrire »). Comme la dictee, il ne
+// fait que REMPLIR #champ-parler : l'envoi reste un appui sur « Envoyer ».
+//
+// Ce bloc ne fait que l'aiguillage. Les decisions (quel moteur, combien de temps
+// de secours, quel message) viennent de moteur_serveur_logique.js ; le bloc de la
+// dictee ci-dessus n'a pas ete modifie d'un octet et reste le moteur par defaut
+// (capacite « ferme », ou « essai » avec la case de Reglages eteinte).
+//
+// REGLE ABSOLUE : jamais les deux moteurs en meme temps. SpeechRecognition et
+// getUserMedia ouverts ensemble sur iOS, c'est une seconde session audio sur la
+// meme piste, le terrain exact du defaut d'origine. Au tap, un moteur qui n'est
+// pas au repos garde la main ; sinon moteurChoisi() decide.
 
+// Le texte d'origine de la ligne « micro desactive », inchange.
+const MSG_MICRO_INDISPONIBLE = 'Reconnaissance vocale non disponible sur cet appareil, utilise le clavier (le vocal serveur arrive bientôt).';
+
+// Le secours (la dictee reprend quand le serveur ne repond pas) vit en memoire
+// seulement, jamais en localStorage : un rechargement de l'app l'efface.
+let secours = null;
+const ENREGISTREUR_DISPONIBLE = enregistreurDisponible();
+
+// Les quatre clés sont propres au chemin de l'app (/app/ ou /app-bac/, même origine donc même
+// localStorage) : voir cleVocal. Correctif de relecture du 12/10/2026.
+const lireReglagesVocalStockes = () => lireReglagesVocal((cle) => localStorage.getItem(cle), location.pathname);
+
+// Quel moteur prend le micro. `avecSecours` faux sert a savoir si le bouton doit
+// etre actif (le secours finit tout seul, ou au rechargement) ; vrai, au tap.
+function moteurChoisi(avecSecours) {
+  const reglages = lireReglagesVocalStockes();
+  return choisirMoteur({
+    capacite: reglages.capacite,
+    caseAllumee: reglages.caseAllumee,
+    secoursActif: avecSecours && secoursEstActif(secours, Date.now()),
+    enregistreurDisponible: ENREGISTREUR_DISPONIBLE,
+    dicteeDisponible: Boolean(SR),
+  });
+}
+
+// La capacite du vocal pour ce compte. Appelee une fois par chargement, au
+// declencheur de reprise (lancer, plus haut). Une reponse inconnue ou en echec (la
+// prod, qui n'a pas encore la route, rend une 400 « Requete invalide. ») ne change
+// rien : la derniere valeur connue reste, sinon « ferme ».
+async function demanderCapacites() {
+  let capacite = null;
+  try {
+    const { data, error } = await supabase.functions.invoke('pwa-api', optionsInvokePwaApi(corpsCapacites()));
+    capacite = error ? null : normaliserCapacite(data);
+  } catch (_erreur) {
+    capacite = null;
+  }
+  if (capacite === null) return;
+  try {
+    localStorage.setItem(cleVocal(CLE_VOCAL_CAPACITE, location.pathname), capacite);
+  } catch (_erreur) {
+    // Volontairement silencieux : meme doctrine que le journal du micro.
+  }
+  document.dispatchEvent(new CustomEvent('stovo:vocal-capacite', { detail: { capacite } }));
+}
+
+const moteurServeur = creerMoteurServeur({
+  // Classe « ecoute » et message d'etat suivent l'etat du moteur. Un retour a
+  // l'inactif efface le message ; les messages d'echec sont poses APRES (surMessage).
+  surEtat: (etat) => {
+    btnMicro.classList.toggle('ecoute', etat === 'enregistre');
+    // 'demande' efface le message précédent (une erreur d'avant ne reste pas affichée
+    // pendant l'attente de la piste).
+    if (etat === 'demande') afficherEtatMicro('');
+    else if (etat === 'enregistre') afficherEtatMicro(TEXTE_ECOUTE_SERVEUR);
+    else if (etat === 'transcrit') afficherEtatMicro(TEXTE_TRANSCRIPTION);
+    else if (etat === 'inactif') {
+      afficherEtatMicro('');
+      // Le bouton n'est recalculé qu'ici, au repos (voir majBoutonMicro).
+      majBoutonMicro();
+    }
+  },
+  // Le texte REMPLACE le champ, comme la dictee ; l'envoi reste un appui.
+  surTexteFinal: (texte) => {
+    champTexte.value = texte;
+    ajusterHauteurChamp();
+  },
+  surMessage: (message) => afficherEtatMicro(message),
+  // La phrase en cours est perdue (la dictee d'iOS ne peut pas relire un son
+  // enregistre) : le relais vaut pour la suivante.
+  surRelais: (cause, message) => {
+    const nouveau = etatSecours(cause, Date.now());
+    if (nouveau) {
+      secours = nouveau;
+      // La dictée prend la suite : la piste gardée de la stratégie B ne doit pas rester
+      // ouverte (jamais deux moteurs sur le micro en même temps).
+      moteurServeur.liberer();
+    }
+    afficherEtatMicro(nouveau && !SR ? MSG_RELAIS_CLAVIER : message);
+  },
+  journaliser,
+  // Ne passe PAS par appelerPwaApi : elle ecrit dans la zone de reponse et
+  // desactive des controles. Rend la reponse, ou null si invoke() a rendu une erreur.
+  envoyer: async (corps) => {
+    const { data, error } = await supabase.functions.invoke('pwa-api', optionsInvokePwaApi(corps));
+    if (error) {
+      console.error('Erreur pwa-api (transcrire) Stovo :', error.message || error);
+      return null;
+    }
+    return data;
+  },
+  lireReglages: lireReglagesVocalStockes,
+});
+
+// Le bouton est actif si au moins un moteur peut marcher sur cet appareil.
+// Sinon il garde l'attribut `disabled` et le message d'origine s'affiche.
+let messageIndisponibleAffiche = false;
+function majBoutonMicro() {
+  // Jamais en plein vocal : ni désactiver le bouton, ni écraser « J'écoute… » ou « Je
+  // transcris… ». Le recalcul se fait au retour à 'inactif' (surEtat).
+  if (moteurServeur.etat() !== 'inactif') return;
+  const clavier = moteurChoisi(false) === 'clavier';
+  btnMicro.disabled = clavier;
+  if (clavier) {
+    // Progressive enhancement : sans aucun moteur, le micro reste desactive et
+    // le clavier fonctionne sans rien de plus.
+    afficherEtatMicro(MSG_MICRO_INDISPONIBLE);
+    messageIndisponibleAffiche = true;
+  } else if (messageIndisponibleAffiche) {
+    afficherEtatMicro('');
+    messageIndisponibleAffiche = false;
+  }
+}
+majBoutonMicro();
+document.addEventListener('stovo:vocal-capacite', majBoutonMicro);
+document.addEventListener('stovo:vocal-reglages', majBoutonMicro);
+
+// Le geste de la dictee : le code d'avant ce lot, recopie tel quel.
+function appuiDictee() {
+  const action = etatMicro.appui();
+  if (action === 'demarrer') {
+    demarrerEcoute();
+    return;
+  }
+  if (action === 'annuler') {
+    // Appui pendant l'attente de démarrage (comportement tranché au lot
+    // D28, voir le rapport de passation) : on annule proprement l'instance
+    // en attente et on rend la main tout de suite, sans relancer un
+    // démarrage dans la foulée. Un second appui explicite relance un essai
+    // propre — plus fiable qu'un enchaînement immédiat abort()+start(),
+    // dont le navigateur ne garantit pas le timing.
+    annulerGardeDemarrage();
+    abandonnerInstanceEnCours();
+    afficherEtatMicro('');
+    return;
+  }
+  // 'arreter' : écoute réellement en cours (onstart déjà reçu), toggle
+  // inchangé — l'appui arrête la reconnaissance en cours. Correction après
+  // relecture du Jarvis (05/09/2026, point 2) : arme aussi la garde de
+  // 2 s qui force la remise à zéro si `onend` n'arrive jamais après ce
+  // `stop()` volontaire (armerGardeArret, voir plus haut).
+  instanceEnCours?.stop();
+  armerGardeArret();
+}
+
+btnMicro.addEventListener('click', () => {
+  // Un moteur qui n'est pas au repos garde la main (jamais les deux ensemble).
+  if (moteurServeur.etat() !== 'inactif') {
+    moteurServeur.appui();
+    return;
+  }
+  if (etatMicro.etat() === 'inactif') {
+    const moteur = moteurChoisi(true);
+    if (moteur === 'serveur') {
+      moteurServeur.appui();
+      return;
+    }
+    if (moteur === 'clavier') {
+      afficherEtatMicro(MSG_RELAIS_CLAVIER);
+      return;
+    }
+  }
+  // La dictée prend la main : une piste gardée par la stratégie B (relais, case décochée)
+  // est rendue d'abord. Jamais deux moteurs sur le micro en même temps.
+  moteurServeur.liberer();
+  appuiDictee();
+});
+
+if (SR) {
   // Remise à zéro sur visibilitychange (retour sur l'onglet) et pagehide
   // (app fermée/mise en arrière-plan) : voir reinitialiserEcouteEnArrierePlan()
   // ci-dessus (restreinte à l'état 'ecoute' depuis la correction du 05/09).
@@ -1077,6 +1265,27 @@ if (!SR) {
   });
   globalThis.addEventListener('pagehide', reinitialiserEcouteEnArrierePlan);
 }
+
+// Le moteur serveur quitte la scene quand l'app se cache : un enregistrement en
+// cours (ou en attente de la piste) est annule, une transcription en cours finit
+// d'arriver, et la piste gardee de la strategie B est rendue. Ces ecouteurs
+// existent avec ou sans dictee sur l'appareil.
+//
+// Comme la dictee (correction du 05/09, point 3, commentaire au-dessus de
+// reinitialiserEcouteEnArrierePlan) : on n'annule que `enregistre`, JAMAIS
+// `demande`. L'alerte de permission micro d'iOS peut cacher la page ; annuler
+// l'attente de la piste tuerait le tout premier vocal apres « Autoriser ». La
+// piste gardee (strategie B) n'est pas rendue pendant `demande` non plus : elle
+// peut etre celle que ce vocal va utiliser.
+function quitterMoteurServeur() {
+  const etat = moteurServeur.etat();
+  if (etat === 'enregistre') moteurServeur.annuler();
+  if (etat !== 'demande') moteurServeur.liberer();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') quitterMoteurServeur();
+});
+globalThis.addEventListener('pagehide', quitterMoteurServeur);
 
 // --- Aide aux captures d'écran locales (lot A10-6, 23/08/2026) ---
 // Expose le VRAI rendu de l'app sur window, pour que les captures du Codeur

@@ -484,7 +484,115 @@
 // D57, D75, D76) : la seule retouche de CE correctif est le message honnete
 // d'une ligne de session a deux produits dont la seconde ecriture echoue
 // (coeur.ts, aucun fichier front).
-const CACHE_NAME = 'stovo-app-v56';
+// v57 (lot L6a de la démo en libre-service, 07/10/2026) : le front de la
+// démo. Trois modules neufs au précache (demo_logique.js, demo.js,
+// demo_textes.js), l'écran de lancement, l'écran de fin et le bandeau
+// (index.html, styles.css), l'aiguillage au démarrage (app.js, auth.js).
+// pwa-api INCHANGÉE par ce lot.
+// CORRECTIF DE CACHE dans le même bump : /app/ et /app-bac/ sont servis sur la
+// même origine (stovo.fr) et partagent donc le Cache Storage, or l'activation
+// effaçait tout cache dont le nom différait du sien. Monter /app-bac/ en v57
+// aurait effacé le cache v56 de /app/ sur le même appareil, et inversement.
+// Le nom du cache dépend désormais de la portée du service worker
+// (stovo-app-vNN pour /app/, stovo-app-bac-vNN pour /app-bac/) et chaque
+// famille ne nettoie que les anciennes versions de la sienne. Une seule ligne
+// à bumper, comme avant : CACHE_NAME (le nom de la famille /app/), le nom réel
+// se calcule juste en dessous. Reste vrai après ce lot : les deux familles ne
+// se protègent que si LES DEUX portées portent ce code. Un service worker v56
+// (ancien code) qui s'installerait sur /app/ après un v57 de /app-bac/
+// effacerait encore stovo-app-bac-v57 ; le premier v57 de /app/ referme ce cas.
+// Suite de la revue du 07/10/2026 (toujours v57, rien n'a ete deploye) : une navigation
+// est rangee et retrouvee SANS sa query (cleDeCache, ignoreSearch), sinon
+// /app-bac/?demo&depuis=salon ne retrouvait pas la coquille hors ligne et chaque variante
+// de lien creait une entree de cache de plus ; la regle de la famille bac n'est plus
+// ecrite avec deux regex differentes.
+// v58 (lot L6b démo, 07/10/2026) : la démo grise la photo de bon et l'import de tableur
+// (demo.js, écoute en capture, aucune requête), masque le mot de passe et la déconnexion de
+// Réglages (reglages.js), et l'Aide gagne « Ce que la démo ne fait pas » (aide.js). Aucun
+// module neuf : demo_logique.js, demo_textes.js, demo.js, aide.js, reglages.js et une règle de
+// styles.css changent.
+// pwa-api INCHANGÉE par ce lot.
+// v59 (lot L7 démo, 08/10/2026) : la carte « L'essentiel, en 5 phrases » en haut de l'écran Saisir,
+// en démo seulement (missions_demo.js, créée à la demande : un testeur n'en a rien dans sa page).
+// Deux modules neufs au précache (missions_demo_logique.js, missions_demo.js) ; demo.js (une ligne
+// d'import), demo_textes.js (les textes des missions) et styles.css (règles neuves) changent.
+// pwa-api INCHANGÉE par ce lot.
+// v60 (dettes du 12/10/2026) : D90 le minuteur du tableau de bord s'arrête à la déconnexion
+// (dashboard.js), D91 une démo en fin n'appelle plus pwa-api au démarrage (parler.js,
+// parler_logique.js), D92 Réglages lit stovo-app-bac-vNN (contact.js), l'Aide dit qu'on répond
+// oui ou non à voix haute (D35) et les notes « Verbes compris » de la livraison (D96)
+// (aide-contenu.js). Aucun module neuf.
+// pwa-api CHANGÉE en même temps (D35, dettes de la voix V1 à V7).
+// v61 (vocal serveur V2, 12/10/2026) : le second moteur du micro. Enregistrement, arrêt sur
+// silence et transcription par pwa-api (kinds capacites et transcrire, route déjà sur le bac) :
+// deux modules neufs au précache (moteur_serveur_logique.js, moteur_serveur.js) ; parler.js
+// (aiguillage entre la dictée et le serveur, le bloc de la dictée inchangé), parler_logique.js
+// (deux corps, journal du micro à 40 lignes), reglages.js et index.html (la carte « Vocal
+// serveur (essai) », visible seulement si le serveur répond « essai ») changent. Sans effet pour
+// un compte dont la capacité est « ferme » ou inconnue (la prod, qui n'a pas encore la route).
+// Le nouveau code n'est actif qu'après une fermeture complète de la PWA.
+// v62 (correctif de relecture du vocal serveur V2, 12/10/2026) : les quatre clés stovo-vocal-* sont
+// propres au chemin (/app/ ou /app-bac/, même origine donc même localStorage), la piste gardée de la
+// stratégie B est rendue avant la dictée, la garde de la dictée lit « audiostart » (plus « start »,
+// que le moteur serveur écrit aussi), un AudioContext qui ne tourne pas désactive la détection de
+// silence pour ce vocal, le bouton micro n'est jamais désactivé en plein vocal, un refus pour un vocal
+// annulé s'écrit srv:annule:<code>, le message périmé s'efface à l'entrée en « demande ».
+// Aucun module neuf : moteur_serveur_logique.js, moteur_serveur.js, parler.js, parler_logique.js et
+// reglages.js changent. Un « essai » posé sur /app-bac/ avant ce lot est sous l'ancienne clé : à refaire.
+// v63 (texte d de la démo, 23/10/2026) : une fois les cinq missions faites, le bandeau de la démo affiche
+// TEXTE_SORTIE_ESSENTIEL (« Et si tu faisais la même chose avec ton vrai stock ? ... ») au lieu de répéter la
+// phrase de la carte. Aucun module neuf : demo_textes.js et missions_demo.js changent. Sans effet hors démo.
+const CACHE_NAME = 'stovo-app-v63';
+
+// ---- DEBUT bloc pur du nom de cache (testé par supabase_test.js, aucun accès à self) ----
+// Trois fonctions pures, extraites du texte de ce fichier par le banc Deno : un
+// service worker n'est pas importable, et on teste ainsi le code réellement
+// servi. Une portée illisible retombe dans la famille /app/, jamais d'exception
+// (un throw ici empêcherait l'installation du service worker).
+function prefixeDeFamille(scope) {
+  let chemin = '';
+  try {
+    chemin = new URL(scope).pathname;
+  } catch (_e) {
+    chemin = '';
+  }
+  // MEME regle que cleStockageDemo (demo_logique.js) : un service worker ne peut pas
+  // importer un module, la regex est donc ecrite deux fois, a l'identique, et
+  // supabase_test.js compare leurs verdicts sur six chemins.
+  return /(^|\/)app-bac(\/|$)/.test(chemin) ? 'stovo-app-bac-v' : 'stovo-app-v';
+}
+
+function nomDuCache(scope, version) {
+  return prefixeDeFamille(scope) + version;
+}
+
+// Les caches à effacer : les anciennes versions de SA famille, rien d'autre.
+// Un nom étranger ou mal formé (stovo-app-v57-old, workbox-...) reste intact.
+function cachesAEffacer(noms, scope, version) {
+  const prefixe = prefixeDeFamille(scope);
+  const actif = prefixe + version;
+  const saFamille = new RegExp('^' + prefixe + '\\d+$');
+  return (noms || []).filter((nom) => nom !== actif && saFamille.test(nom));
+}
+
+// La cle sous laquelle ranger une reponse. Une NAVIGATION (le document que le navigateur
+// demande) est rangee sans sa query : /app-bac/?demo&depuis=salon et /app-bac/?demo
+// sont la meme coquille, et sans ce nettoyage chaque variante de lien creait une entree de
+// plus, jamais retrouvee hors ligne (le precache ne connait que /app-bac/ et index.html).
+// Tout le reste (scripts, feuilles de style) garde son adresse complete.
+function cleDeCache(url, mode) {
+  if (mode !== 'navigate') return url;
+  try {
+    const adresse = new URL(url);
+    return adresse.origin + adresse.pathname;
+  } catch (_e) {
+    return url;
+  }
+}
+// ---- FIN bloc pur du nom de cache ----
+
+const VERSION_CACHE = CACHE_NAME.replace(/^stovo-app-v/, '');
+const CACHE_ACTIF = nomDuCache(self.registration.scope, VERSION_CACHE);
 
 // Coquille locale a precacher : les fichiers de l'app elle-meme, dont
 // vendor/supabase-2.117.0.umd.js depuis le lot RGPD F2 (supabase-js est
@@ -519,6 +627,8 @@ const FICHIERS_COQUILLE = [
   './reglages_logique.js',
   './parler.js',
   './parler_logique.js',
+  './moteur_serveur_logique.js',
+  './moteur_serveur.js',
   './reception.js',
   './inventaire.js',
   './sortie.js',
@@ -530,6 +640,11 @@ const FICHIERS_COQUILLE = [
   './premiers_pas.js',
   './tutoriels_logique.js',
   './tutoriels.js',
+  './demo_logique.js',
+  './demo.js',
+  './demo_textes.js',
+  './missions_demo_logique.js',
+  './missions_demo.js',
   './fonts/dm-sans-latin.woff2',
   './manifest.json',
   './icons/icon.svg',
@@ -552,17 +667,18 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(FICHIERS_COQUILLE))
+    caches.open(CACHE_ACTIF).then((cache) => cache.addAll(FICHIERS_COQUILLE))
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      // Nettoie les caches des anciennes versions (nom different de l'actuel).
+      // Nettoie les caches des anciennes versions de SA famille seulement
+      // (lot L6a : /app/ et /app-bac/ partagent le Cache Storage).
       const noms = await caches.keys();
       await Promise.all(
-        noms.filter((nom) => nom !== CACHE_NAME).map((nom) => caches.delete(nom))
+        cachesAEffacer(noms, self.registration.scope, VERSION_CACHE).map((nom) => caches.delete(nom))
       );
       // Prend le controle des pages ouvertes des cette activation. Sans
       // risque ici : l'activation n'arrive JAMAIS toute seule (toujours pas
@@ -598,9 +714,12 @@ self.addEventListener('fetch', (event) => {
     fetch(requete)
       .then((reponse) => {
         const copie = reponse.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(requete, copie));
+        const cle = requete.mode === 'navigate' ? cleDeCache(requete.url, requete.mode) : requete;
+        caches.open(CACHE_ACTIF).then((cache) => cache.put(cle, copie));
         return reponse;
       })
-      .catch(() => caches.match(requete))
+      // Hors ligne, une navigation retrouve la coquille precachee MALGRE sa query
+      // (/app-bac/?demo&depuis=salon -> /app-bac/), revue du 07/10, point 6.
+      .catch(() => caches.match(requete, { ignoreSearch: requete.mode === 'navigate' }))
   );
 });

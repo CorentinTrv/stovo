@@ -21,6 +21,9 @@
 // Auth, sans connaître l'écran qui l'appelle.
 
 import { supabase, SUPABASE_KEY, SUPABASE_URL } from './supabase.js';
+// Lot L6a de la démo (07/10/2026) : la traduction d'un refus de lancement est
+// une fonction PURE testée (demo_logique.js), auth.js ne fait que l'appeler.
+import { filtrerDepuis, traduireRefusLancement } from './demo_logique.js';
 
 // Traduit les erreurs Supabase les plus courantes en français lisible.
 // Repli sur le message brut si le cas n'est pas prévu : mieux vaut un
@@ -106,6 +109,42 @@ export async function seConnecter(email, motDePasse) {
     return { ok: false, message: messageLisible(error) };
   }
   return { ok: true, message: '', session: data.session };
+}
+
+// Lot L6a de la démo en libre-service (07/10/2026) : ouvre un compte anonyme.
+// Même contrat que seConnecter : renvoie toujours un objet, jamais d'exception
+// qui remonterait jusqu'à l'écran de lancement. Succès : { ok: true, session }.
+// Échec : { ok: false, cle, message }, où `message` est l'emplacement de texte
+// qui correspond au refus (traduireRefusLancement : démo complète, fermée,
+// réseau partagé, ou message générique).
+//
+// `depuis` est l'étiquette de provenance du lien (?depuis=). Elle est
+// refiltrée ICI sur la liste fermée, même si l'appelant l'a déjà lue avec
+// lireDepuis : c'est la dernière garde avant l'envoi, et le contenu de
+// user_metadata est de toute façon refiltré par la base (le navigateur ne
+// mérite jamais confiance). `client` n'existe que pour le banc (faux client
+// injecté, jamais de réseau en test) ; l'app appelle ouvrirDemo(depuis).
+export async function ouvrirDemo(depuis, client = supabase) {
+  let reponse;
+  try {
+    reponse = await client.auth.signInAnonymously({
+      options: { data: { depuis: filtrerDepuis(depuis) } },
+    });
+  } catch (erreur) {
+    // supabase-js ne lève que pour une panne qui n'est pas une erreur d'Auth
+    // (réseau coupé, réponse illisible) : on la journalise et on rend le
+    // message générique.
+    console.error('Échec de l’ouverture de la démo Stovo :', erreur);
+    return refusDeLancement(null);
+  }
+  const { data, error } = reponse;
+  if (error || !data?.session) return refusDeLancement(error);
+  return { ok: true, session: data.session };
+}
+
+function refusDeLancement(erreur) {
+  const refus = traduireRefusLancement(erreur);
+  return { ok: false, cle: refus.cle, message: refus.texte };
 }
 
 // Déconnexion : purge la session locale et distante.

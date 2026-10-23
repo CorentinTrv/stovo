@@ -1121,6 +1121,29 @@ async function charger() {
 // doit toujours fonctionner, drapeau ou pas.
 let demarre = false;
 let donneesACharger = true;
+
+// D90 (12/10/2026) : le rafraichissement de 30 s ne doit tourner que session
+// ouverte. Avant ce correctif le setInterval etait pose une fois et jamais
+// arrete : apres une deconnexion il continuait d'appeler la base sans session.
+// creerMinuteur garde le handle de l'intervalle : demarrer() n'en pose jamais
+// un second tant qu'un tourne (les echos d'evenements d'auth rappellent
+// demarrerDashboard), arreter() le coupe (viderDashboard, a la deconnexion et
+// a l'entree sur l'ecran de fin de demo). setInterval et clearInterval sont des
+// parametres pour que le test injecte des doublures, sans vrai minuteur.
+export function creerMinuteur(planifier, annuler, tache, delaiMs) {
+  let handle = null;
+  return {
+    demarrer() {
+      if (handle === null) handle = planifier(tache, delaiMs);
+    },
+    arreter() {
+      if (handle === null) return;
+      annuler(handle);
+      handle = null;
+    },
+  };
+}
+const minuteurRafraichissement = creerMinuteur(setInterval, clearInterval, charger, 30000);
 // Chantier EX-1, lot 2 (01/10/2026) : dernier état connu pour l'export
 // Excel -- voir son affectation dans charger() et sa remise à null dans
 // viderDashboard() plus bas.
@@ -1181,8 +1204,12 @@ export function demarrerDashboard() {
     // invGroupesOuverts : son état ouvert/fermé survit tout seul au
     // rafraîchissement toutes les 30 s.
     majExport();
-    setInterval(charger, 30000);
   }
+  // D90 : le cablage ci-dessus ne s'attache qu'UNE fois pour la vie de la
+  // page, mais le minuteur, lui, est coupe a chaque deconnexion (viderDashboard)
+  // et doit repartir a la reconnexion : demarrer() est donc appele a chaque
+  // ouverture et n'empile jamais deux intervalles.
+  minuteurRafraichissement.demarrer();
   // Un seul charger() par ouverture reelle de session, zero sur un simple
   // echo d'evenement d'auth (voir le commentaire au-dessus de `demarre`).
   if (donneesACharger) {
@@ -1203,6 +1230,9 @@ export function demarrerDashboard() {
 // pas un futur bug d'affichage (ou une inspection du DOM) de les rendre
 // visibles avec les donnees de l'ancien compte encore dedans.
 export function viderDashboard() {
+  // D90 : plus aucun appel de rafraichissement session fermee. Le prochain
+  // demarrerDashboard() (reconnexion) relance le minuteur, une seule fois.
+  minuteurRafraichissement.arreter();
   // Reautorise le PROCHAIN charger() (voir le commentaire au-dessus de
   // `demarre`/`donneesACharger`) : la session qui vient de se fermer avait
   // deja consomme le drapeau, la prochaine ouverture doit pouvoir le

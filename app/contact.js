@@ -42,10 +42,12 @@ export function resumerNavigateur(userAgent) {
 // Extrait le numéro de version depuis le nom du cache actif du service
 // worker (ex. "stovo-app-v32" -> "32"). C'est LA source de vérité déjà
 // utilisée par sw.js (CACHE_NAME) : aucune constante de version à maintenir
-// en double ici. `null` si le format ne correspond pas (aucun cache Stovo
-// trouvé, ou nom inattendu) : à l'appelant de décider du repli affiché.
+// en double ici. Deux familles de noms, rien d'autre : "stovo-app-vNN" (l'app)
+// et "stovo-app-bac-vNN" (le bac à sable, D92). `null` si le format ne
+// correspond pas (aucun cache Stovo trouvé, ou nom inattendu) : à l'appelant
+// de décider du repli affiché.
 export function extraireNumeroVersion(nomCache) {
-  const trouve = String(nomCache || '').match(/^stovo-app-v(\d+)$/);
+  const trouve = String(nomCache || '').match(/^stovo-app(?:-bac)?-v(\d+)$/);
   return trouve ? trouve[1] : null;
 }
 

@@ -45,6 +45,7 @@
 // bloc d'aide ne modifie jamais le stock.
 
 import { CONTENU } from './aide-contenu.js';
+import { aideSelonDemo } from './demo_logique.js';
 import { ICONES } from './icones.js';
 
 const $ = (id) => document.getElementById(id);
@@ -177,6 +178,20 @@ const zone = $('aide-liste');
 if (zone) {
   zone.innerHTML = rendreTout(CONTENU);
 }
+
+// Lot L6b (07/10/2026) : en démo, l'Aide gagne la section « Ce que la démo ne fait pas » et
+// perd le tuto « Refaire mes premiers pas » (aideSelonDemo, demo_logique.js). L'état vient
+// de l'événement 'stovo:demo' (demo.js, source unique) ; il n'est pas recalculé ici. On
+// repeint seulement quand l'état CHANGE : le renouvellement du jeton, toutes les heures,
+// ne doit pas replier les sections que le visiteur a ouvertes. Hors démo, rien ne
+// change : le rendu de départ ci-dessus reste celui d'avant.
+let aideEnDemo = false;
+document.addEventListener('stovo:demo', (evenement) => {
+  const actif = evenement.detail?.actif === true;
+  if (!zone || actif === aideEnDemo) return;
+  aideEnDemo = actif;
+  zone.innerHTML = rendreTout(aideSelonDemo(CONTENU, actif));
+});
 
 // Un exemple tape : on recopie la phrase dans le champ de l'ecran Parler,
 // on bascule sur cet ecran, et on s'arrete la. AUCUN envoi : c'est toujours

@@ -17,6 +17,7 @@ import { changerMotDePasseConnecte, getSessionActuelle, seDeconnecter } from './
 import { construireLienMailto, DESTINATAIRE_CONTACT, extraireNumeroVersion } from './contact.js';
 import { CLE_STOCKAGE, calculerAttribut, normaliserTeinte, rendreNuancier } from './couleur_logique.js';
 import { validerChangementMotDePasse } from './reglages_logique.js';
+import { LIGNES_COMPTE_REGLAGES, reglagesCachesEnDemo } from './demo_logique.js';
 // Lot D28 (05/09/2026) : carte "Diagnostic micro" -- lecture seule du
 // journal ecrit par parler.js (localStorage, survit a un rechargement
 // complet de l'app, voir parler_logique.js pour le detail de la decision).
@@ -26,6 +27,14 @@ import {
   formaterEnvironnementMicro,
   formaterJournalMicroPourAffichage,
 } from './parler_logique.js';
+// Lot « vocal serveur V2 » (12/10/2026) : la carte « Vocal serveur (essai) ».
+import {
+  cleVocal,
+  CLE_VOCAL_ESSAI,
+  CLE_VOCAL_SILENCE,
+  CLE_VOCAL_STRATEGIE,
+  lireReglagesVocal,
+} from './moteur_serveur_logique.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -126,6 +135,49 @@ function rafraichirDiagnosticMicro() {
   $('reglages-diagnostic-journal').textContent = formaterJournalMicroPourAffichage(journal, environnement);
 }
 
+// --- Vocal serveur (essai) (lot « vocal serveur V2 », 12/10/2026) ---------------
+// La carte n'existe que si le serveur a répondu « essai » pour ce compte (la
+// capacité est stockée par parler.js sous stovo-vocal-capacite) : en « ferme »
+// ou « defaut » elle reste cachée. Trois réglages mémorisés sur l'appareil,
+// comme la couleur (try/catch silencieux, jamais envoyés au serveur) ; chaque
+// changement prévient parler.js par 'stovo:vocal-reglages'. Les contrôles natifs
+// sont acceptés tels quels pour ce lot d'essai.
+//
+// La carte et ses contrôles sont cherchés avec une garde : sur GitHub Pages un
+// reglages.js neuf peut arriver avant l'index.html qui les porte.
+
+function rafraichirCarteVocal() {
+  const carte = $('reglages-carte-vocal');
+  if (!carte) return;
+  // lireReglagesVocal rend les défauts si le stockage lève : pas de try/catch ici.
+  // Clés propres au chemin de l'app (/app/ ou /app-bac/) : voir cleVocal.
+  const reglages = lireReglagesVocal((cle) => localStorage.getItem(cle), location.pathname);
+  carte.hidden = reglages.capacite !== 'essai';
+  $('reglages-vocal-essai').checked = reglages.caseAllumee;
+  $('reglages-vocal-silence').value = String(reglages.silenceMs);
+  $('reglages-vocal-strategie').checked = reglages.strategie === 'B';
+}
+
+function ecrireReglageVocal(cle, valeur) {
+  try {
+    localStorage.setItem(cleVocal(cle, location.pathname), valeur);
+  } catch (_e) {
+    // Volontairement silencieux : voir « Couleur de Stovo » plus haut.
+  }
+  document.dispatchEvent(new CustomEvent('stovo:vocal-reglages'));
+}
+
+$('reglages-vocal-essai')?.addEventListener('change', (evenement) => {
+  ecrireReglageVocal(CLE_VOCAL_ESSAI, evenement.target.checked ? '1' : '0');
+});
+$('reglages-vocal-silence')?.addEventListener('change', (evenement) => {
+  ecrireReglageVocal(CLE_VOCAL_SILENCE, evenement.target.value);
+});
+$('reglages-vocal-strategie')?.addEventListener('change', (evenement) => {
+  ecrireReglageVocal(CLE_VOCAL_STRATEGIE, evenement.target.checked ? 'B' : 'A');
+});
+document.addEventListener('stovo:vocal-capacite', rafraichirCarteVocal);
+
 // --- Remplissage de l'écran Réglages, à chaque fois qu'il s'affiche --------
 // (et non une seule fois au chargement : l'e-mail de session, la version et
 // le lien mailto doivent rester à jour même si la page vit longtemps).
@@ -133,6 +185,7 @@ function rafraichirDiagnosticMicro() {
 async function remplirReglages() {
   rafraichirNuancier(lireTeinteStockee());
   rafraichirDiagnosticMicro();
+  rafraichirCarteVocal();
 
   const session = await getSessionActuelle();
   const email = session?.user?.email || '';
@@ -149,6 +202,21 @@ document.addEventListener('stovo:onglet', (evenement) => {
   if (evenement.detail && evenement.detail.onglet === 'reglages') {
     remplirReglages();
   }
+});
+
+// --- La démo (lot L6b, 07/10/2026) -------------------------------------------
+// En démo, la ligne « Changer mon mot de passe » et « Se déconnecter » sont masquées (la
+// démo n'a pas de compte à protéger). La carte « Mon compte » qui les porte est masquée avec
+// elles : elle ne contient qu'elles et l'e-mail, vide pour une démo, et n'afficherait qu'un
+// titre seul. L'état vient de l'événement 'stovo:demo' (demo.js, source unique) ; il
+// retombe à faux au passage vers un compte normal et tout réapparaît, sans rechargement.
+document.addEventListener('stovo:demo', (evenement) => {
+  const caches = reglagesCachesEnDemo(evenement.detail?.actif === true);
+  for (const id of LIGNES_COMPTE_REGLAGES) $(id).hidden = caches.includes(id);
+  const carte = $(LIGNES_COMPTE_REGLAGES[0]).closest('.reglages-carte');
+  if (carte) carte.hidden = caches.length > 0;
+  // À la place : la sortie vers un vrai compte (carte neuve d'index.html, câblée par demo.js).
+  $('reglages-carte-demo').hidden = caches.length === 0;
 });
 
 // --- Navigation --------------------------------------------------------------

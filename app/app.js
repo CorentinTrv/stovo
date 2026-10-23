@@ -64,6 +64,11 @@ import './tutoriels.js';
 // recuperation_logique.js).
 import { gardeRecuperation } from './recuperation.js';
 import './reglages.js';
+// Lot L6a (07/10/2026) : la démo en libre-service. `aiguillerDemarrage` est
+// le SEUL point d'entrée : à chaque session connue elle décide si l'app, la
+// connexion, l'écran de lancement ou l'écran de fin. Hors démo elle rend 'app'
+// ou 'connexion' sans aucune requête ni aucun écran de plus (voir demo.js).
+import { aiguillerDemarrage } from './demo.js';
 
 const formLogin = document.getElementById('form-login');
 const champEmail = document.getElementById('login-email');
@@ -105,14 +110,23 @@ document.getElementById('hors-ligne-message').textContent = MESSAGE_HORS_LIGNE;
 // l'app ou l'écran de connexion.
 let horsLigneActif = false;
 
+// Lot L6a : l'aiguillage remplace le « session ? app : connexion » d'avant.
+// 'lancement' et 'fin' sont déjà à l'écran quand elle rend la main ; 'perimee'
+// veut dire qu'une session plus récente a pris le relais pendant la lecture de
+// la ligne de la démo, rien à faire.
+async function montrerSelonSession(session) {
+  const ecran = await aiguillerDemarrage(session);
+  if (ecran === 'app') {
+    afficherApp();
+  } else if (ecran === 'connexion') {
+    afficherLogin();
+  }
+}
+
 function verifierSessionEtAfficher() {
   getSessionActuelle().then((session) => {
     ecranHorsLigne.hidden = true;
-    if (session) {
-      afficherApp();
-    } else {
-      afficherLogin();
-    }
+    montrerSelonSession(session);
   });
 }
 
@@ -144,11 +158,7 @@ if (fautIlAfficherRepliHorsLigne(navigator.onLine)) {
 onAuthChange((session) => {
   if (horsLigneActif) return;
   if (gardeRecuperation.estEnCours()) return;
-  if (session) {
-    afficherApp();
-  } else {
-    afficherLogin();
-  }
+  montrerSelonSession(session);
 });
 
 // --- Formulaire de connexion ---

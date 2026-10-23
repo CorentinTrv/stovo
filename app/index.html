@@ -190,6 +190,42 @@
     </div>
   </div>
 
+  <!-- ================= Démo en libre-service (lot L6a, 07/10/2026) =================
+       Deux écrans pré-connexion, variantes de .ecran-login comme les écrans
+       ci-dessus, masqués par défaut (hidden) : demo.js en montre UN SEUL à la
+       fois, et seulement quand l'adresse porte ?demo sans session
+       (lancement), ou quand la démo est finie (fin). Tous les textes sont
+       posés par demo.js depuis demo_textes.js (textes validés le 07/10/2026),
+       aucune phrase n'est écrite ici. -->
+  <div id="ecran-demo-lancement" class="ecran-login" hidden>
+    <p class="login-logo">Stovo</p>
+    <div class="login-carte">
+      <h1 id="demo-lancement-titre"></h1>
+      <p class="login-soustitre" id="demo-lancement-corps"></p>
+      <p class="login-note" id="demo-appareil" hidden></p>
+      <button type="button" class="btn-login" id="btn-demo-lancer"></button>
+      <div class="login-erreur" id="demo-lancement-erreur" role="alert" hidden></div>
+      <!-- Un testeur déconnecté qui touche un lien ?demo ne doit pas rester coincé ici : même
+           lien, même geste, même texte que sur l'écran de fin (câblé par demo.js). -->
+      <div class="login-lien-centre"><a href="#" id="demo-lancement-compte"></a></div>
+      <p class="login-note" id="demo-lancement-rgpd"></p>
+      <p class="login-note" id="demo-lancement-pas-inscription"></p>
+    </div>
+  </div>
+
+  <div id="ecran-demo-fin" class="ecran-login" hidden>
+    <p class="login-logo">Stovo</p>
+    <div class="login-carte">
+      <h1 id="demo-fin-titre"></h1>
+      <p class="login-soustitre" id="demo-fin-corps"></p>
+      <a class="btn-login demo-lien-bouton" id="demo-fin-mail" href="#"></a>
+      <!-- Pour un testeur (ou un client de l'essai) dont la démo est finie : retire
+           le repère « démo vue » de ce chemin et ouvre la connexion normale, sans
+           recharger (câblé par demo.js). -->
+      <div class="login-lien-centre"><a href="#" id="demo-fin-compte"></a></div>
+    </div>
+  </div>
+
   <!-- ================= Application (dashboard + parler + nav) ================= -->
   <!-- Masquée par défaut (hidden) : app.js la montre une fois la session
        confirmée (au démarrage si déjà connecté, ou juste après un login). -->
@@ -227,6 +263,22 @@
     </div>
     <div class="tuto-corps" id="tuto-corps"></div>
     <div class="tuto-actions" id="tuto-actions"></div>
+  </section>
+
+  <!-- ================= Bandeau de la démo (lot L6a, 07/10/2026) =================
+       Dans le flux de la page, en tête de l'application, JAMAIS en surimpression
+       (leçon de D70 : un bandeau ne cache pas ce qu'il montre). Visible sur
+       tous les onglets. Masqué par défaut (hidden) : demo.js ne le montre que
+       pour une session de démo. Le bouton est un lien mailto vers Corentin
+       (construireMailDemo), avec le code DEMO-XXXX. La proposition du 3e jour
+       (#demo-sortie) ne s'affiche qu'une fois. -->
+  <section class="demo-bandeau" id="demo-bandeau" aria-label="Démo" hidden>
+    <p class="demo-bandeau-texte" id="demo-bandeau-texte"></p>
+    <a class="demo-bandeau-bouton" id="demo-bandeau-mail" href="#"></a>
+    <div class="demo-sortie" id="demo-sortie" hidden>
+      <p class="demo-sortie-texte" id="demo-sortie-texte"></p>
+      <button class="demo-sortie-fermer" type="button" id="demo-sortie-fermer" aria-label="Fermer">✕</button>
+    </div>
   </section>
 
   <!-- ================= Écran « Tableau de bord » (par défaut) ================= -->
@@ -788,6 +840,18 @@
         </button>
       </section>
 
+      <!-- Correctif de revue L6b (07/10/2026) : en démo SEULEMENT (reglages.js la montre, demo.js la
+           câble), à la place de « Mon compte » : la sortie vers un vrai compte, avec confirmation
+           (la démo se ferme pour de bon). Libellé posé par demo.js (TEXTE_FIN_J_AI_UN_COMPTE). -->
+      <section class="card reglages-carte" id="reglages-carte-demo" hidden>
+        <button type="button" class="reglages-ligne" id="reglages-quitter-demo">
+          <span class="reglages-ligne-icone">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M8 3.5H5a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 5 16.5h3M12.5 6.5 16 10l-3.5 3.5M16 10H8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="reglages-ligne-texte" id="reglages-quitter-demo-texte"></span>
+        </button>
+      </section>
+
       <section class="reglages-contact">
         <span class="reglages-soustitre">Une question, un souci&nbsp;?</span>
         <p class="reglages-contact-texte">Écris à Corentin, il répond lui-même. Le mail part avec la version de l’app, ça l’aide à comprendre.</p>
@@ -804,6 +868,32 @@
         </div>
       </section>
 
+      <!-- Carte « Vocal serveur (essai) » (lot « vocal serveur V2 », 12/10/2026) : visible
+           SEULEMENT si le serveur a répondu « essai » pour ce compte (reglages.js). Éteinte
+           par défaut ; les trois réglages restent sur l'appareil. Textes provisoires jusqu'au
+           lot V6. -->
+      <section class="card reglages-carte" id="reglages-carte-vocal" hidden>
+        <span class="reglages-soustitre">Vocal serveur (essai)</span>
+        <p class="reglages-diagnostic-texte">Le son part chez Mistral, qui le transcrit. Pour les essais de Corentin seulement.</p>
+        <div class="reglages-separateur"></div>
+        <label for="reglages-vocal-essai">
+          <input type="checkbox" id="reglages-vocal-essai">
+          Utiliser le vocal serveur
+        </label>
+        <div class="reglages-separateur"></div>
+        <label for="reglages-vocal-silence">Arrêt après un silence de</label>
+        <select id="reglages-vocal-silence">
+          <option value="1500">1,5 s</option>
+          <option value="2000" selected>2 s</option>
+          <option value="2500">2,5 s</option>
+        </select>
+        <div class="reglages-separateur"></div>
+        <label for="reglages-vocal-strategie">
+          <input type="checkbox" id="reglages-vocal-strategie">
+          Garder le micro ouvert pendant la visite (stratégie B)
+        </label>
+      </section>
+
       <!-- Carte « Diagnostic micro » (lot D28, 05/09/2026) : le micro ne
            démarrait pas un lancement sur deux, et tout ce qu'il savait
            partait dans console.error, illisible sur un iPhone sans Mac
@@ -812,7 +902,7 @@
            copiable. Lecture seule : rien ici n'écrit vers pwa-api. -->
       <section class="card reglages-carte reglages-diagnostic">
         <span class="reglages-soustitre">Diagnostic micro</span>
-        <p class="reglages-diagnostic-texte">Le micro te lâche parfois au démarrage&nbsp;? Ce journal garde les vingt derniers essais, avec l’heure de chacun. Copie-le et envoie-le à Corentin, ça aide à comprendre.</p>
+        <p class="reglages-diagnostic-texte">Le micro te lâche parfois au démarrage&nbsp;? Ce journal garde les quarante derniers essais, avec l’heure de chacun. Copie-le et envoie-le à Corentin, ça aide à comprendre.</p>
         <pre class="reglages-diagnostic-journal" id="reglages-diagnostic-journal"></pre>
         <div class="reglages-diagnostic-actions">
           <button type="button" class="btn-export" id="reglages-diagnostic-copier">

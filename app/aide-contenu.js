@@ -281,7 +281,7 @@ export const CONTENU = [
         titre: 'Faire entrer du stock',
         quoi: 'Une livraison, un achat, un réassort.',
         exemples: ["j'ai reçu 10 pâtes", "j'ai acheté 6 bières", "on a rentré 24 lait"],
-        note: 'Verbes compris : reçu, acheté, livré, ajouté, rentré.',
+        note: 'Verbes compris : reçu, acheté, ajouté, rentré, et « on m\'a livré ».',
       },
       {
         type: 'geste',
@@ -289,7 +289,7 @@ export const CONTENU = [
         titre: 'Faire sortir du stock',
         quoi: 'Une vente, une consommation, une sortie vers la production.',
         exemples: ["j'ai vendu 3 pâtes", "on a consommé 5 lait", "j'ai sorti 2 riz"],
-        note: 'Verbes compris : vendu, sorti, consommé, utilisé.',
+        note: 'Verbes compris : vendu, sorti, consommé, utilisé, et « j\'ai livré » (à un client).',
       },
       {
         type: 'geste',
@@ -463,7 +463,7 @@ export const CONTENU = [
       {
         type: 'astuce',
         titre: 'Un nom proche signalé n\'est pas un refus',
-        texte: 'Quand tu crées une référence, Stovo vérifie d\'abord qu\'un nom voisin n\'existe pas déjà, et il te le dit avant d\'écrire quoi que ce soit. C\'est un garde-fou contre les doublons, pas un refus. Si ton produit est bien nouveau, réponds <b>oui</b> et il est créé. Si tu reconnais le produit qu\'il te cite, réponds <b>non</b> et sers-toi de celui qui existe déjà.',
+        texte: 'Quand tu crées une référence, Stovo vérifie d\'abord qu\'un nom voisin n\'existe pas déjà, et il te le dit avant d\'écrire quoi que ce soit. C\'est un garde-fou contre les doublons, pas un refus. Si ton produit est bien nouveau, réponds <b>oui</b> et il est créé. Si tu reconnais le produit qu\'il te cite, réponds <b>non</b> et sers-toi de celui qui existe déjà. Pas besoin de toucher le bouton : tu peux aussi répondre à voix haute, « <b>oui</b> », « <b>ouais</b> », « <b>d\'accord</b> » ou « <b>non</b> ».',
       },
       {
         type: 'astuce',
